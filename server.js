@@ -118,39 +118,24 @@ function fetchGitHub() {
     // Fetch issues only for ACTIVE_REPOS (prioritized); collect stats for all
     for (const { name: repo, archived } of allRepos) {
       try {
-        const isActive = ACTIVE_REPOS.includes(repo);
-        const issues = isActive
-          ? gh(`issue list --repo ${repo} --state open --json number,title,labels,assignees,createdAt,url,milestone --limit 50`)
-          : gh(`issue list --repo ${repo} --state open --json number,title,labels,createdAt --limit 1`);
-
+        const issues = gh(`issue list --repo ${repo} --state open --json number,title,labels,assignees,createdAt,url,milestone --limit 100`);
         const repoName = repo.split('/')[1];
 
-        if (isActive) {
-          allIssues.push(...issues.map(i => ({
-            ...i,
-            repo: repoName,
-            repoFull: repo,
-            priority: issuePriority(i.labels),
-          })));
-        }
-
-        // For non-active repos we only fetched 1 issue to check count — get full count via API
-        let openCount = issues.length;
-        if (!isActive && issues.length === 1) {
-          try {
-            const all = gh(`issue list --repo ${repo} --state open --json number --limit 100`);
-            openCount = all.length;
-          } catch (_) {}
-        }
+        allIssues.push(...issues.map(i => ({
+          ...i,
+          repo: repoName,
+          repoFull: repo,
+          priority: issuePriority(i.labels),
+        })));
 
         repoStats.push({
           repo: repoName,
           repoFull: repo,
-          openIssues: isActive ? issues.length : openCount,
-          bugs: isActive ? issues.filter(i => i.labels.some(l => l.name === 'bug')).length : 0,
-          enhancements: isActive ? issues.filter(i => i.labels.some(l => l.name === 'enhancement')).length : 0,
+          openIssues: issues.length,
+          bugs: issues.filter(i => i.labels.some(l => l.name === 'bug')).length,
+          enhancements: issues.filter(i => i.labels.some(l => l.name === 'enhancement')).length,
           lastActivity: issues.length > 0 ? issues[0].createdAt : null,
-          tracked: isActive,
+          tracked: true,
           archived,
         });
       } catch (e) {
