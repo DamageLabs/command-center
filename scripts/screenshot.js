@@ -4,6 +4,16 @@ const puppeteer = require('puppeteer');
 const path = require('path');
 const fs = require('fs');
 
+const TABS = [
+  { id: 'urgent',   label: 'urgent' },
+  { id: 'active',   label: 'active' },
+  { id: 'backlog',  label: 'backlog' },
+  { id: 'infra',    label: 'infra' },
+  { id: 'tasks',    label: 'tasks' },
+  { id: 'calendar', label: 'calendar' },
+  { id: 'repos',    label: 'repos' },
+];
+
 (async () => {
   const outDir = path.join(__dirname, '..', 'docs');
   if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
@@ -16,17 +26,24 @@ const fs = require('fs');
   const page = await browser.newPage();
   await page.setViewport({ width: 1440, height: 900 });
 
-  // Load the dashboard — wait for data to populate
+  // Initial load — wait for data
   await page.goto('http://localhost:4500', { waitUntil: 'networkidle2', timeout: 15000 });
-
-  // Give it a moment for the JS fetch to complete
   await new Promise(r => setTimeout(r, 3000));
 
-  await page.screenshot({
-    path: path.join(outDir, 'screenshot.png'),
-    fullPage: false,
-  });
+  // Full dashboard screenshot (default Urgent tab)
+  await page.screenshot({ path: path.join(outDir, 'screenshot.png') });
+  console.log('✓ screenshot.png');
+
+  // Each tab
+  for (const tab of TABS) {
+    await page.evaluate((id) => {
+      if (typeof switchView === 'function') switchView(id);
+    }, tab.id);
+    await new Promise(r => setTimeout(r, 400));
+    await page.screenshot({ path: path.join(outDir, `screenshot-${tab.label}.png`) });
+    console.log(`✓ screenshot-${tab.label}.png`);
+  }
 
   await browser.close();
-  console.log('Screenshot saved to docs/screenshot.png');
+  console.log('\nAll screenshots saved to docs/');
 })();

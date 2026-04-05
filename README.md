@@ -2,7 +2,25 @@
 
 A personal command center dashboard for DamageLabs. Aggregates GitHub issues, Google Calendar, Obsidian tasks, and PM2 infrastructure status into a single tabbed UI.
 
-![Command Center dashboard](https://raw.githubusercontent.com/DamageLabs/command-center/main/docs/screenshot.png)
+![Command Center — Urgent tab](https://raw.githubusercontent.com/DamageLabs/command-center/main/docs/screenshot-urgent.png)
+
+## Screenshots
+
+| Urgent & Bugs | Active |
+|---|---|
+| ![Urgent](https://raw.githubusercontent.com/DamageLabs/command-center/main/docs/screenshot-urgent.png) | ![Active](https://raw.githubusercontent.com/DamageLabs/command-center/main/docs/screenshot-active.png) |
+
+| Backlog | Infra |
+|---|---|
+| ![Backlog](https://raw.githubusercontent.com/DamageLabs/command-center/main/docs/screenshot-backlog.png) | ![Infra](https://raw.githubusercontent.com/DamageLabs/command-center/main/docs/screenshot-infra.png) |
+
+| Tasks | Calendar |
+|---|---|
+| ![Tasks](https://raw.githubusercontent.com/DamageLabs/command-center/main/docs/screenshot-tasks.png) | ![Calendar](https://raw.githubusercontent.com/DamageLabs/command-center/main/docs/screenshot-calendar.png) |
+
+| Repos |
+|---|
+| ![Repos](https://raw.githubusercontent.com/DamageLabs/command-center/main/docs/screenshot-repos.png) |
 
 ## Features
 
