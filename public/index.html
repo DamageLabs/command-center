@@ -35,19 +35,13 @@
       --accent: var(--amber-500);
       --border: rgba(255,255,255,0.07);
     }
-
     *, *::before, *::after { box-sizing: border-box; }
-
     body {
       margin: 0; padding: 0;
       font-family: 'Inter', system-ui, sans-serif;
-      background: var(--bg);
-      color: var(--text);
+      background: var(--bg); color: var(--text);
       -webkit-font-smoothing: antialiased;
-      height: 100vh;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
+      height: 100vh; display: flex; flex-direction: column; overflow: hidden;
     }
 
     /* ── Header ── */
@@ -56,144 +50,128 @@
       background: var(--bg-secondary);
       border-bottom: 1px solid var(--border);
       height: 52px;
-      display: flex;
-      align-items: center;
-      padding: 0 1.5rem;
-      gap: 1rem;
+      display: flex; align-items: center;
+      padding: 0 1.5rem; gap: 1.5rem;
     }
     .logo {
       display: flex; align-items: center; gap: 0.5rem;
       font-size: 1rem; font-weight: 800; letter-spacing: -0.03em;
+      flex-shrink: 0;
     }
     .logo-accent { color: var(--accent); }
-    .header-time {
-      margin-left: auto;
-      font-size: 0.8rem;
+
+    /* ── Nav tabs ── */
+    .nav-tabs {
+      display: flex; align-items: center; gap: 0.25rem;
+      flex: 1;
+    }
+    .nav-tab {
+      display: flex; align-items: center; gap: 0.45rem;
+      padding: 0.35rem 0.9rem;
+      font-size: 0.8rem; font-weight: 600;
       color: var(--text-muted);
+      background: transparent; border: none;
+      border-radius: 6px; cursor: pointer;
+      transition: all 0.15s; font-family: inherit;
+      white-space: nowrap;
+    }
+    .nav-tab:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+    .nav-tab.active { color: var(--text); background: var(--bg-card); }
+    .nav-tab .tab-badge {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 17px; height: 17px; padding: 0 4px;
+      border-radius: 999px; font-size: 0.65rem; font-weight: 700;
+    }
+    .badge-urgent { background: rgba(239,68,68,0.2); color: var(--red-400); }
+    .badge-active { background: rgba(251,191,36,0.15); color: var(--amber-400); }
+    .badge-backlog { background: rgba(148,163,184,0.12); color: var(--slate-400); }
+    .badge-cal { background: rgba(74,222,128,0.12); color: var(--green-400); }
+    .badge-repo { background: rgba(96,165,250,0.12); color: var(--blue-400); }
+
+    .header-right {
+      display: flex; align-items: center; gap: 0.75rem; margin-left: auto;
+    }
+    .header-clock {
+      font-size: 0.78rem; color: var(--text-muted);
       font-family: 'JetBrains Mono', monospace;
     }
-    .header-actions { display: flex; gap: 0.5rem; align-items: center; }
+    .live-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--green-400); animation: pulse-dot 2s infinite;
+    }
+    @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.35} }
     .btn-sm {
       display: flex; align-items: center; gap: 0.3rem;
-      padding: 0.3rem 0.7rem;
-      background: transparent; border: 1px solid var(--border);
-      border-radius: 6px; color: var(--text-secondary);
-      font-size: 0.75rem; font-family: inherit; cursor: pointer;
-      transition: all 0.15s;
+      padding: 0.3rem 0.7rem; background: transparent;
+      border: 1px solid var(--border); border-radius: 6px;
+      color: var(--text-secondary); font-size: 0.75rem;
+      font-family: inherit; cursor: pointer; transition: all 0.15s;
     }
     .btn-sm:hover { border-color: var(--accent); color: var(--accent); }
     .btn-sm.spinning svg { animation: spin 0.7s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    .status-dot-hdr {
-      width: 7px; height: 7px; border-radius: 50%;
-      background: var(--green-400);
-      animation: pulse-dot 2s infinite;
+    /* ── Views ── */
+    .view-container {
+      flex: 1; overflow: hidden; position: relative;
     }
-    @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.35} }
-
-    /* ── Layout ── */
-    .workspace {
-      flex: 1;
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr 320px;
-      grid-template-rows: 1fr;
-      gap: 0;
-      overflow: hidden;
-      padding: 0;
-    }
-
-    /* Right panel splits into calendar + repos */
-    .right-panel {
-      display: flex;
-      flex-direction: column;
-      border-left: 1px solid var(--border);
+    .view {
+      position: absolute; inset: 0;
+      display: none; flex-direction: column;
       overflow: hidden;
     }
-    .right-panel .col {
-      border-right: none;
-      border-left: none;
-      border-bottom: 1px solid var(--border);
-      flex: 1;
-      min-height: 0;
-    }
-    .right-panel .col:last-child { border-bottom: none; }
+    .view.active { display: flex; }
 
-    /* Columns */
-    .col {
-      display: flex; flex-direction: column;
-      border-right: 1px solid var(--border);
-      overflow: hidden;
-    }
-    .col:last-child { border-right: none; }
-
-    .col-header {
+    /* View header */
+    .view-header {
       flex-shrink: 0;
-      padding: 0.85rem 1rem 0.75rem;
+      padding: 1.25rem 2rem 1rem;
       border-bottom: 1px solid var(--border);
-      display: flex; align-items: center; justify-content: space-between;
       background: var(--bg-secondary);
+      display: flex; align-items: baseline; gap: 1rem;
     }
-    .col-title {
-      font-size: 0.72rem; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 0.07em;
-      color: var(--text-muted);
-      display: flex; align-items: center; gap: 0.5rem;
+    .view-title {
+      font-size: 1.25rem; font-weight: 800; letter-spacing: -0.03em;
     }
-    .col-count {
-      display: inline-flex; align-items: center; justify-content: center;
-      min-width: 18px; height: 18px; padding: 0 4px;
-      border-radius: 999px; font-size: 0.68rem; font-weight: 700;
+    .view-subtitle {
+      font-size: 0.8rem; color: var(--text-muted);
     }
-    .urgent-count { background: rgba(239,68,68,0.2); color: var(--red-400); }
-    .active-count { background: rgba(251,191,36,0.15); color: var(--amber-400); }
-    .deferred-count { background: rgba(148,163,184,0.15); color: var(--slate-400); }
-    .repo-count { background: rgba(96,165,250,0.15); color: var(--blue-400); }
-
-    .col-body {
-      flex: 1; overflow-y: auto;
-      padding: 0.75rem;
-      display: flex; flex-direction: column; gap: 0.5rem;
+    .view-body {
+      flex: 1; overflow-y: auto; padding: 1.25rem 2rem;
     }
-    .col-body::-webkit-scrollbar { width: 4px; }
-    .col-body::-webkit-scrollbar-track { background: transparent; }
-    .col-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    .view-body::-webkit-scrollbar { width: 5px; }
+    .view-body::-webkit-scrollbar-track { background: transparent; }
+    .view-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
     /* ── Issue cards ── */
+    .issues-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 0.75rem;
+    }
     .issue-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 0.75rem 0.875rem;
-      cursor: pointer;
-      transition: border-color 0.15s, background 0.15s;
-      text-decoration: none;
-      display: block;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 10px; padding: 0.875rem 1rem;
+      cursor: pointer; transition: border-color 0.15s, background 0.15s;
+      text-decoration: none; display: block;
     }
     .issue-card:hover { border-color: rgba(245,158,11,0.3); background: var(--bg-hover); }
-
     .issue-top {
       display: flex; align-items: flex-start;
-      justify-content: space-between; gap: 0.5rem;
-      margin-bottom: 0.4rem;
+      justify-content: space-between; gap: 0.5rem; margin-bottom: 0.45rem;
     }
     .issue-title {
-      font-size: 0.85rem; font-weight: 600;
-      color: var(--text); line-height: 1.35;
-      flex: 1;
+      font-size: 0.875rem; font-weight: 600; color: var(--text);
+      line-height: 1.35; flex: 1;
     }
     .issue-num {
       font-size: 0.7rem; color: var(--text-muted);
-      font-family: 'JetBrains Mono', monospace;
-      flex-shrink: 0; margin-top: 1px;
+      font-family: 'JetBrains Mono', monospace; flex-shrink: 0; margin-top: 1px;
     }
     .issue-meta {
-      display: flex; align-items: center;
-      gap: 0.5rem; flex-wrap: wrap; margin-top: 0.35rem;
+      display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;
     }
-    .issue-repo {
-      font-size: 0.7rem; font-weight: 600; color: var(--accent);
-    }
+    .issue-repo { font-size: 0.72rem; font-weight: 600; color: var(--accent); }
     .issue-label {
       font-size: 0.65rem; font-weight: 500;
       padding: 0.1rem 0.4rem; border-radius: 999px;
@@ -203,36 +181,33 @@
     .issue-label.enhancement { background: rgba(245,158,11,0.1); color: var(--amber-400); }
     .issue-label.frontend { background: rgba(96,165,250,0.1); color: var(--blue-400); }
     .issue-label.backend { background: rgba(192,132,252,0.1); color: var(--purple-400); }
-    .issue-age {
-      font-size: 0.68rem; color: var(--text-muted); margin-left: auto;
-    }
+    .issue-age { font-size: 0.68rem; color: var(--text-muted); margin-left: auto; }
 
-    /* ── Calendar events ── */
+    /* ── Calendar ── */
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 0.75rem;
+    }
     .event-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 0.7rem 0.875rem;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 10px; padding: 0.875rem 1rem;
       border-left: 3px solid var(--accent);
-      transition: border-color 0.15s;
     }
     .event-card.work { border-left-color: var(--blue-400); }
     .event-card.soon { border-left-color: var(--red-400); }
     .event-card.today { border-left-color: var(--green-400); }
     .event-title {
-      font-size: 0.85rem; font-weight: 600; color: var(--text);
-      margin-bottom: 0.3rem; line-height: 1.3;
-    }
-    .event-meta {
-      display: flex; flex-direction: column; gap: 0.15rem;
+      font-size: 0.9rem; font-weight: 600; color: var(--text);
+      margin-bottom: 0.35rem; line-height: 1.3;
     }
     .event-time {
-      font-size: 0.72rem; color: var(--amber-400);
-      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem; color: var(--amber-400);
+      font-family: 'JetBrains Mono', monospace; margin-bottom: 0.3rem;
     }
     .event-sub {
-      font-size: 0.7rem; color: var(--text-muted);
       display: flex; align-items: center; gap: 0.4rem;
+      font-size: 0.72rem; color: var(--text-muted);
     }
     .event-cal-badge {
       font-size: 0.62rem; font-weight: 600; padding: 0.1rem 0.35rem;
@@ -240,177 +215,183 @@
     }
     .event-cal-badge.personal { background: rgba(245,158,11,0.12); color: var(--amber-400); }
 
-    /* ── Repo cards ── */
-    .repo-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 0.875rem;
-      transition: border-color 0.15s;
-      text-decoration: none; display: block;
+    /* ── Repos ── */
+    .repos-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 0.75rem;
     }
-    .repo-card:hover { border-color: rgba(245,158,11,0.3); }
+    .repo-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 10px; padding: 1.25rem;
+      text-decoration: none; display: block;
+      transition: border-color 0.15s, transform 0.15s;
+    }
+    .repo-card:hover { border-color: rgba(245,158,11,0.3); transform: translateY(-1px); }
     .repo-top {
       display: flex; align-items: center;
-      justify-content: space-between; margin-bottom: 0.6rem;
+      justify-content: space-between; margin-bottom: 0.875rem;
     }
-    .repo-name {
-      font-size: 0.875rem; font-weight: 700; color: var(--text);
-    }
+    .repo-name { font-size: 1rem; font-weight: 700; color: var(--text); }
     .repo-open {
-      font-size: 0.7rem; font-weight: 700; color: var(--amber-400);
-      background: rgba(245,158,11,0.1); padding: 0.15rem 0.5rem;
-      border-radius: 999px;
+      font-size: 0.72rem; font-weight: 700; color: var(--amber-400);
+      background: rgba(245,158,11,0.1); padding: 0.2rem 0.55rem; border-radius: 999px;
     }
-    .repo-stats {
-      display: flex; gap: 1rem;
-    }
-    .repo-stat {
-      display: flex; flex-direction: column; gap: 0.15rem;
-    }
+    .repo-stats { display: flex; gap: 1.5rem; }
+    .repo-stat { display: flex; flex-direction: column; gap: 0.2rem; }
     .repo-stat-label {
-      font-size: 0.62rem; text-transform: uppercase;
+      font-size: 0.65rem; text-transform: uppercase;
       letter-spacing: 0.05em; color: var(--text-muted);
     }
-    .repo-stat-val {
-      font-size: 0.85rem; font-weight: 700; color: var(--text);
-    }
+    .repo-stat-val { font-size: 1rem; font-weight: 700; color: var(--text); }
     .repo-stat-val.red { color: var(--red-400); }
     .repo-stat-val.blue { color: var(--blue-400); }
 
-    /* ── Empty state ── */
+    /* ── Empty / skeleton ── */
     .empty {
-      text-align: center; padding: 2rem 1rem;
-      color: var(--text-muted); font-size: 0.8rem;
+      text-align: center; padding: 3rem 1rem;
+      color: var(--text-muted); font-size: 0.875rem;
     }
-
-    /* ── Loading ── */
     .skeleton {
       background: var(--bg-card); border-radius: 10px;
-      height: 72px; animation: shimmer 1.4s infinite;
+      height: 76px; animation: shimmer 1.4s infinite;
     }
-    @keyframes shimmer {
-      0%,100% { opacity: 0.4; }
-      50% { opacity: 0.8; }
-    }
+    @keyframes shimmer { 0%,100%{opacity:0.4} 50%{opacity:0.8} }
+    .skeletons { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 0.75rem; }
   </style>
 </head>
 <body>
 
 <header>
   <div class="logo">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2">
       <rect x="2" y="3" width="20" height="14" rx="2"/>
       <path d="M8 21h8M12 17v4"/>
     </svg>
     <span><span class="logo-accent">command</span>.center</span>
   </div>
-  <div class="header-actions">
-    <div class="status-dot-hdr"></div>
-    <span class="header-time" id="clock">—</span>
-    <span style="color:var(--border)">|</span>
-    <span style="font-size:0.72rem;color:var(--text-muted)" id="updated-at">Loading…</span>
+
+  <nav class="nav-tabs">
+    <button class="nav-tab active" data-view="urgent" onclick="switchView('urgent')">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="var(--red-400)" stroke="none"><path d="M12 2L2 22h20L12 2z"/></svg>
+      Urgent
+      <span class="tab-badge badge-urgent" id="badge-urgent">0</span>
+    </button>
+    <button class="nav-tab" data-view="active" onclick="switchView('active')">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--amber-400)" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+      Active
+      <span class="tab-badge badge-active" id="badge-active">0</span>
+    </button>
+    <button class="nav-tab" data-view="backlog" onclick="switchView('backlog')">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--slate-400)" stroke-width="2.5"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      Backlog
+      <span class="tab-badge badge-backlog" id="badge-backlog">0</span>
+    </button>
+    <button class="nav-tab" data-view="calendar" onclick="switchView('calendar')">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--green-400)" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      Calendar
+      <span class="tab-badge badge-cal" id="badge-cal">0</span>
+    </button>
+    <button class="nav-tab" data-view="repos" onclick="switchView('repos')">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--blue-400)" stroke-width="2.5"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+      Repos
+      <span class="tab-badge badge-repo" id="badge-repos">0</span>
+    </button>
+  </nav>
+
+  <div class="header-right">
+    <div class="live-dot"></div>
+    <span class="header-clock" id="clock">—</span>
     <button class="btn-sm" id="refresh-btn" onclick="refreshAll()">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
         <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
-        <path d="M21 3v5h-5"/>
-        <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
-        <path d="M8 16H3v5"/>
+        <path d="M21 3v5h-5M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16M8 16H3v5"/>
       </svg>
       Refresh
     </button>
   </div>
 </header>
 
-<div class="workspace">
+<div class="view-container">
 
   <!-- Urgent -->
-  <div class="col">
-    <div class="col-header">
-      <div class="col-title">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="var(--red-400)" stroke="none"><path d="M12 2L2 22h20L12 2z"/></svg>
-        Urgent / Bugs
-        <span class="col-count urgent-count" id="cnt-urgent">0</span>
-      </div>
+  <div class="view active" id="view-urgent">
+    <div class="view-header">
+      <div class="view-title">Urgent &amp; Bugs</div>
+      <div class="view-subtitle" id="sub-urgent">Loading…</div>
     </div>
-    <div class="col-body" id="col-urgent">
-      <div class="skeleton"></div>
-      <div class="skeleton"></div>
-      <div class="skeleton"></div>
+    <div class="view-body">
+      <div class="skeletons" id="col-urgent">
+        <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
+      </div>
     </div>
   </div>
 
   <!-- Active -->
-  <div class="col">
-    <div class="col-header">
-      <div class="col-title">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--amber-400)" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-        Active
-        <span class="col-count active-count" id="cnt-active">0</span>
-      </div>
+  <div class="view" id="view-active">
+    <div class="view-header">
+      <div class="view-title">Active</div>
+      <div class="view-subtitle" id="sub-active">Loading…</div>
     </div>
-    <div class="col-body" id="col-active">
-      <div class="skeleton"></div>
-      <div class="skeleton"></div>
-      <div class="skeleton"></div>
+    <div class="view-body">
+      <div class="skeletons" id="col-active">
+        <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
+      </div>
     </div>
   </div>
 
-  <!-- Deferred -->
-  <div class="col">
-    <div class="col-header">
-      <div class="col-title">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--slate-400)" stroke-width="2.5"><path d="M12 2v20M2 12h20"/></svg>
-        Backlog
-        <span class="col-count deferred-count" id="cnt-deferred">0</span>
-      </div>
+  <!-- Backlog -->
+  <div class="view" id="view-backlog">
+    <div class="view-header">
+      <div class="view-title">Backlog</div>
+      <div class="view-subtitle" id="sub-backlog">Loading…</div>
     </div>
-    <div class="col-body" id="col-deferred">
-      <div class="skeleton"></div>
-      <div class="skeleton"></div>
-      <div class="skeleton"></div>
+    <div class="view-body">
+      <div class="skeletons" id="col-deferred">
+        <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
+      </div>
     </div>
   </div>
 
-  <!-- Right panel: Calendar + Repos -->
-  <div class="right-panel">
-
-    <!-- Calendar -->
-    <div class="col" style="flex: 0 0 50%; border-right: none;">
-      <div class="col-header">
-        <div class="col-title">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--green-400)" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-          Calendar
-          <span class="col-count" style="background:rgba(74,222,128,0.12);color:var(--green-400)" id="cnt-events">0</span>
-        </div>
-      </div>
-      <div class="col-body" id="col-calendar">
-        <div class="skeleton"></div>
-        <div class="skeleton"></div>
-        <div class="skeleton"></div>
+  <!-- Calendar -->
+  <div class="view" id="view-calendar">
+    <div class="view-header">
+      <div class="view-title">Calendar</div>
+      <div class="view-subtitle" id="sub-calendar">Loading…</div>
+    </div>
+    <div class="view-body">
+      <div class="skeletons" id="col-calendar">
+        <div class="skeleton"></div><div class="skeleton"></div>
       </div>
     </div>
+  </div>
 
-    <!-- Repos -->
-    <div class="col" style="border-right: none;">
-      <div class="col-header">
-        <div class="col-title">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--blue-400)" stroke-width="2.5"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
-          Repos
-          <span class="col-count repo-count" id="cnt-repos">0</span>
-        </div>
-      </div>
-      <div class="col-body" id="col-repos">
-        <div class="skeleton"></div>
-        <div class="skeleton"></div>
+  <!-- Repos -->
+  <div class="view" id="view-repos">
+    <div class="view-header">
+      <div class="view-title">Repositories</div>
+      <div class="view-subtitle" id="sub-repos">Loading…</div>
+    </div>
+    <div class="view-body">
+      <div class="skeletons" id="col-repos">
+        <div class="skeleton"></div><div class="skeleton"></div>
       </div>
     </div>
-
   </div>
 
 </div>
 
 <script>
+  // ── View switching ─────────────────────────────────────────────────────────
+  let currentView = 'urgent';
+  function switchView(id) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('view-' + id).classList.add('active');
+    document.querySelector(`[data-view="${id}"]`).classList.add('active');
+    currentView = id;
+  }
+
   // ── Clock ──────────────────────────────────────────────────────────────────
   function updateClock() {
     document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-US', {
@@ -439,6 +420,10 @@
     return '';
   }
 
+  function escHtml(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
   function renderIssueCard(issue) {
     const labels = issue.labels.slice(0, 3).map(l =>
       `<span class="issue-label ${labelClass(l.name)}">${l.name.replace(/[^\w\s-]/g,'').trim()}</span>`
@@ -459,9 +444,8 @@
   }
 
   function renderRepoCard(repo) {
-    const ghUrl = `https://github.com/${repo.repoFull}/issues`;
     return `
-      <a class="repo-card" href="${ghUrl}" target="_blank">
+      <a class="repo-card" href="https://github.com/${repo.repoFull}/issues" target="_blank">
         <div class="repo-top">
           <div class="repo-name">${repo.repo}</div>
           <div class="repo-open">${repo.openIssues} open</div>
@@ -485,29 +469,28 @@
     `;
   }
 
-  function escHtml(str) {
-    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  }
-
   // ── Fetch ──────────────────────────────────────────────────────────────────
   async function fetchIssues() {
     const res = await fetch('/api/issues');
     const data = await res.json();
     if (!data.ok) throw new Error(data.error);
 
-    document.getElementById('cnt-urgent').textContent = data.urgent.length;
-    document.getElementById('cnt-active').textContent = data.active.length;
-    document.getElementById('cnt-deferred').textContent = data.deferred.length;
+    document.getElementById('badge-urgent').textContent = data.urgent.length;
+    document.getElementById('badge-active').textContent = data.active.length;
+    document.getElementById('badge-backlog').textContent = data.deferred.length;
 
-    const render = (id, arr) => {
+    document.getElementById('sub-urgent').textContent = `${data.urgent.length} issues · Updated ${timeAgo(data.updatedAt)}`;
+    document.getElementById('sub-active').textContent = `${data.active.length} issues · Updated ${timeAgo(data.updatedAt)}`;
+    document.getElementById('sub-backlog').textContent = `${data.deferred.length} issues · Updated ${timeAgo(data.updatedAt)}`;
+
+    const render = (id, arr, cls) => {
       const el = document.getElementById(id);
+      el.className = cls;
       el.innerHTML = arr.length ? arr.map(renderIssueCard).join('') : '<div class="empty">Nothing here 🎉</div>';
     };
-    render('col-urgent', data.urgent);
-    render('col-active', data.active);
-    render('col-deferred', data.deferred);
-
-    document.getElementById('updated-at').textContent = `Updated ${timeAgo(data.updatedAt)}`;
+    render('col-urgent', data.urgent, 'issues-grid');
+    render('col-active', data.active, 'issues-grid');
+    render('col-deferred', data.deferred, 'issues-grid');
   }
 
   async function fetchCalendar() {
@@ -517,44 +500,36 @@
 
     const now = new Date();
     const events = data.events;
-    document.getElementById('cnt-events').textContent = events.length;
+    document.getElementById('badge-cal').textContent = events.length;
+    document.getElementById('sub-calendar').textContent = `${events.length} upcoming events · next 30 days`;
 
     const col = document.getElementById('col-calendar');
+    col.className = 'cal-grid';
     if (!events.length) {
-      col.innerHTML = '<div class="empty">No events this week 🎉</div>';
+      col.innerHTML = '<div class="empty">No upcoming events 🎉</div>';
       return;
     }
-
     col.innerHTML = events.map(e => {
       const start = new Date(e.start);
       const end = new Date(e.end);
       const isToday = start.toDateString() === now.toDateString();
-      const isSoon = start > now && (start - now) < 2 * 60 * 60 * 1000; // <2hrs
+      const isSoon = start > now && (start - now) < 2 * 60 * 60 * 1000;
       const isPast = end < now;
-
       let cardClass = e.calendar === 'Work' ? 'work' : '';
       if (isSoon) cardClass = 'soon';
       if (isToday && !isSoon) cardClass = 'today';
-
       const timeStr = e.allDay ? 'All day' :
-        start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true,
-          timeZone: 'America/Chicago' }) + ' – ' +
-        end.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true,
-          timeZone: 'America/Chicago' });
-
+        start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Chicago' }) +
+        ' – ' + end.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Chicago' });
       const dateStr = isToday ? 'Today' :
-        start.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric',
-          timeZone: 'America/Chicago' });
-
+        start.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'America/Chicago' });
       return `
         <div class="event-card ${cardClass}" style="${isPast ? 'opacity:0.45' : ''}">
           <div class="event-title">${escHtml(e.title)}</div>
-          <div class="event-meta">
-            <div class="event-time">${dateStr} · ${timeStr}</div>
-            <div class="event-sub">
-              <span class="event-cal-badge ${e.calendar === 'Personal' ? 'personal' : ''}">${e.calendar}</span>
-              ${e.location ? `<span>📍 ${escHtml(e.location.substring(0,30))}</span>` : ''}
-            </div>
+          <div class="event-time">${dateStr} · ${timeStr}</div>
+          <div class="event-sub">
+            <span class="event-cal-badge ${e.calendar === 'Personal' ? 'personal' : ''}">${e.calendar}</span>
+            ${e.location ? `<span>📍 ${escHtml(e.location.substring(0,40))}</span>` : ''}
           </div>
         </div>
       `;
@@ -565,11 +540,12 @@
     const res = await fetch('/api/repos');
     const data = await res.json();
     if (!data.ok) throw new Error(data.error);
-
-    document.getElementById('cnt-repos').textContent = data.repos.length;
-    document.getElementById('col-repos').innerHTML = data.repos
-      .sort((a,b) => b.openIssues - a.openIssues)
-      .map(renderRepoCard).join('');
+    const repos = data.repos.sort((a,b) => b.openIssues - a.openIssues);
+    document.getElementById('badge-repos').textContent = repos.length;
+    document.getElementById('sub-repos').textContent = `${repos.length} repos · ${repos.reduce((s,r) => s + r.openIssues, 0)} open issues total`;
+    const el = document.getElementById('col-repos');
+    el.className = 'repos-grid';
+    el.innerHTML = repos.map(renderRepoCard).join('');
   }
 
   async function refreshAll() {
@@ -577,18 +553,17 @@
     btn.classList.add('spinning');
     try {
       await fetch('/api/refresh', { method: 'POST' });
-      await Promise.all([fetchIssues(), fetchRepos(), fetchCalendar()]);
+      await Promise.all([fetchIssues(), fetchCalendar(), fetchRepos()]);
     } catch(e) { console.error(e); }
     btn.classList.remove('spinning');
   }
 
   async function poll() {
-    try { await Promise.all([fetchIssues(), fetchRepos(), fetchCalendar()]); } catch(e) { console.error(e); }
+    try { await Promise.all([fetchIssues(), fetchCalendar(), fetchRepos()]); } catch(e) { console.error(e); }
   }
 
   poll();
   setInterval(poll, 30000);
 </script>
-
 </body>
 </html>
