@@ -29,7 +29,7 @@ const TABS = [
 
   // Initial load — wait for data
   await page.goto('http://localhost:4500', { waitUntil: 'domcontentloaded', timeout: 15000 });
-  await new Promise(r => setTimeout(r, 6000));
+  await new Promise(r => setTimeout(r, 12000));
 
   // Full dashboard screenshot (default Urgent tab)
   await page.screenshot({ path: path.join(outDir, 'screenshot.png') });
