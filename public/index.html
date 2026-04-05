@@ -247,6 +247,43 @@
     .repo-stat-val.red { color: var(--red-400); }
     .repo-stat-val.blue { color: var(--blue-400); }
 
+    /* ── Tasks ── */
+    .tasks-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 0.6rem;
+    }
+    .task-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 10px; padding: 0.75rem 1rem;
+      border-left: 3px solid var(--purple-400);
+      transition: border-color 0.15s;
+    }
+    .task-card.amber { border-left-color: var(--amber-400); }
+    .task-card.blue { border-left-color: var(--blue-400); }
+    .task-card.green { border-left-color: var(--green-400); }
+    .task-card:hover { border-color: rgba(192,132,252,0.4); }
+    .task-title {
+      font-size: 0.875rem; font-weight: 600; color: var(--text);
+      margin-bottom: 0.35rem; line-height: 1.35;
+    }
+    .task-meta {
+      display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+    }
+    .task-source {
+      font-size: 0.68rem; font-weight: 600; padding: 0.1rem 0.4rem;
+      border-radius: 3px;
+    }
+    .task-source.amber { background: rgba(245,158,11,0.12); color: var(--amber-400); }
+    .task-source.blue { background: rgba(96,165,250,0.12); color: var(--blue-400); }
+    .task-source.green { background: rgba(74,222,128,0.12); color: var(--green-400); }
+    .task-section { font-size: 0.68rem; color: var(--text-muted); }
+    .task-due {
+      font-size: 0.68rem; font-family: 'JetBrains Mono', monospace;
+      color: var(--red-400); margin-left: auto;
+    }
+    .task-recurring { font-size: 0.68rem; color: var(--text-muted); }
+
     /* ── Empty / skeleton ── */
     .empty {
       text-align: center; padding: 3rem 1rem;
@@ -291,6 +328,11 @@
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--green-400)" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
       Calendar
       <span class="tab-badge badge-cal" id="badge-cal">0</span>
+    </button>
+    <button class="nav-tab" data-view="tasks" onclick="switchView('tasks')">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--purple-400)" stroke-width="2.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      Tasks
+      <span class="tab-badge" style="background:rgba(192,132,252,0.12);color:var(--purple-400)" id="badge-tasks">0</span>
     </button>
     <button class="nav-tab" data-view="repos" onclick="switchView('repos')">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--blue-400)" stroke-width="2.5"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
@@ -348,6 +390,19 @@
     </div>
     <div class="view-body">
       <div class="skeletons" id="col-deferred">
+        <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tasks -->
+  <div class="view" id="view-tasks">
+    <div class="view-header">
+      <div class="view-title">Tasks</div>
+      <div class="view-subtitle" id="sub-tasks">Loading…</div>
+    </div>
+    <div class="view-body">
+      <div class="skeletons" id="col-tasks">
         <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
       </div>
     </div>
@@ -493,6 +548,29 @@
     render('col-deferred', data.deferred, 'issues-grid');
   }
 
+  async function fetchTasks() {
+    const res = await fetch('/api/tasks');
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error);
+    const tasks = data.tasks;
+    document.getElementById('badge-tasks').textContent = tasks.length;
+    document.getElementById('sub-tasks').textContent = `${tasks.length} open tasks · General, CA, TX`;
+    const el = document.getElementById('col-tasks');
+    el.className = 'tasks-grid';
+    if (!tasks.length) { el.innerHTML = '<div class="empty">All done! 🎉</div>'; return; }
+    el.innerHTML = tasks.map(t => `
+      <div class="task-card ${t.color}">
+        <div class="task-title">${escHtml(t.title)}</div>
+        <div class="task-meta">
+          <span class="task-source ${t.color}">${t.source}</span>
+          ${t.section ? `<span class="task-section">${escHtml(t.section)}</span>` : ''}
+          ${t.recurring ? '<span class="task-recurring">🔁 recurring</span>' : ''}
+          ${t.due ? `<span class="task-due">📅 ${t.due}</span>` : ''}
+        </div>
+      </div>
+    `).join('');
+  }
+
   async function fetchCalendar() {
     const res = await fetch('/api/calendar');
     const data = await res.json();
@@ -553,13 +631,13 @@
     btn.classList.add('spinning');
     try {
       await fetch('/api/refresh', { method: 'POST' });
-      await Promise.all([fetchIssues(), fetchCalendar(), fetchRepos()]);
+      await Promise.all([fetchIssues(), fetchCalendar(), fetchRepos(), fetchTasks()]);
     } catch(e) { console.error(e); }
     btn.classList.remove('spinning');
   }
 
   async function poll() {
-    try { await Promise.all([fetchIssues(), fetchCalendar(), fetchRepos()]); } catch(e) { console.error(e); }
+    try { await Promise.all([fetchIssues(), fetchCalendar(), fetchRepos(), fetchTasks()]); } catch(e) { console.error(e); }
   }
 
   poll();

@@ -7,6 +7,7 @@ const { execSync } = require('child_process');
 const path = require('path');
 const cron = require('node-cron');
 const ical = require('node-ical');
+const fs = require('fs');
 
 const app = express();
 const PORT = 4500;
@@ -21,6 +22,13 @@ const ACTIVE_REPOS = [
   'DamageLabs/whiskey-canon',
   'DamageLabs/sports-card-tracker',
   'DamageLabs/brain',
+];
+
+const TASKS_DIR = '/Users/guntharp/Documents/guntharp-personal/02 - Action/01 - Tasks';
+const TASK_FILES = [
+  { file: '02 - General Tasks.md', label: 'General', color: 'amber' },
+  { file: '03 - CA Tasks.md',      label: 'California', color: 'blue' },
+  { file: '04 - TX Tasks.md',      label: 'Texas', color: 'green' },
 ];
 
 const CALENDAR_URLS = [
@@ -45,9 +53,55 @@ let cache = {
   issues: null,
   repoStats: null,
   events: null,
+  tasks: null,
   issuesUpdatedAt: null,
   eventsUpdatedAt: null,
+  tasksUpdatedAt: null,
 };
+
+// ── Tasks ────────────────────────────────────────────────────────────────────
+function fetchTasks() {
+  console.log('[tasks] reading obsidian tasks...');
+  try {
+    const result = [];
+    for (const { file, label, color } of TASK_FILES) {
+      const fullPath = `${TASKS_DIR}/${file}`;
+      if (!fs.existsSync(fullPath)) continue;
+      const lines = fs.readFileSync(fullPath, 'utf8').split('\n');
+      let currentSection = null;
+      for (const line of lines) {
+        // Track headings as sections
+        const headingMatch = line.match(/^#+\s+(.+)/);
+        if (headingMatch) { currentSection = headingMatch[1].trim(); continue; }
+        // Open tasks only: - [ ] ...
+        const taskMatch = line.match(/^\s*- \[ \]\s+(.+)/);
+        if (!taskMatch) continue;
+        const raw = taskMatch[1];
+        // Skip pure recurring without todo tag if desired (keep all open)
+        const dueMatch = raw.match(/📅\s*(\d{4}-\d{2}-\d{2})/);
+        const title = raw
+          .replace(/📅\s*\d{4}-\d{2}-\d{2}/g, '')
+          .replace(/#\w+/g, '')
+          .replace(/🔁[^\n]*/g, '')
+          .trim();
+        if (!title) continue;
+        result.push({
+          title,
+          source: label,
+          color,
+          section: currentSection,
+          due: dueMatch ? dueMatch[1] : null,
+          recurring: raw.includes('🔁'),
+        });
+      }
+    }
+    cache.tasks = result;
+    cache.tasksUpdatedAt = Date.now();
+    console.log(`[tasks] found ${result.length} open tasks`);
+  } catch (err) {
+    console.error('[tasks] error:', err.message);
+  }
+}
 
 // ── GitHub ────────────────────────────────────────────────────────────────────
 function fetchGitHub() {
@@ -142,9 +196,11 @@ async function fetchCalendars() {
 // ── Schedules ─────────────────────────────────────────────────────────────────
 cron.schedule('*/5 * * * *', fetchGitHub);
 cron.schedule('*/10 * * * *', fetchCalendars);
+cron.schedule('*/2 * * * *', fetchTasks);
 
 fetchGitHub();
 fetchCalendars();
+fetchTasks();
 
 // ── Routes ────────────────────────────────────────────────────────────────────
 app.use(express.static(path.join(__dirname, 'public')));
@@ -167,9 +223,15 @@ app.get('/api/calendar', (req, res) => {
   res.json({ ok: true, events: cache.events, updatedAt: cache.eventsUpdatedAt });
 });
 
+app.get('/api/tasks', (req, res) => {
+  if (!cache.tasks) return res.status(503).json({ ok: false, error: 'loading' });
+  res.json({ ok: true, tasks: cache.tasks, updatedAt: cache.tasksUpdatedAt });
+});
+
 app.post('/api/refresh', async (req, res) => {
   fetchGitHub();
   await fetchCalendars();
+  fetchTasks();
   res.json({ ok: true });
 });
 
