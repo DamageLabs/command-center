@@ -16,5 +16,8 @@
     "express": "^5.2.1",
     "node-cron": "^4.2.1",
     "node-ical": "^0.26.0"
+  },
+  "devDependencies": {
+    "puppeteer": "^24.40.0"
   }
 }
