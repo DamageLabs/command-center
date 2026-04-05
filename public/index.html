@@ -583,12 +583,11 @@
   }
 
   async function poll() {
-    try { await Promise.all([fetchIssues(), fetchRepos(), fetchCalendar()]); } catch(e) {
+    try { await Promise.all([fetchIssues(), fetchRepos(), fetchCalendar()]); } catch(e) { console.error(e); }
   }
 
   poll();
   setInterval(poll, 30000);
-  setInterval(fetchCalendar, 60000); // calendar every 60s
 </script>
 
 </body>
