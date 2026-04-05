@@ -337,16 +337,15 @@
     }
     .infra-stat {
       background: var(--bg-card); border: 1px solid var(--border);
-      border-radius: 12px; padding: 0.75rem 1.25rem;
-      display: flex; align-items: center; gap: 1rem;
-      flex: 0 0 auto;
+      border-radius: 8px; padding: 0.5rem 1rem;
+      display: flex; align-items: center; gap: 0.6rem;
     }
     .infra-stat-label {
-      font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+      font-size: 0.72rem; font-weight: 600; text-transform: uppercase;
       letter-spacing: 0.06em; color: var(--text-muted);
     }
     .infra-stat-val {
-      font-size: 1.4rem; font-weight: 800; letter-spacing: -0.03em;
+      font-size: 1.1rem; font-weight: 800; letter-spacing: -0.02em;
     }
     .infra-stat-val.green { color: var(--green-400); }
     .infra-stat-val.red { color: var(--red-400); }
@@ -882,14 +881,15 @@
     document.getElementById('badge-infra').textContent = online + '/' + procs.length;
     document.getElementById('sub-infra').textContent = `${online} online · ${down} down · ${restarts} total restarts`;
     const el = document.getElementById('col-infra');
+    el.style.cssText = '';
     el.innerHTML = `
-      <div class="infra-summary">
+      <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-bottom:1.5rem;">
         <div class="infra-stat"><div class="infra-stat-label">Total</div><div class="infra-stat-val">${procs.length}</div></div>
         <div class="infra-stat"><div class="infra-stat-label">Online</div><div class="infra-stat-val green">${online}</div></div>
         <div class="infra-stat"><div class="infra-stat-label">Down</div><div class="infra-stat-val red">${down}</div></div>
         <div class="infra-stat"><div class="infra-stat-label">Restarts</div><div class="infra-stat-val amber">${restarts}</div></div>
       </div>
-      <div class="infra-grid" style="grid-template-columns: repeat(auto-fill, minmax(320px, 1fr))">
+      <div class="infra-grid">
         ${procs.map(p => {
           const sc = p.status === 'online' ? 'online' : p.status === 'erroring' ? 'erroring' : 'stopped';
           const domain = SERVICE_DOMAINS[p.name];
