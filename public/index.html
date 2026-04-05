@@ -585,9 +585,13 @@
       <a class="repo-card" href="https://github.com/${repo.repoFull}/issues" target="_blank">
         <div class="repo-top">
           <div class="repo-name">${repo.repo}</div>
-          <div class="repo-open">${repo.openIssues} open</div>
+          <div style="display:flex;align-items:center;gap:0.4rem">
+            ${repo.tracked ? `<span style="font-size:0.62rem;color:var(--green-400);background:rgba(74,222,128,0.1);padding:0.1rem 0.35rem;border-radius:3px;font-weight:600">tracked</span>` : ''}
+            <div class="repo-open">${repo.openIssues} open</div>
+          </div>
         </div>
         <div class="repo-stats">
+          ${repo.tracked ? `
           <div class="repo-stat">
             <div class="repo-stat-label">Bugs</div>
             <div class="repo-stat-val red">${repo.bugs}</div>
@@ -595,7 +599,7 @@
           <div class="repo-stat">
             <div class="repo-stat-label">Features</div>
             <div class="repo-stat-val blue">${repo.enhancements}</div>
-          </div>
+          </div>` : ''}
           ${repo.lastActivity ? `
           <div class="repo-stat">
             <div class="repo-stat-label">Last Issue</div>

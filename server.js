@@ -107,28 +107,50 @@ function fetchTasks() {
 function fetchGitHub() {
   console.log('[github] fetching issues...');
   try {
+    // Fetch all DamageLabs repos dynamically
+    const allRepos = gh('repo list DamageLabs --json name,isArchived,pushedAt --limit 100')
+      .filter(r => !r.isArchived)
+      .map(r => `DamageLabs/${r.name}`);
+
     const allIssues = [];
     const repoStats = [];
 
-    for (const repo of ACTIVE_REPOS) {
+    // Fetch issues only for ACTIVE_REPOS (prioritized); collect stats for all
+    for (const repo of allRepos) {
       try {
-        const issues = gh(`issue list --repo ${repo} --state open --json number,title,labels,assignees,createdAt,url,milestone --limit 50`);
+        const isActive = ACTIVE_REPOS.includes(repo);
+        const issues = isActive
+          ? gh(`issue list --repo ${repo} --state open --json number,title,labels,assignees,createdAt,url,milestone --limit 50`)
+          : gh(`issue list --repo ${repo} --state open --json number,title,labels,createdAt --limit 1`);
+
         const repoName = repo.split('/')[1];
 
-        allIssues.push(...issues.map(i => ({
-          ...i,
-          repo: repoName,
-          repoFull: repo,
-          priority: issuePriority(i.labels),
-        })));
+        if (isActive) {
+          allIssues.push(...issues.map(i => ({
+            ...i,
+            repo: repoName,
+            repoFull: repo,
+            priority: issuePriority(i.labels),
+          })));
+        }
+
+        // For non-active repos we only fetched 1 issue to check count — get full count via API
+        let openCount = issues.length;
+        if (!isActive && issues.length === 1) {
+          try {
+            const all = gh(`issue list --repo ${repo} --state open --json number --limit 100`);
+            openCount = all.length;
+          } catch (_) {}
+        }
 
         repoStats.push({
           repo: repoName,
           repoFull: repo,
-          openIssues: issues.length,
-          bugs: issues.filter(i => i.labels.some(l => l.name === 'bug')).length,
-          enhancements: issues.filter(i => i.labels.some(l => l.name === 'enhancement')).length,
+          openIssues: isActive ? issues.length : openCount,
+          bugs: isActive ? issues.filter(i => i.labels.some(l => l.name === 'bug')).length : 0,
+          enhancements: isActive ? issues.filter(i => i.labels.some(l => l.name === 'enhancement')).length : 0,
           lastActivity: issues.length > 0 ? issues[0].createdAt : null,
+          tracked: isActive,
         });
       } catch (e) {
         console.warn(`[github] skipping ${repo}: ${e.message}`);
@@ -138,7 +160,7 @@ function fetchGitHub() {
     cache.issues = allIssues;
     cache.repoStats = repoStats;
     cache.issuesUpdatedAt = Date.now();
-    console.log(`[github] fetched ${allIssues.length} issues across ${repoStats.length} repos`);
+    console.log(`[github] fetched ${allIssues.length} issues, ${repoStats.length} repos`);
   } catch (err) {
     console.error('[github] fetch error:', err.message);
   }
