@@ -6,6 +6,9 @@ A personal command center dashboard for DamageLabs. Aggregates GitHub issues, Go
 
 ## Screenshots
 
+### Home
+![Home](https://raw.githubusercontent.com/DamageLabs/command-center/main/docs/screenshot-home.png)
+
 | Urgent & Bugs | Active |
 |---|---|
 | ![Urgent](https://raw.githubusercontent.com/DamageLabs/command-center/main/docs/screenshot-urgent.png) | ![Active](https://raw.githubusercontent.com/DamageLabs/command-center/main/docs/screenshot-active.png) |

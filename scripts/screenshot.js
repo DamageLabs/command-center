@@ -5,6 +5,7 @@ const path = require('path');
 const fs = require('fs');
 
 const TABS = [
+  { id: 'home',     label: 'home' },
   { id: 'urgent',   label: 'urgent' },
   { id: 'active',   label: 'active' },
   { id: 'backlog',  label: 'backlog' },
@@ -27,8 +28,8 @@ const TABS = [
   await page.setViewport({ width: 1440, height: 900 });
 
   // Initial load — wait for data
-  await page.goto('http://localhost:4500', { waitUntil: 'networkidle2', timeout: 15000 });
-  await new Promise(r => setTimeout(r, 3000));
+  await page.goto('http://localhost:4500', { waitUntil: 'domcontentloaded', timeout: 15000 });
+  await new Promise(r => setTimeout(r, 6000));
 
   // Full dashboard screenshot (default Urgent tab)
   await page.screenshot({ path: path.join(outDir, 'screenshot.png') });
