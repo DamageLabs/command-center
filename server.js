@@ -22,6 +22,7 @@ const ACTIVE_REPOS = [
   'DamageLabs/whiskey-canon',
   'DamageLabs/sports-card-tracker',
   'DamageLabs/brain',
+  'DamageLabs/command-center',
 ];
 
 const TASKS_DIR = '/Users/guntharp/Documents/guntharp-personal/02 - Action/01 - Tasks';
