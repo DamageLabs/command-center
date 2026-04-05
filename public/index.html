@@ -881,7 +881,8 @@
     document.getElementById('badge-infra').textContent = online + '/' + procs.length;
     document.getElementById('sub-infra').textContent = `${online} online · ${down} down · ${restarts} total restarts`;
     const el = document.getElementById('col-infra');
-    el.style.cssText = '';
+    el.className = '';
+    el.style.cssText = 'display:flex;flex-direction:column;gap:0';
     el.innerHTML = `
       <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-bottom:1.5rem;">
         <div class="infra-stat"><div class="infra-stat-label">Total</div><div class="infra-stat-val">${procs.length}</div></div>
