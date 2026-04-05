@@ -103,6 +103,22 @@
       padding: 0;
     }
 
+    /* Right panel splits into calendar + repos */
+    .right-panel {
+      display: flex;
+      flex-direction: column;
+      border-left: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .right-panel .col {
+      border-right: none;
+      border-left: none;
+      border-bottom: 1px solid var(--border);
+      flex: 1;
+      min-height: 0;
+    }
+    .right-panel .col:last-child { border-bottom: none; }
+
     /* Columns */
     .col {
       display: flex; flex-direction: column;
@@ -190,6 +206,39 @@
     .issue-age {
       font-size: 0.68rem; color: var(--text-muted); margin-left: auto;
     }
+
+    /* ── Calendar events ── */
+    .event-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.7rem 0.875rem;
+      border-left: 3px solid var(--accent);
+      transition: border-color 0.15s;
+    }
+    .event-card.work { border-left-color: var(--blue-400); }
+    .event-card.soon { border-left-color: var(--red-400); }
+    .event-card.today { border-left-color: var(--green-400); }
+    .event-title {
+      font-size: 0.85rem; font-weight: 600; color: var(--text);
+      margin-bottom: 0.3rem; line-height: 1.3;
+    }
+    .event-meta {
+      display: flex; flex-direction: column; gap: 0.15rem;
+    }
+    .event-time {
+      font-size: 0.72rem; color: var(--amber-400);
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .event-sub {
+      font-size: 0.7rem; color: var(--text-muted);
+      display: flex; align-items: center; gap: 0.4rem;
+    }
+    .event-cal-badge {
+      font-size: 0.62rem; font-weight: 600; padding: 0.1rem 0.35rem;
+      border-radius: 3px; background: rgba(96,165,250,0.12); color: var(--blue-400);
+    }
+    .event-cal-badge.personal { background: rgba(245,158,11,0.12); color: var(--amber-400); }
 
     /* ── Repo cards ── */
     .repo-card {
@@ -323,20 +372,40 @@
     </div>
   </div>
 
-  <!-- Repos sidebar -->
-  <div class="col">
-    <div class="col-header">
-      <div class="col-title">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--blue-400)" stroke-width="2.5"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
-        Repos
-        <span class="col-count repo-count" id="cnt-repos">0</span>
+  <!-- Right panel: Calendar + Repos -->
+  <div class="right-panel">
+
+    <!-- Calendar -->
+    <div class="col" style="flex: 0 0 50%; border-right: none;">
+      <div class="col-header">
+        <div class="col-title">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--green-400)" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          Calendar
+          <span class="col-count" style="background:rgba(74,222,128,0.12);color:var(--green-400)" id="cnt-events">0</span>
+        </div>
+      </div>
+      <div class="col-body" id="col-calendar">
+        <div class="skeleton"></div>
+        <div class="skeleton"></div>
+        <div class="skeleton"></div>
       </div>
     </div>
-    <div class="col-body" id="col-repos">
-      <div class="skeleton"></div>
-      <div class="skeleton"></div>
-      <div class="skeleton"></div>
+
+    <!-- Repos -->
+    <div class="col" style="border-right: none;">
+      <div class="col-header">
+        <div class="col-title">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--blue-400)" stroke-width="2.5"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+          Repos
+          <span class="col-count repo-count" id="cnt-repos">0</span>
+        </div>
+      </div>
+      <div class="col-body" id="col-repos">
+        <div class="skeleton"></div>
+        <div class="skeleton"></div>
+      </div>
     </div>
+
   </div>
 
 </div>
@@ -441,6 +510,57 @@
     document.getElementById('updated-at').textContent = `Updated ${timeAgo(data.updatedAt)}`;
   }
 
+  async function fetchCalendar() {
+    const res = await fetch('/api/calendar');
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error);
+
+    const now = new Date();
+    const events = data.events;
+    document.getElementById('cnt-events').textContent = events.length;
+
+    const col = document.getElementById('col-calendar');
+    if (!events.length) {
+      col.innerHTML = '<div class="empty">No events this week 🎉</div>';
+      return;
+    }
+
+    col.innerHTML = events.map(e => {
+      const start = new Date(e.start);
+      const end = new Date(e.end);
+      const isToday = start.toDateString() === now.toDateString();
+      const isSoon = start > now && (start - now) < 2 * 60 * 60 * 1000; // <2hrs
+      const isPast = end < now;
+
+      let cardClass = e.calendar === 'Work' ? 'work' : '';
+      if (isSoon) cardClass = 'soon';
+      if (isToday && !isSoon) cardClass = 'today';
+
+      const timeStr = e.allDay ? 'All day' :
+        start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true,
+          timeZone: 'America/Chicago' }) + ' – ' +
+        end.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true,
+          timeZone: 'America/Chicago' });
+
+      const dateStr = isToday ? 'Today' :
+        start.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric',
+          timeZone: 'America/Chicago' });
+
+      return `
+        <div class="event-card ${cardClass}" style="${isPast ? 'opacity:0.45' : ''}">
+          <div class="event-title">${escHtml(e.title)}</div>
+          <div class="event-meta">
+            <div class="event-time">${dateStr} · ${timeStr}</div>
+            <div class="event-sub">
+              <span class="event-cal-badge ${e.calendar === 'Personal' ? 'personal' : ''}">${e.calendar}</span>
+              ${e.location ? `<span>📍 ${escHtml(e.location.substring(0,30))}</span>` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
   async function fetchRepos() {
     const res = await fetch('/api/repos');
     const data = await res.json();
@@ -457,17 +577,18 @@
     btn.classList.add('spinning');
     try {
       await fetch('/api/refresh', { method: 'POST' });
-      await Promise.all([fetchIssues(), fetchRepos()]);
+      await Promise.all([fetchIssues(), fetchRepos(), fetchCalendar()]);
     } catch(e) { console.error(e); }
     btn.classList.remove('spinning');
   }
 
   async function poll() {
-    try { await Promise.all([fetchIssues(), fetchRepos()]); } catch(e) {}
+    try { await Promise.all([fetchIssues(), fetchRepos(), fetchCalendar()]); } catch(e) {
   }
 
   poll();
-  setInterval(poll, 30000); // refresh every 30s
+  setInterval(poll, 30000);
+  setInterval(fetchCalendar, 60000); // calendar every 60s
 </script>
 
 </body>

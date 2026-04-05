@@ -12,7 +12,9 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "dotenv": "^17.4.1",
     "express": "^5.2.1",
-    "node-cron": "^4.2.1"
+    "node-cron": "^4.2.1",
+    "node-ical": "^0.26.0"
   }
 }
