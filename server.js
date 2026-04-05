@@ -108,15 +108,14 @@ function fetchGitHub() {
   console.log('[github] fetching issues...');
   try {
     // Fetch all DamageLabs repos dynamically
-    const allRepos = gh('repo list DamageLabs --json name,isArchived,pushedAt --limit 100')
-      .filter(r => !r.isArchived)
-      .map(r => `DamageLabs/${r.name}`);
+    const allRepos = gh('repo list DamageLabs --json name,isArchived,pushedAt --limit 200')
+      .map(r => ({ name: `DamageLabs/${r.name}`, archived: r.isArchived }));
 
     const allIssues = [];
     const repoStats = [];
 
     // Fetch issues only for ACTIVE_REPOS (prioritized); collect stats for all
-    for (const repo of allRepos) {
+    for (const { name: repo, archived } of allRepos) {
       try {
         const isActive = ACTIVE_REPOS.includes(repo);
         const issues = isActive
@@ -151,6 +150,7 @@ function fetchGitHub() {
           enhancements: isActive ? issues.filter(i => i.labels.some(l => l.name === 'enhancement')).length : 0,
           lastActivity: issues.length > 0 ? issues[0].createdAt : null,
           tracked: isActive,
+          archived,
         });
       } catch (e) {
         console.warn(`[github] skipping ${repo}: ${e.message}`);

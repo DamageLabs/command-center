@@ -586,6 +586,7 @@
         <div class="repo-top">
           <div class="repo-name">${repo.repo}</div>
           <div style="display:flex;align-items:center;gap:0.4rem">
+            ${repo.archived ? `<span style="font-size:0.62rem;color:var(--text-muted);background:rgba(255,255,255,0.05);padding:0.1rem 0.35rem;border-radius:3px;font-weight:600">archived</span>` : ''}
             ${repo.tracked ? `<span style="font-size:0.62rem;color:var(--green-400);background:rgba(74,222,128,0.1);padding:0.1rem 0.35rem;border-radius:3px;font-weight:600">tracked</span>` : ''}
             <div class="repo-open">${repo.openIssues} open</div>
           </div>
