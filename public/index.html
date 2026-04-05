@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Command Center</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" />
+  <style>
+    :root {
+      --navy-950: #0a0e1a;
+      --navy-900: #0f1629;
+      --navy-800: #1a2240;
+      --navy-700: #253057;
+      --amber-400: #fbbf24;
+      --amber-500: #f59e0b;
+      --slate-100: #f1f5f9;
+      --slate-400: #94a3b8;
+      --slate-500: #64748b;
+      --green-400: #4ade80;
+      --green-500: #22c55e;
+      --red-400: #f87171;
+      --red-500: #ef4444;
+      --yellow-400: #facc15;
+      --blue-400: #60a5fa;
+      --purple-400: #c084fc;
+
+      --bg: var(--navy-950);
+      --bg-secondary: var(--navy-900);
+      --bg-card: var(--navy-800);
+      --bg-hover: var(--navy-700);
+      --text: var(--slate-100);
+      --text-secondary: var(--slate-400);
+      --text-muted: var(--slate-500);
+      --accent: var(--amber-500);
+      --border: rgba(255,255,255,0.07);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      margin: 0; padding: 0;
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ── */
+    header {
+      flex-shrink: 0;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+      height: 52px;
+      display: flex;
+      align-items: center;
+      padding: 0 1.5rem;
+      gap: 1rem;
+    }
+    .logo {
+      display: flex; align-items: center; gap: 0.5rem;
+      font-size: 1rem; font-weight: 800; letter-spacing: -0.03em;
+    }
+    .logo-accent { color: var(--accent); }
+    .header-time {
+      margin-left: auto;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .header-actions { display: flex; gap: 0.5rem; align-items: center; }
+    .btn-sm {
+      display: flex; align-items: center; gap: 0.3rem;
+      padding: 0.3rem 0.7rem;
+      background: transparent; border: 1px solid var(--border);
+      border-radius: 6px; color: var(--text-secondary);
+      font-size: 0.75rem; font-family: inherit; cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-sm:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-sm.spinning svg { animation: spin 0.7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .status-dot-hdr {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--green-400);
+      animation: pulse-dot 2s infinite;
+    }
+    @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.35} }
+
+    /* ── Layout ── */
+    .workspace {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 320px;
+      grid-template-rows: 1fr;
+      gap: 0;
+      overflow: hidden;
+      padding: 0;
+    }
+
+    /* Columns */
+    .col {
+      display: flex; flex-direction: column;
+      border-right: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .col:last-child { border-right: none; }
+
+    .col-header {
+      flex-shrink: 0;
+      padding: 0.85rem 1rem 0.75rem;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--bg-secondary);
+    }
+    .col-title {
+      font-size: 0.72rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.07em;
+      color: var(--text-muted);
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .col-count {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 18px; height: 18px; padding: 0 4px;
+      border-radius: 999px; font-size: 0.68rem; font-weight: 700;
+    }
+    .urgent-count { background: rgba(239,68,68,0.2); color: var(--red-400); }
+    .active-count { background: rgba(251,191,36,0.15); color: var(--amber-400); }
+    .deferred-count { background: rgba(148,163,184,0.15); color: var(--slate-400); }
+    .repo-count { background: rgba(96,165,250,0.15); color: var(--blue-400); }
+
+    .col-body {
+      flex: 1; overflow-y: auto;
+      padding: 0.75rem;
+      display: flex; flex-direction: column; gap: 0.5rem;
+    }
+    .col-body::-webkit-scrollbar { width: 4px; }
+    .col-body::-webkit-scrollbar-track { background: transparent; }
+    .col-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    /* ── Issue cards ── */
+    .issue-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.75rem 0.875rem;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      text-decoration: none;
+      display: block;
+    }
+    .issue-card:hover { border-color: rgba(245,158,11,0.3); background: var(--bg-hover); }
+
+    .issue-top {
+      display: flex; align-items: flex-start;
+      justify-content: space-between; gap: 0.5rem;
+      margin-bottom: 0.4rem;
+    }
+    .issue-title {
+      font-size: 0.85rem; font-weight: 600;
+      color: var(--text); line-height: 1.35;
+      flex: 1;
+    }
+    .issue-num {
+      font-size: 0.7rem; color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+      flex-shrink: 0; margin-top: 1px;
+    }
+    .issue-meta {
+      display: flex; align-items: center;
+      gap: 0.5rem; flex-wrap: wrap; margin-top: 0.35rem;
+    }
+    .issue-repo {
+      font-size: 0.7rem; font-weight: 600; color: var(--accent);
+    }
+    .issue-label {
+      font-size: 0.65rem; font-weight: 500;
+      padding: 0.1rem 0.4rem; border-radius: 999px;
+      background: rgba(255,255,255,0.07); color: var(--text-secondary);
+    }
+    .issue-label.bug { background: rgba(239,68,68,0.15); color: var(--red-400); }
+    .issue-label.enhancement { background: rgba(245,158,11,0.1); color: var(--amber-400); }
+    .issue-label.frontend { background: rgba(96,165,250,0.1); color: var(--blue-400); }
+    .issue-label.backend { background: rgba(192,132,252,0.1); color: var(--purple-400); }
+    .issue-age {
+      font-size: 0.68rem; color: var(--text-muted); margin-left: auto;
+    }
+
+    /* ── Repo cards ── */
+    .repo-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.875rem;
+      transition: border-color 0.15s;
+      text-decoration: none; display: block;
+    }
+    .repo-card:hover { border-color: rgba(245,158,11,0.3); }
+    .repo-top {
+      display: flex; align-items: center;
+      justify-content: space-between; margin-bottom: 0.6rem;
+    }
+    .repo-name {
+      font-size: 0.875rem; font-weight: 700; color: var(--text);
+    }
+    .repo-open {
+      font-size: 0.7rem; font-weight: 700; color: var(--amber-400);
+      background: rgba(245,158,11,0.1); padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+    }
+    .repo-stats {
+      display: flex; gap: 1rem;
+    }
+    .repo-stat {
+      display: flex; flex-direction: column; gap: 0.15rem;
+    }
+    .repo-stat-label {
+      font-size: 0.62rem; text-transform: uppercase;
+      letter-spacing: 0.05em; color: var(--text-muted);
+    }
+    .repo-stat-val {
+      font-size: 0.85rem; font-weight: 700; color: var(--text);
+    }
+    .repo-stat-val.red { color: var(--red-400); }
+    .repo-stat-val.blue { color: var(--blue-400); }
+
+    /* ── Empty state ── */
+    .empty {
+      text-align: center; padding: 2rem 1rem;
+      color: var(--text-muted); font-size: 0.8rem;
+    }
+
+    /* ── Loading ── */
+    .skeleton {
+      background: var(--bg-card); border-radius: 10px;
+      height: 72px; animation: shimmer 1.4s infinite;
+    }
+    @keyframes shimmer {
+      0%,100% { opacity: 0.4; }
+      50% { opacity: 0.8; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2">
+      <rect x="2" y="3" width="20" height="14" rx="2"/>
+      <path d="M8 21h8M12 17v4"/>
+    </svg>
+    <span><span class="logo-accent">command</span>.center</span>
+  </div>
+  <div class="header-actions">
+    <div class="status-dot-hdr"></div>
+    <span class="header-time" id="clock">—</span>
+    <span style="color:var(--border)">|</span>
+    <span style="font-size:0.72rem;color:var(--text-muted)" id="updated-at">Loading…</span>
+    <button class="btn-sm" id="refresh-btn" onclick="refreshAll()">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+        <path d="M21 3v5h-5"/>
+        <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+        <path d="M8 16H3v5"/>
+      </svg>
+      Refresh
+    </button>
+  </div>
+</header>
+
+<div class="workspace">
+
+  <!-- Urgent -->
+  <div class="col">
+    <div class="col-header">
+      <div class="col-title">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="var(--red-400)" stroke="none"><path d="M12 2L2 22h20L12 2z"/></svg>
+        Urgent / Bugs
+        <span class="col-count urgent-count" id="cnt-urgent">0</span>
+      </div>
+    </div>
+    <div class="col-body" id="col-urgent">
+      <div class="skeleton"></div>
+      <div class="skeleton"></div>
+      <div class="skeleton"></div>
+    </div>
+  </div>
+
+  <!-- Active -->
+  <div class="col">
+    <div class="col-header">
+      <div class="col-title">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--amber-400)" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        Active
+        <span class="col-count active-count" id="cnt-active">0</span>
+      </div>
+    </div>
+    <div class="col-body" id="col-active">
+      <div class="skeleton"></div>
+      <div class="skeleton"></div>
+      <div class="skeleton"></div>
+    </div>
+  </div>
+
+  <!-- Deferred -->
+  <div class="col">
+    <div class="col-header">
+      <div class="col-title">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--slate-400)" stroke-width="2.5"><path d="M12 2v20M2 12h20"/></svg>
+        Backlog
+        <span class="col-count deferred-count" id="cnt-deferred">0</span>
+      </div>
+    </div>
+    <div class="col-body" id="col-deferred">
+      <div class="skeleton"></div>
+      <div class="skeleton"></div>
+      <div class="skeleton"></div>
+    </div>
+  </div>
+
+  <!-- Repos sidebar -->
+  <div class="col">
+    <div class="col-header">
+      <div class="col-title">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--blue-400)" stroke-width="2.5"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+        Repos
+        <span class="col-count repo-count" id="cnt-repos">0</span>
+      </div>
+    </div>
+    <div class="col-body" id="col-repos">
+      <div class="skeleton"></div>
+      <div class="skeleton"></div>
+      <div class="skeleton"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ── Clock ──────────────────────────────────────────────────────────────────
+  function updateClock() {
+    document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-US', {
+      hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true,
+      timeZone: 'America/Chicago'
+    }) + ' CDT';
+  }
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+  function timeAgo(iso) {
+    const s = Math.floor((Date.now() - new Date(iso)) / 1000);
+    if (s < 60) return `${s}s ago`;
+    if (s < 3600) return `${Math.floor(s/60)}m ago`;
+    if (s < 86400) return `${Math.floor(s/3600)}h ago`;
+    return `${Math.floor(s/86400)}d ago`;
+  }
+
+  function labelClass(name) {
+    const n = name.toLowerCase();
+    if (n.includes('bug')) return 'bug';
+    if (n.includes('enhancement') || n.includes('feature')) return 'enhancement';
+    if (n.includes('frontend')) return 'frontend';
+    if (n.includes('backend')) return 'backend';
+    return '';
+  }
+
+  function renderIssueCard(issue) {
+    const labels = issue.labels.slice(0, 3).map(l =>
+      `<span class="issue-label ${labelClass(l.name)}">${l.name.replace(/[^\w\s-]/g,'').trim()}</span>`
+    ).join('');
+    return `
+      <a class="issue-card" href="${issue.url}" target="_blank">
+        <div class="issue-top">
+          <div class="issue-title">${escHtml(issue.title)}</div>
+          <div class="issue-num">#${issue.number}</div>
+        </div>
+        <div class="issue-meta">
+          <span class="issue-repo">${issue.repo}</span>
+          ${labels}
+          <span class="issue-age">${timeAgo(issue.createdAt)}</span>
+        </div>
+      </a>
+    `;
+  }
+
+  function renderRepoCard(repo) {
+    const ghUrl = `https://github.com/${repo.repoFull}/issues`;
+    return `
+      <a class="repo-card" href="${ghUrl}" target="_blank">
+        <div class="repo-top">
+          <div class="repo-name">${repo.repo}</div>
+          <div class="repo-open">${repo.openIssues} open</div>
+        </div>
+        <div class="repo-stats">
+          <div class="repo-stat">
+            <div class="repo-stat-label">Bugs</div>
+            <div class="repo-stat-val red">${repo.bugs}</div>
+          </div>
+          <div class="repo-stat">
+            <div class="repo-stat-label">Features</div>
+            <div class="repo-stat-val blue">${repo.enhancements}</div>
+          </div>
+          ${repo.lastActivity ? `
+          <div class="repo-stat">
+            <div class="repo-stat-label">Last Issue</div>
+            <div class="repo-stat-val">${timeAgo(repo.lastActivity)}</div>
+          </div>` : ''}
+        </div>
+      </a>
+    `;
+  }
+
+  function escHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // ── Fetch ──────────────────────────────────────────────────────────────────
+  async function fetchIssues() {
+    const res = await fetch('/api/issues');
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error);
+
+    document.getElementById('cnt-urgent').textContent = data.urgent.length;
+    document.getElementById('cnt-active').textContent = data.active.length;
+    document.getElementById('cnt-deferred').textContent = data.deferred.length;
+
+    const render = (id, arr) => {
+      const el = document.getElementById(id);
+      el.innerHTML = arr.length ? arr.map(renderIssueCard).join('') : '<div class="empty">Nothing here 🎉</div>';
+    };
+    render('col-urgent', data.urgent);
+    render('col-active', data.active);
+    render('col-deferred', data.deferred);
+
+    document.getElementById('updated-at').textContent = `Updated ${timeAgo(data.updatedAt)}`;
+  }
+
+  async function fetchRepos() {
+    const res = await fetch('/api/repos');
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error);
+
+    document.getElementById('cnt-repos').textContent = data.repos.length;
+    document.getElementById('col-repos').innerHTML = data.repos
+      .sort((a,b) => b.openIssues - a.openIssues)
+      .map(renderRepoCard).join('');
+  }
+
+  async function refreshAll() {
+    const btn = document.getElementById('refresh-btn');
+    btn.classList.add('spinning');
+    try {
+      await fetch('/api/refresh', { method: 'POST' });
+      await Promise.all([fetchIssues(), fetchRepos()]);
+    } catch(e) { console.error(e); }
+    btn.classList.remove('spinning');
+  }
+
+  async function poll() {
+    try { await Promise.all([fetchIssues(), fetchRepos()]); } catch(e) {}
+  }
+
+  poll();
+  setInterval(poll, 30000); // refresh every 30s
+</script>
+
+</body>
+</html>
