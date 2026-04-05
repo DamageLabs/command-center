@@ -2,8 +2,6 @@
 
 A personal command center dashboard for DamageLabs. Aggregates GitHub issues, Google Calendar, Obsidian tasks, and PM2 infrastructure status into a single tabbed UI.
 
-![Command Center — Urgent tab](https://raw.githubusercontent.com/DamageLabs/command-center/main/docs/screenshot-urgent.png)
-
 ## Screenshots
 
 ### Home
