@@ -645,7 +645,11 @@
 <script>
   // ── View switching ─────────────────────────────────────────────────────────
   let currentView = 'home';
-  let _lastIssues, _lastEvents, _lastTasks, _lastInfra;
+  let _homeData = { issues: null, events: null, tasks: null, infra: null };
+  function tryRenderHome() {
+    const { issues, events, tasks, infra } = _homeData;
+    if (issues && events && tasks && infra) renderHome(issues, events, tasks, null, infra);
+  }
   function switchView(id) {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
@@ -758,6 +762,7 @@
     render('col-urgent', data.urgent, 'issues-grid');
     render('col-active', data.active, 'issues-grid');
     render('col-deferred', data.deferred, 'issues-grid');
+    _homeData.issues = data; tryRenderHome();
   }
 
   // ── Home view ────────────────────────────────────────────────────────────
@@ -906,6 +911,7 @@
         }).join('')}
       </div>
     `;
+    _homeData.infra = procs; tryRenderHome();
   }
 
   async function fetchTasks() {
@@ -929,6 +935,7 @@
         </div>
       </div>
     `).join('');
+    _homeData.tasks = tasks; tryRenderHome();
   }
 
   async function fetchCalendar() {
@@ -972,6 +979,7 @@
         </div>
       `;
     }).join('');
+    _homeData.events = events; tryRenderHome();
   }
 
   async function fetchRepos() {
@@ -997,23 +1005,7 @@
   }
 
   async function poll() {
-    try {
-      await Promise.all([fetchIssues(), fetchCalendar(), fetchRepos(), fetchTasks(), fetchInfra()]);
-      // Update home after all data is fresh
-      const [issRes, evtRes, taskRes, infraRes] = await Promise.all([
-        fetch('/api/issues').then(r=>r.json()),
-        fetch('/api/calendar').then(r=>r.json()),
-        fetch('/api/tasks').then(r=>r.json()),
-        fetch('/api/infra').then(r=>r.json()),
-      ]);
-      renderHome(
-        issRes.ok ? issRes : null,
-        evtRes.ok ? evtRes.events : null,
-        taskRes.ok ? taskRes.tasks : null,
-        null,
-        infraRes.ok ? infraRes.processes : null,
-      );
-    } catch(e) { console.error(e); }
+    try { await Promise.all([fetchIssues(), fetchCalendar(), fetchRepos(), fetchTasks(), fetchInfra()]); } catch(e) { console.error(e); }
   }
 
   poll();
