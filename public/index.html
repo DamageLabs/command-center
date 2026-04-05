@@ -247,6 +247,82 @@
     .repo-stat-val.red { color: var(--red-400); }
     .repo-stat-val.blue { color: var(--blue-400); }
 
+    /* ── Home ── */
+    .home-hero {
+      position: relative; overflow: hidden;
+      padding: 2rem 0 2.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .home-hero-glow {
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 20% 50%, rgba(245,158,11,0.1) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .home-hero-content { position: relative; }
+    .home-logo {
+      display: flex; align-items: center; gap: 0.6rem;
+      font-size: 1.75rem; font-weight: 900; letter-spacing: -0.04em;
+      margin-bottom: 0.5rem;
+    }
+    .home-tagline {
+      font-size: 0.9rem; color: var(--text-muted); margin: 0;
+    }
+    .home-stats {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0.75rem;
+      margin-bottom: 2rem;
+    }
+    .home-stat-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 1.25rem 1.5rem;
+      cursor: pointer; transition: border-color 0.15s, transform 0.15s;
+      text-decoration: none; display: block;
+    }
+    .home-stat-card:hover {
+      border-color: rgba(245,158,11,0.3); transform: translateY(-2px);
+    }
+    .home-stat-label {
+      font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.07em; color: var(--text-muted); margin-bottom: 0.5rem;
+    }
+    .home-stat-val {
+      font-size: 2rem; font-weight: 900; letter-spacing: -0.04em; line-height: 1;
+      margin-bottom: 0.3rem;
+    }
+    .home-stat-sub {
+      font-size: 0.72rem; color: var(--text-muted);
+    }
+    .home-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 1.5rem;
+      margin-bottom: 3rem;
+    }
+    .home-section-title {
+      font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.07em; color: var(--text-muted); margin-bottom: 0.75rem;
+    }
+    .home-event-item, .home-issue-item, .home-task-item {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 10px; padding: 0.75rem 1rem;
+      margin-bottom: 0.5rem; cursor: pointer;
+      transition: border-color 0.15s;
+      text-decoration: none; display: block;
+    }
+    .home-event-item:hover, .home-issue-item:hover, .home-task-item:hover {
+      border-color: rgba(245,158,11,0.3);
+    }
+    .home-item-title {
+      font-size: 0.85rem; font-weight: 600; color: var(--text);
+      margin-bottom: 0.25rem; line-height: 1.3;
+    }
+    .home-item-meta {
+      font-size: 0.72rem; color: var(--text-muted);
+      display: flex; align-items: center; gap: 0.4rem;
+    }
+    .home-item-accent { color: var(--accent); }
+
     /* ── Infra ── */
     .infra-grid {
       display: grid;
@@ -373,7 +449,11 @@
   </div>
 
   <nav class="nav-tabs">
-    <button class="nav-tab active" data-view="urgent" onclick="switchView('urgent')">
+    <button class="nav-tab active" data-view="home" onclick="switchView('home')">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Home
+    </button>
+    <button class="nav-tab" data-view="urgent" onclick="switchView('urgent')">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="var(--red-400)" stroke="none"><path d="M12 2L2 22h20L12 2z"/></svg>
       Urgent
       <span class="tab-badge badge-urgent" id="badge-urgent">0</span>
@@ -426,7 +506,7 @@
 <div class="view-container">
 
   <!-- Urgent -->
-  <div class="view active" id="view-urgent">
+  <div class="view" id="view-urgent">
     <div class="view-header">
       <div class="view-title">Urgent &amp; Bugs</div>
       <div class="view-subtitle" id="sub-urgent">Loading…</div>
@@ -461,6 +541,50 @@
       <div class="skeletons" id="col-deferred">
         <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
       </div>
+    </div>
+  </div>
+
+  <!-- Home -->
+  <div class="view active" id="view-home">
+    <div class="view-body" style="padding-top: 2rem;">
+
+      <!-- Hero -->
+      <div class="home-hero">
+        <div class="home-hero-glow"></div>
+        <div class="home-hero-content">
+          <div class="home-logo">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+            <span><span style="color:var(--accent)">command</span>.center</span>
+          </div>
+          <p class="home-tagline" id="home-tagline">Loading…</p>
+        </div>
+      </div>
+
+      <!-- Stat cards -->
+      <div class="home-stats" id="home-stats">
+        <div class="home-stat-card skeleton" style="height:110px"></div>
+        <div class="home-stat-card skeleton" style="height:110px"></div>
+        <div class="home-stat-card skeleton" style="height:110px"></div>
+        <div class="home-stat-card skeleton" style="height:110px"></div>
+        <div class="home-stat-card skeleton" style="height:110px"></div>
+      </div>
+
+      <!-- Next event + recent issues -->
+      <div class="home-grid">
+        <div class="home-section">
+          <div class="home-section-title">Upcoming</div>
+          <div id="home-events"><div class="skeleton" style="height:72px"></div></div>
+        </div>
+        <div class="home-section">
+          <div class="home-section-title">Recent Issues</div>
+          <div id="home-issues"><div class="skeleton" style="height:72px"></div><div class="skeleton" style="height:72px;margin-top:0.5rem"></div></div>
+        </div>
+        <div class="home-section">
+          <div class="home-section-title">Open Tasks</div>
+          <div id="home-tasks"><div class="skeleton" style="height:72px"></div><div class="skeleton" style="height:72px;margin-top:0.5rem"></div></div>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -520,7 +644,8 @@
 
 <script>
   // ── View switching ─────────────────────────────────────────────────────────
-  let currentView = 'urgent';
+  let currentView = 'home';
+  let _lastIssues, _lastEvents, _lastTasks, _lastInfra;
   function switchView(id) {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
@@ -633,6 +758,88 @@
     render('col-urgent', data.urgent, 'issues-grid');
     render('col-active', data.active, 'issues-grid');
     render('col-deferred', data.deferred, 'issues-grid');
+  }
+
+  // ── Home view ────────────────────────────────────────────────────────────
+  function renderHome(issues, events, tasks, repos, infra) {
+    if (!issues || !events || !tasks || !repos || !infra) return;
+
+    const urgent = issues.urgent.length;
+    const active = issues.active.length;
+    const backlog = issues.deferred.length;
+    const totalIssues = urgent + active + backlog;
+    const totalTasks = tasks.length;
+    const onlineServices = infra.filter(p => p.status === 'online').length;
+    const totalServices = infra.length;
+    const nextEvents = events.filter(e => new Date(e.start) > new Date()).slice(0, 3);
+    const recentIssues = [...issues.urgent, ...issues.active].slice(0, 4);
+    const openTasks = tasks.slice(0, 4);
+
+    // Tagline
+    const now = new Date();
+    document.getElementById('home-tagline').textContent =
+      now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'America/Chicago' }) +
+      (urgent > 0 ? ` · ${urgent} urgent issue${urgent > 1 ? 's' : ''} need attention` : ' · All clear');
+
+    // Stat cards
+    document.getElementById('home-stats').innerHTML = `
+      <button class="home-stat-card" onclick="switchView('urgent')" style="border-left:3px solid var(--red-400)">
+        <div class="home-stat-label">Urgent</div>
+        <div class="home-stat-val" style="color:var(--red-400)">${urgent}</div>
+        <div class="home-stat-sub">open bugs &amp; critical</div>
+      </button>
+      <button class="home-stat-card" onclick="switchView('active')" style="border-left:3px solid var(--amber-400)">
+        <div class="home-stat-label">Active</div>
+        <div class="home-stat-val" style="color:var(--amber-400)">${active}</div>
+        <div class="home-stat-sub">in-progress issues</div>
+      </button>
+      <button class="home-stat-card" onclick="switchView('backlog')" style="border-left:3px solid var(--slate-400)">
+        <div class="home-stat-label">Backlog</div>
+        <div class="home-stat-val" style="color:var(--slate-400)">${backlog}</div>
+        <div class="home-stat-sub">${totalIssues} total open</div>
+      </button>
+      <button class="home-stat-card" onclick="switchView('tasks')" style="border-left:3px solid var(--purple-400)">
+        <div class="home-stat-label">Tasks</div>
+        <div class="home-stat-val" style="color:var(--purple-400)">${totalTasks}</div>
+        <div class="home-stat-sub">open in Obsidian</div>
+      </button>
+      <button class="home-stat-card" onclick="switchView('infra')" style="border-left:3px solid var(--green-400)">
+        <div class="home-stat-label">Infra</div>
+        <div class="home-stat-val" style="color:var(--green-400)">${onlineServices}<span style="font-size:1rem;font-weight:600;color:var(--text-muted)">/${totalServices}</span></div>
+        <div class="home-stat-sub">services online</div>
+      </button>
+    `;
+
+    // Upcoming events
+    document.getElementById('home-events').innerHTML = nextEvents.length
+      ? nextEvents.map(e => {
+          const start = new Date(e.start);
+          const dateStr = start.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'America/Chicago' });
+          const timeStr = e.allDay ? 'All day' : start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Chicago' });
+          return `<div class="home-event-item" onclick="switchView('calendar')">
+            <div class="home-item-title">${escHtml(e.title)}</div>
+            <div class="home-item-meta"><span class="home-item-accent">${dateStr} · ${timeStr}</span><span>${e.calendar}</span></div>
+          </div>`;
+        }).join('')
+      : '<div class="empty" style="padding:1rem">No upcoming events</div>';
+
+    // Recent issues
+    document.getElementById('home-issues').innerHTML = recentIssues.length
+      ? recentIssues.map(i => `
+          <a class="home-issue-item" href="${i.url}" target="_blank">
+            <div class="home-item-title">${escHtml(i.title)}</div>
+            <div class="home-item-meta"><span class="home-item-accent">${i.repo}</span><span>#${i.number}</span><span>${timeAgo(i.createdAt)}</span></div>
+          </a>`).join('')
+      : '<div class="empty" style="padding:1rem">No urgent issues 🎉</div>';
+
+    // Open tasks
+    document.getElementById('home-tasks').innerHTML = openTasks.length
+      ? openTasks.map(t => `
+          <div class="home-task-item" onclick="switchView('tasks')">
+            <div class="home-item-title">${escHtml(t.title)}</div>
+            <div class="home-item-meta"><span class="home-item-accent">${t.source}</span>${t.section ? `<span>${escHtml(t.section)}</span>` : ''}${t.due ? `<span style="color:var(--red-400)">📅 ${t.due}</span>` : ''}</div>
+          </div>`).join('')
+      : '<div class="empty" style="padding:1rem">All done! 🎉</div>';
   }
 
   const SERVICE_DOMAINS = {
@@ -790,7 +997,23 @@
   }
 
   async function poll() {
-    try { await Promise.all([fetchIssues(), fetchCalendar(), fetchRepos(), fetchTasks(), fetchInfra()]); } catch(e) { console.error(e); }
+    try {
+      await Promise.all([fetchIssues(), fetchCalendar(), fetchRepos(), fetchTasks(), fetchInfra()]);
+      // Update home after all data is fresh
+      const [issRes, evtRes, taskRes, infraRes] = await Promise.all([
+        fetch('/api/issues').then(r=>r.json()),
+        fetch('/api/calendar').then(r=>r.json()),
+        fetch('/api/tasks').then(r=>r.json()),
+        fetch('/api/infra').then(r=>r.json()),
+      ]);
+      renderHome(
+        issRes.ok ? issRes : null,
+        evtRes.ok ? evtRes.events : null,
+        taskRes.ok ? taskRes.tasks : null,
+        null,
+        infraRes.ok ? infraRes.processes : null,
+      );
+    } catch(e) { console.error(e); }
   }
 
   poll();
