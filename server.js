@@ -223,6 +223,27 @@ app.get('/api/calendar', (req, res) => {
   res.json({ ok: true, events: cache.events, updatedAt: cache.eventsUpdatedAt });
 });
 
+// Infra — PM2 process list
+app.get('/api/infra', (req, res) => {
+  try {
+    const raw = execSync('pm2 jlist', { encoding: 'utf8' });
+    const processes = JSON.parse(raw);
+    const data = processes.map(p => ({
+      id: p.pm_id,
+      name: p.name,
+      status: p.pm2_env.status,
+      pid: p.pid,
+      uptime: p.pm2_env.status === 'online' ? Date.now() - p.pm2_env.pm_uptime : null,
+      restarts: p.pm2_env.restart_time,
+      cpu: p.monit?.cpu ?? 0,
+      memory: p.monit?.memory ?? 0,
+    }));
+    res.json({ ok: true, processes: data, updatedAt: Date.now() });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 app.get('/api/tasks', (req, res) => {
   if (!cache.tasks) return res.status(503).json({ ok: false, error: 'loading' });
   res.json({ ok: true, tasks: cache.tasks, updatedAt: cache.tasksUpdatedAt });

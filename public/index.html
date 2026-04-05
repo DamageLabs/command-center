@@ -247,6 +247,70 @@
     .repo-stat-val.red { color: var(--red-400); }
     .repo-stat-val.blue { color: var(--blue-400); }
 
+    /* ── Infra ── */
+    .infra-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 0.75rem;
+    }
+    .infra-summary {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+    .infra-stat {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 1rem 1.25rem;
+    }
+    .infra-stat-label {
+      font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 0.4rem;
+    }
+    .infra-stat-val {
+      font-size: 1.6rem; font-weight: 800; letter-spacing: -0.03em;
+    }
+    .infra-stat-val.green { color: var(--green-400); }
+    .infra-stat-val.red { color: var(--red-400); }
+    .infra-stat-val.amber { color: var(--amber-400); }
+    .process-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 1.1rem 1.25rem;
+      border-left: 3px solid var(--border);
+    }
+    .process-card.online { border-left-color: var(--green-500); }
+    .process-card.stopped { border-left-color: var(--red-500); }
+    .process-card.erroring { border-left-color: var(--yellow-400); }
+    .process-top {
+      display: flex; align-items: center;
+      justify-content: space-between; margin-bottom: 0.75rem;
+    }
+    .process-name { font-size: 0.95rem; font-weight: 700; }
+    .process-badge {
+      display: inline-flex; align-items: center; gap: 0.25rem;
+      padding: 0.18rem 0.55rem; border-radius: 999px;
+      font-size: 0.68rem; font-weight: 600;
+    }
+    .process-badge.online { background: rgba(34,197,94,0.12); color: var(--green-400); }
+    .process-badge.stopped { background: rgba(239,68,68,0.12); color: var(--red-400); }
+    .process-badge.erroring { background: rgba(250,204,21,0.12); color: var(--yellow-400); }
+    .process-badge .dot {
+      width: 5px; height: 5px; border-radius: 50%; background: currentColor;
+    }
+    .online .dot { animation: pulse-dot 2s infinite; }
+    .process-metrics {
+      display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.4rem;
+      margin-bottom: 0.6rem;
+    }
+    .pm { background: var(--bg-secondary); border-radius: 7px; padding: 0.4rem 0.6rem; }
+    .pm-label { font-size: 0.62rem; color: var(--text-muted); margin-bottom: 0.15rem; }
+    .pm-val { font-size: 0.82rem; font-weight: 700; color: var(--text); }
+    .pm-val.accent { color: var(--accent); }
+    .process-id {
+      font-size: 0.68rem; color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
     /* ── Tasks ── */
     .tasks-grid {
       display: grid;
@@ -329,6 +393,11 @@
       Calendar
       <span class="tab-badge badge-cal" id="badge-cal">0</span>
     </button>
+    <button class="nav-tab" data-view="infra" onclick="switchView('infra')">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--green-400)" stroke-width="2.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+      Infra
+      <span class="tab-badge" style="background:rgba(74,222,128,0.12);color:var(--green-400)" id="badge-infra">0</span>
+    </button>
     <button class="nav-tab" data-view="tasks" onclick="switchView('tasks')">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--purple-400)" stroke-width="2.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
       Tasks
@@ -390,6 +459,19 @@
     </div>
     <div class="view-body">
       <div class="skeletons" id="col-deferred">
+        <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Infra -->
+  <div class="view" id="view-infra">
+    <div class="view-header">
+      <div class="view-title">Infrastructure</div>
+      <div class="view-subtitle" id="sub-infra">Loading…</div>
+    </div>
+    <div class="view-body">
+      <div class="skeletons" id="col-infra">
         <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
       </div>
     </div>
@@ -548,6 +630,72 @@
     render('col-deferred', data.deferred, 'issues-grid');
   }
 
+  const SERVICE_DOMAINS = {
+    'armory-backend':      'armory.test',
+    'armory-frontend':     'armory-ui.test',
+    'damagelabs-frontend': 'damagelabs.test',
+    'fusion94':            'fusion94.test',
+    'openclaw-dashboard':  'dashboard.test',
+    'uas-backend':         'uas-api.test',
+    'uas-frontend':        'uas-log.test',
+    'infra-dash':          'infra.test',
+    'command-center':      'command.test',
+  };
+
+  function formatUptime(ms) {
+    if (!ms) return '—';
+    const s = Math.floor(ms/1000), m = Math.floor(s/60), h = Math.floor(m/60), d = Math.floor(h/24);
+    if (d > 0) return `${d}d ${h%24}h`;
+    if (h > 0) return `${h}h ${m%60}m`;
+    if (m > 0) return `${m}m ${s%60}s`;
+    return `${s}s`;
+  }
+  function formatMem(b) { return b ? (b/1024/1024).toFixed(1)+' MB' : '0 MB'; }
+
+  async function fetchInfra() {
+    const res = await fetch('/api/infra');
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error);
+    const procs = data.processes;
+    const online = procs.filter(p => p.status === 'online').length;
+    const down = procs.filter(p => p.status !== 'online').length;
+    const restarts = procs.reduce((s,p) => s + (p.restarts||0), 0);
+    document.getElementById('badge-infra').textContent = online + '/' + procs.length;
+    document.getElementById('sub-infra').textContent = `${online} online · ${down} down · ${restarts} total restarts`;
+    const el = document.getElementById('col-infra');
+    el.innerHTML = `
+      <div class="infra-summary">
+        <div class="infra-stat"><div class="infra-stat-label">Total</div><div class="infra-stat-val">${procs.length}</div></div>
+        <div class="infra-stat"><div class="infra-stat-label">Online</div><div class="infra-stat-val green">${online}</div></div>
+        <div class="infra-stat"><div class="infra-stat-label">Down</div><div class="infra-stat-val red">${down}</div></div>
+        <div class="infra-stat"><div class="infra-stat-label">Restarts</div><div class="infra-stat-val amber">${restarts}</div></div>
+      </div>
+      <div class="infra-grid">
+        ${procs.map(p => {
+          const sc = p.status === 'online' ? 'online' : p.status === 'erroring' ? 'erroring' : 'stopped';
+          const domain = SERVICE_DOMAINS[p.name];
+          return `
+            <div class="process-card ${sc}">
+              <div class="process-top">
+                <div class="process-name">${p.name}</div>
+                <div class="process-badge ${sc}"><div class="dot"></div>${p.status}</div>
+              </div>
+              <div class="process-metrics">
+                <div class="pm"><div class="pm-label">Uptime</div><div class="pm-val accent">${formatUptime(p.uptime)}</div></div>
+                <div class="pm"><div class="pm-label">Memory</div><div class="pm-val">${formatMem(p.memory)}</div></div>
+                <div class="pm"><div class="pm-label">Restarts</div><div class="pm-val ${p.restarts > 5 ? 'accent' : ''}">${p.restarts}</div></div>
+              </div>
+              <div class="process-id">
+                #${p.id} · PID ${p.pid || '—'}
+                ${domain ? ` · <a href="https://${domain}" target="_blank" style="color:var(--accent);text-decoration:none;">↗ ${domain}</a>` : ''}
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+  }
+
   async function fetchTasks() {
     const res = await fetch('/api/tasks');
     const data = await res.json();
@@ -631,13 +779,13 @@
     btn.classList.add('spinning');
     try {
       await fetch('/api/refresh', { method: 'POST' });
-      await Promise.all([fetchIssues(), fetchCalendar(), fetchRepos(), fetchTasks()]);
+      await Promise.all([fetchIssues(), fetchCalendar(), fetchRepos(), fetchTasks(), fetchInfra()]);
     } catch(e) { console.error(e); }
     btn.classList.remove('spinning');
   }
 
   async function poll() {
-    try { await Promise.all([fetchIssues(), fetchCalendar(), fetchRepos(), fetchTasks()]); } catch(e) { console.error(e); }
+    try { await Promise.all([fetchIssues(), fetchCalendar(), fetchRepos(), fetchTasks(), fetchInfra()]); } catch(e) { console.error(e); }
   }
 
   poll();
