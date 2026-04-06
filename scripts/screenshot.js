@@ -9,6 +9,8 @@ const TABS = [
   { id: 'urgent',   label: 'urgent' },
   { id: 'active',   label: 'active' },
   { id: 'backlog',  label: 'backlog' },
+  { id: 'prs',      label: 'prs' },
+  { id: 'notes',    label: 'notes' },
   { id: 'infra',    label: 'infra' },
   { id: 'tasks',    label: 'tasks' },
   { id: 'calendar', label: 'calendar' },
