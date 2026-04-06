@@ -26,6 +26,9 @@ const ACTIVE_REPOS = [
 ];
 
 const TASKS_DIR = '/Users/guntharp/Documents/guntharp-personal/02 - Action/01 - Tasks';
+const VAULT_DIR = '/Users/guntharp/Documents/guntharp-personal';
+const DAILY_DIR = `${VAULT_DIR}/03 - Periodic/01 - Daily`;
+const DECISIONS_DIR = `${VAULT_DIR}/08 - Projects/DamageLabs/Decisions`;
 const TASK_FILES = [
   { file: '02 - General Tasks.md', label: 'General', color: 'amber' },
   { file: '03 - CA Tasks.md',      label: 'California', color: 'blue' },
@@ -55,10 +58,91 @@ let cache = {
   repoStats: null,
   events: null,
   tasks: null,
+  notes: null,
   issuesUpdatedAt: null,
   eventsUpdatedAt: null,
   tasksUpdatedAt: null,
 };
+
+// ── Notes ────────────────────────────────────────────────────────────────────
+function fetchNotes() {
+  console.log('[notes] reading obsidian notes...');
+  try {
+    const now = new Date();
+    const result = { dailyNote: null, decisions: [], updatedAt: Date.now() };
+
+    // Find today's or most recent daily note
+    const months = ['01-January','02-February','03-March','04-April','05-May','06-June',
+      '07-July','08-August','09-September','10-October','11-November','12-December'];
+    const year = now.getFullYear();
+    const month = months[now.getMonth()];
+    const pad = n => String(n).padStart(2,'0');
+    const todayFile = `${year}-${pad(now.getMonth()+1)}-${pad(now.getDate())}.md`;
+    const monthDir = `${DAILY_DIR}/${year}/${month}`;
+
+    // Try today, then walk back up to 7 days
+    let noteContent = null, noteDate = null;
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(now - i * 86400000);
+      const m = months[d.getMonth()];
+      const fname = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}.md`;
+      const fpath = `${DAILY_DIR}/${d.getFullYear()}/${m}/${fname}`;
+      if (fs.existsSync(fpath)) {
+        noteContent = fs.readFileSync(fpath, 'utf8');
+        noteDate = fname.replace('.md','');
+        break;
+      }
+    }
+
+    if (noteContent) {
+      // Strip frontmatter
+      const body = noteContent.replace(/^---[\s\S]*?---\n/, '');
+      // Strip Obsidian code blocks and button syntax
+      const clean = body
+        .replace(/```[\s\S]*?```/g, '')
+        .replace(/>[^\n]*/g, '') // blockquotes
+        .replace(/!\[\[[^\]]*\]\]/g, '') // embeds
+        .replace(/\[\[[^\]|]*(?:\|([^\]]+))?\]\]/g, (_, alt) => alt || '')
+        .replace(/#{1,6}\s/g, '')
+        .trim();
+      // First meaningful paragraph
+      const lines = clean.split('\n').map(l => l.trim()).filter(l => l.length > 20);
+      result.dailyNote = {
+        date: noteDate,
+        preview: lines.slice(0, 3).join(' ').substring(0, 300),
+        isToday: noteDate === `${year}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`,
+      };
+    }
+
+    // Recent decisions
+    if (fs.existsSync(DECISIONS_DIR)) {
+      const files = fs.readdirSync(DECISIONS_DIR)
+        .filter(f => f.endsWith('.md'))
+        .sort().reverse().slice(0, 5);
+      for (const file of files) {
+        const content = fs.readFileSync(`${DECISIONS_DIR}/${file}`, 'utf8');
+        const titleMatch = content.match(/^#\s+(.+)/m);
+        const statusMatch = content.match(/\*\*Status:\*\*\s*(.+)/i);
+        const dateMatch = content.match(/\*\*Date:\*\*\s*(\S+)/i);
+        const contextLines = content.split('\n')
+          .filter(l => l.trim().length > 20 && !l.startsWith('#') && !l.startsWith('**'))
+          .slice(0, 2).join(' ').substring(0, 200);
+        result.decisions.push({
+          title: titleMatch ? titleMatch[1].replace('Decision: ','') : file.replace('.md',''),
+          status: statusMatch ? statusMatch[1].trim() : null,
+          date: dateMatch ? dateMatch[1].trim() : file.substring(0,10),
+          preview: contextLines,
+          file: file.replace('.md',''),
+        });
+      }
+    }
+
+      cache.notes = result;
+    console.log(`[notes] daily note: ${result.dailyNote?.date || 'none'}, decisions: ${result.decisions.length}`);
+  } catch (err) {
+    console.error('[notes] error:', err.message);
+  }
+}
 
 // ── Tasks ────────────────────────────────────────────────────────────────────
 function fetchTasks() {
@@ -205,10 +289,12 @@ async function fetchCalendars() {
 cron.schedule('*/5 * * * *', fetchGitHub);
 cron.schedule('*/10 * * * *', fetchCalendars);
 cron.schedule('*/2 * * * *', fetchTasks);
+cron.schedule('*/5 * * * *', fetchNotes);
 
 fetchGitHub();
 fetchCalendars();
 fetchTasks();
+fetchNotes();
 
 // ── Routes ────────────────────────────────────────────────────────────────────
 app.use(express.static(path.join(__dirname, 'public')));
@@ -257,10 +343,16 @@ app.get('/api/tasks', (req, res) => {
   res.json({ ok: true, tasks: cache.tasks, updatedAt: cache.tasksUpdatedAt });
 });
 
+app.get('/api/notes', (req, res) => {
+  if (!cache.notes) return res.status(503).json({ ok: false, error: 'loading' });
+  res.json({ ok: true, ...cache.notes });
+});
+
 app.post('/api/refresh', async (req, res) => {
   fetchGitHub();
   await fetchCalendars();
   fetchTasks();
+  fetchNotes();
   res.json({ ok: true });
 });
 
