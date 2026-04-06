@@ -23,6 +23,8 @@ const ACTIVE_REPOS = [
   'DamageLabs/sports-card-tracker',
   'DamageLabs/brain',
   'DamageLabs/command-center',
+  'fusion94/fusion94.org',
+  'fusion94/clawd',
 ];
 
 const TASKS_DIR = '/Users/guntharp/Documents/guntharp-personal/02 - Action/01 - Tasks';
@@ -61,10 +63,39 @@ let cache = {
   tasks: null,
   notes: null,
   standup: null,
+  prs: null,
+  prsUpdatedAt: null,
   issuesUpdatedAt: null,
   eventsUpdatedAt: null,
   tasksUpdatedAt: null,
 };
+
+// ── Pull Requests ───────────────────────────────────────────────────────────────
+function fetchPRs() {
+  console.log('[prs] fetching open PRs...');
+  try {
+    const allPRs = [];
+    for (const repo of ACTIVE_REPOS) {
+      try {
+        const prs = gh(`pr list --repo ${repo} --state open --json number,title,author,createdAt,url,headRefName,isDraft,reviewDecision,labels --limit 20`);
+        const repoName = repo.split('/')[1];
+        allPRs.push(...prs.map(pr => ({
+          ...pr,
+          repo: repoName,
+          repoFull: repo,
+        })));
+      } catch (e) {
+        // repo may have no PRs or no access
+      }
+    }
+    allPRs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    cache.prs = allPRs;
+    cache.prsUpdatedAt = Date.now();
+    console.log(`[prs] fetched ${allPRs.length} open PRs`);
+  } catch (err) {
+    console.error('[prs] fetch error:', err.message);
+  }
+}
 
 // ── Standup ───────────────────────────────────────────────────────────────────
 function fetchStandup() {
@@ -241,9 +272,13 @@ function fetchTasks() {
 function fetchGitHub() {
   console.log('[github] fetching issues...');
   try {
-    // Fetch all DamageLabs repos dynamically
-    const allRepos = gh('repo list DamageLabs --json name,isArchived,pushedAt --limit 200')
+    // Fetch all DamageLabs + fusion94 repos dynamically
+    const damagelabsRepos = gh('repo list DamageLabs --json name,isArchived,pushedAt --limit 200')
       .map(r => ({ name: `DamageLabs/${r.name}`, archived: r.isArchived }));
+    const fusion94Repos = gh('repo list fusion94 --json name,isArchived,pushedAt --limit 100')
+      .filter(r => ['fusion94.org','clawd','dotfiles','homeassistant'].includes(r.name))
+      .map(r => ({ name: `fusion94/${r.name}`, archived: r.isArchived }));
+    const allRepos = [...damagelabsRepos, ...fusion94Repos];
 
     const allIssues = [];
     const repoStats = [];
@@ -340,12 +375,14 @@ cron.schedule('*/10 * * * *', fetchCalendars);
 cron.schedule('*/2 * * * *', fetchTasks);
 cron.schedule('*/5 * * * *', fetchNotes);
 cron.schedule('*/10 * * * *', fetchStandup);
+cron.schedule('*/5 * * * *', fetchPRs);
 
 fetchGitHub();
 fetchCalendars();
 fetchTasks();
 fetchNotes();
 fetchStandup();
+fetchPRs();
 
 // ── Routes ────────────────────────────────────────────────────────────────────
 app.use(express.static(path.join(__dirname, 'public')));
@@ -394,6 +431,11 @@ app.get('/api/tasks', (req, res) => {
   res.json({ ok: true, tasks: cache.tasks, updatedAt: cache.tasksUpdatedAt });
 });
 
+app.get('/api/prs', (req, res) => {
+  if (!cache.prs) return res.status(503).json({ ok: false, error: 'loading' });
+  res.json({ ok: true, prs: cache.prs, updatedAt: cache.prsUpdatedAt });
+});
+
 app.get('/api/standup', (req, res) => {
   res.json({ ok: true, standup: cache.standup || null });
 });
@@ -409,6 +451,7 @@ app.post('/api/refresh', async (req, res) => {
   fetchTasks();
   fetchNotes();
   fetchStandup();
+  fetchPRs();
   res.json({ ok: true });
 });
 
