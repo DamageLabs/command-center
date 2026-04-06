@@ -695,6 +695,7 @@
   <div class="header-right">
     <div class="live-dot"></div>
     <span class="header-clock" id="clock">—</span>
+    <button class="btn-sm" onclick="toggleShortcutHelp()" title="Keyboard shortcuts (?)" style="font-size:0.8rem;font-weight:700">?</button>
     <button class="btn-sm" id="theme-btn" onclick="toggleTheme()" aria-label="Toggle theme">
       <svg id="theme-icon-dark" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none">
         <circle cx="12" cy="12" r="5"/>
@@ -916,6 +917,34 @@
   </div>
 
 </div>
+
+<!-- Shortcut help overlay -->
+<div id="shortcut-help" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:999;align-items:center;justify-content:center;" onclick="toggleShortcutHelp()">
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:2rem;min-width:320px;" onclick="event.stopPropagation()">
+    <div style="font-size:1rem;font-weight:800;margin-bottom:1.25rem;display:flex;justify-content:space-between;align-items:center;">
+      Keyboard Shortcuts
+      <button onclick="toggleShortcutHelp()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1.2rem;">&times;</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem 2rem;font-size:0.85rem;">
+      <div><kbd>H</kbd> Home</div><div><kbd>U</kbd> Urgent</div>
+      <div><kbd>A</kbd> Active</div><div><kbd>B</kbd> Backlog</div>
+      <div><kbd>P</kbd> PRs</div><div><kbd>N</kbd> Notes</div>
+      <div><kbd>I</kbd> Infra</div><div><kbd>T</kbd> Tasks</div>
+      <div><kbd>C</kbd> Calendar</div><div><kbd>R</kbd> Repos</div>
+      <div><kbd>/</kbd> Search</div><div><kbd>Shift+R</kbd> Refresh</div>
+      <div><kbd>?</kbd> This help</div><div><kbd>Esc</kbd> Close/Clear</div>
+    </div>
+  </div>
+</div>
+
+<style>
+  kbd {
+    display: inline-block; padding: 0.15rem 0.45rem;
+    background: var(--bg-secondary); border: 1px solid var(--border);
+    border-radius: 4px; font-size: 0.75rem; font-family: 'JetBrains Mono', monospace;
+    color: var(--accent); margin-right: 0.4rem;
+  }
+</style>
 
 <script>
   // ── Theme ───────────────────────────────────────────────────────────
@@ -1522,17 +1551,30 @@
     try { await Promise.all([fetchIssues(), fetchCalendar(), fetchRepos(), fetchTasks(), fetchInfra(), fetchNotes(), fetchStandup(), fetchPRs()]); } catch(e) { console.error(e); }
   }
 
-  // ── Keyboard shortcut: / to focus search ─────────────────────────────
+  // ── Keyboard shortcuts ──────────────────────────────────────────────────
+  const TAB_SHORTCUTS = {
+    'h': 'home', 'u': 'urgent', 'a': 'active', 'b': 'backlog',
+    'p': 'prs', 'n': 'notes', 'i': 'infra', 't': 'tasks',
+    'c': 'calendar', 'r': 'repos'
+  };
+
+  let shortcutHelpVisible = false;
+  function toggleShortcutHelp() {
+    shortcutHelpVisible = !shortcutHelpVisible;
+    document.getElementById('shortcut-help').style.display = shortcutHelpVisible ? 'flex' : 'none';
+  }
+
   document.addEventListener('keydown', e => {
-    if (e.key === '/' && document.activeElement.tagName !== 'INPUT') {
-      e.preventDefault();
-      const input = document.querySelector(`#view-${currentView} .search-input`);
-      if (input) input.focus();
+    if (document.activeElement.tagName === 'INPUT') {
+      if (e.key === 'Escape') { document.activeElement.blur(); clearFilter(); }
+      return;
     }
-    if (e.key === 'Escape') {
-      document.activeElement.blur();
-      clearFilter();
-    }
+    if (e.key === '?') { toggleShortcutHelp(); return; }
+    if (e.key === 'Escape') { shortcutHelpVisible = false; document.getElementById('shortcut-help').style.display='none'; clearFilter(); return; }
+    if (e.key === '/') { e.preventDefault(); const inp = document.querySelector(`#view-${currentView} .search-input`); if (inp) inp.focus(); return; }
+    if (e.shiftKey && e.key === 'R') { refreshAll(); return; }
+    const view = TAB_SHORTCUTS[e.key.toLowerCase()];
+    if (view && !e.metaKey && !e.ctrlKey && !e.altKey) { e.preventDefault(); switchView(view); }
   });
 
   poll();
