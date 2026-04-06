@@ -29,6 +29,7 @@ const TASKS_DIR = '/Users/guntharp/Documents/guntharp-personal/02 - Action/01 - 
 const VAULT_DIR = '/Users/guntharp/Documents/guntharp-personal';
 const DAILY_DIR = `${VAULT_DIR}/03 - Periodic/01 - Daily`;
 const DECISIONS_DIR = `${VAULT_DIR}/08 - Projects/DamageLabs/Decisions`;
+const STANDUP_DIR = `${process.env.HOME}/Code/brain/standups/daily`;
 const TASK_FILES = [
   { file: '02 - General Tasks.md', label: 'General', color: 'amber' },
   { file: '03 - CA Tasks.md',      label: 'California', color: 'blue' },
@@ -59,10 +60,58 @@ let cache = {
   events: null,
   tasks: null,
   notes: null,
+  standup: null,
   issuesUpdatedAt: null,
   eventsUpdatedAt: null,
   tasksUpdatedAt: null,
 };
+
+// ── Standup ───────────────────────────────────────────────────────────────────
+function fetchStandup() {
+  console.log('[standup] reading latest standup...');
+  try {
+    if (!fs.existsSync(STANDUP_DIR)) {
+      cache.standup = null;
+      return;
+    }
+    const files = fs.readdirSync(STANDUP_DIR)
+      .filter(f => f.match(/^\d{4}-\d{2}-\d{2}\.md$/))
+      .sort().reverse();
+    if (!files.length) { cache.standup = null; return; }
+
+    const latest = files[0];
+    const date = latest.replace('.md', '');
+    const content = fs.readFileSync(`${STANDUP_DIR}/${latest}`, 'utf8');
+
+    // Parse sections: split on ### headings (repos)
+    const sections = [];
+    const repoBlocks = content.split(/\n### /);
+    for (const block of repoBlocks.slice(1)) {
+      const lines = block.split('\n');
+      const repo = lines[0].trim();
+      const statsMatch = lines[1]?.match(/(\d+ PRs?[^|]*)?\|?\s*(\d+ Commits?)?\|?\s*(\d+ Issues?[^*]*)/);
+      const bullets = lines
+        .filter(l => l.startsWith('- '))
+        .slice(0, 4)
+        .map(l => l.replace(/^- /, '').replace(/\*Closes[^*]*\*/g, '').trim());
+      sections.push({ repo, stats: lines[1]?.replace(/\*\*/g,'').trim() || '', bullets });
+    }
+
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+
+    cache.standup = {
+      date,
+      isToday: date === todayStr,
+      title: content.match(/^# (.+)/m)?.[1] || `Standup ${date}`,
+      sections,
+      raw: content,
+    };
+    console.log(`[standup] loaded ${date}, ${sections.length} repo sections`);
+  } catch (err) {
+    console.error('[standup] error:', err.message);
+  }
+}
 
 // ── Notes ────────────────────────────────────────────────────────────────────
 function fetchNotes() {
@@ -290,11 +339,13 @@ cron.schedule('*/5 * * * *', fetchGitHub);
 cron.schedule('*/10 * * * *', fetchCalendars);
 cron.schedule('*/2 * * * *', fetchTasks);
 cron.schedule('*/5 * * * *', fetchNotes);
+cron.schedule('*/10 * * * *', fetchStandup);
 
 fetchGitHub();
 fetchCalendars();
 fetchTasks();
 fetchNotes();
+fetchStandup();
 
 // ── Routes ────────────────────────────────────────────────────────────────────
 app.use(express.static(path.join(__dirname, 'public')));
@@ -343,6 +394,10 @@ app.get('/api/tasks', (req, res) => {
   res.json({ ok: true, tasks: cache.tasks, updatedAt: cache.tasksUpdatedAt });
 });
 
+app.get('/api/standup', (req, res) => {
+  res.json({ ok: true, standup: cache.standup || null });
+});
+
 app.get('/api/notes', (req, res) => {
   if (!cache.notes) return res.status(503).json({ ok: false, error: 'loading' });
   res.json({ ok: true, ...cache.notes });
@@ -353,6 +408,7 @@ app.post('/api/refresh', async (req, res) => {
   await fetchCalendars();
   fetchTasks();
   fetchNotes();
+  fetchStandup();
   res.json({ ok: true });
 });
 
