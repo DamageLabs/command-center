@@ -938,6 +938,12 @@
 </div>
 
 <style>
+  .notif-dot {
+    display: inline-block; width: 6px; height: 6px;
+    border-radius: 50%; background: var(--red-400);
+    margin-left: 4px; vertical-align: middle;
+    animation: pulse-dot 2s infinite;
+  }
   kbd {
     display: inline-block; padding: 0.15rem 0.45rem;
     background: var(--bg-secondary); border: 1px solid var(--border);
@@ -947,6 +953,39 @@
 </style>
 
 <script>
+  // ── Notification tracking ────────────────────────────────────────────
+  const NOTIF_KEY = 'cc-seen-counts';
+
+  function getSeenCounts() {
+    try { return JSON.parse(localStorage.getItem(NOTIF_KEY) || '{}'); } catch { return {}; }
+  }
+
+  function markSeen(tab) {
+    const counts = getSeenCounts();
+    const badge = document.getElementById(`badge-${tab}`);
+    if (badge) counts[tab] = parseInt(badge.textContent) || 0;
+    localStorage.setItem(NOTIF_KEY, JSON.stringify(counts));
+    // Remove dot
+    const dot = document.querySelector(`[data-view="${tab}"] .notif-dot`);
+    if (dot) dot.remove();
+  }
+
+  function checkNotifs(tab, currentCount) {
+    const seen = getSeenCounts();
+    const prev = seen[tab];
+    if (prev !== undefined && currentCount > prev) {
+      // Show dot on tab button if not currently viewing it
+      if (currentView !== tab) {
+        const btn = document.querySelector(`[data-view="${tab}"]`);
+        if (btn && !btn.querySelector('.notif-dot')) {
+          const dot = document.createElement('span');
+          dot.className = 'notif-dot';
+          btn.appendChild(dot);
+        }
+      }
+    }
+  }
+
   // ── Theme ───────────────────────────────────────────────────────────
   function applyTheme(theme) {
     document.documentElement.classList.remove('dark','light');
@@ -1046,6 +1085,7 @@
     document.getElementById('view-' + id).classList.add('active');
     document.querySelector(`[data-view="${id}"]`).classList.add('active');
     currentView = id;
+    markSeen(id);
   }
 
   // ── Clock ──────────────────────────────────────────────────────────────────
@@ -1142,6 +1182,9 @@
     document.getElementById('badge-urgent').textContent = data.urgent.length;
     document.getElementById('badge-active').textContent = data.active.length;
     document.getElementById('badge-backlog').textContent = data.deferred.length;
+    checkNotifs('urgent', data.urgent.length);
+    checkNotifs('active', data.active.length);
+    checkNotifs('backlog', data.deferred.length);
 
     document.getElementById('sub-urgent').textContent = `${data.urgent.length} issues · Updated ${timeAgo(data.updatedAt)}`;
     document.getElementById('sub-active').textContent = `${data.active.length} issues · Updated ${timeAgo(data.updatedAt)}`;
@@ -1269,6 +1312,7 @@
     if (!data.ok) throw new Error(data.error);
     const prs = data.prs;
     document.getElementById('badge-prs').textContent = prs.length;
+    checkNotifs('prs', prs.length);
     document.getElementById('sub-prs').textContent =
       `${prs.length} open · ${prs.filter(p=>p.isDraft).length} drafts · Updated ${timeAgo(data.updatedAt)}`;
     const el = document.getElementById('col-prs');
