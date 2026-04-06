@@ -200,6 +200,17 @@
     .issue-label.frontend { background: rgba(96,165,250,0.1); color: var(--blue-400); }
     .issue-label.backend { background: rgba(192,132,252,0.1); color: var(--purple-400); }
     .issue-age { font-size: 0.68rem; color: var(--text-muted); margin-left: auto; }
+    .issue-card { position: relative; }
+    .issue-close-btn {
+      position: absolute; top: 0.6rem; right: 0.6rem;
+      display: none; align-items: center; justify-content: center;
+      width: 22px; height: 22px; border-radius: 4px;
+      background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3);
+      color: var(--red-400); font-size: 0.8rem; cursor: pointer;
+      transition: background 0.15s; z-index: 1;
+    }
+    .issue-card:hover .issue-close-btn { display: flex; }
+    .issue-close-btn:hover { background: rgba(239,68,68,0.3); }
 
     /* ── Calendar ── */
     .cal-grid {
@@ -695,6 +706,7 @@
   <div class="header-right">
     <div class="live-dot"></div>
     <span class="header-clock" id="clock">—</span>
+    <button class="btn-sm" onclick="toggleShortcutHelp()" title="Keyboard shortcuts (?)" style="font-size:0.8rem;font-weight:700">?</button>
     <button class="btn-sm" id="theme-btn" onclick="toggleTheme()" aria-label="Toggle theme">
       <svg id="theme-icon-dark" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none">
         <circle cx="12" cy="12" r="5"/>
@@ -917,7 +929,74 @@
 
 </div>
 
+<!-- Shortcut help overlay -->
+<div id="shortcut-help" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:999;align-items:center;justify-content:center;" onclick="toggleShortcutHelp()">
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:2rem;min-width:320px;" onclick="event.stopPropagation()">
+    <div style="font-size:1rem;font-weight:800;margin-bottom:1.25rem;display:flex;justify-content:space-between;align-items:center;">
+      Keyboard Shortcuts
+      <button onclick="toggleShortcutHelp()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1.2rem;">&times;</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem 2rem;font-size:0.85rem;">
+      <div><kbd>H</kbd> Home</div><div><kbd>U</kbd> Urgent</div>
+      <div><kbd>A</kbd> Active</div><div><kbd>B</kbd> Backlog</div>
+      <div><kbd>P</kbd> PRs</div><div><kbd>N</kbd> Notes</div>
+      <div><kbd>I</kbd> Infra</div><div><kbd>T</kbd> Tasks</div>
+      <div><kbd>C</kbd> Calendar</div><div><kbd>R</kbd> Repos</div>
+      <div><kbd>/</kbd> Search</div><div><kbd>Shift+R</kbd> Refresh</div>
+      <div><kbd>?</kbd> This help</div><div><kbd>Esc</kbd> Close/Clear</div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .notif-dot {
+    display: inline-block; width: 6px; height: 6px;
+    border-radius: 50%; background: var(--red-400);
+    margin-left: 4px; vertical-align: middle;
+    animation: pulse-dot 2s infinite;
+  }
+  kbd {
+    display: inline-block; padding: 0.15rem 0.45rem;
+    background: var(--bg-secondary); border: 1px solid var(--border);
+    border-radius: 4px; font-size: 0.75rem; font-family: 'JetBrains Mono', monospace;
+    color: var(--accent); margin-right: 0.4rem;
+  }
+</style>
+
 <script>
+  // ── Notification tracking ────────────────────────────────────────────
+  const NOTIF_KEY = 'cc-seen-counts';
+
+  function getSeenCounts() {
+    try { return JSON.parse(localStorage.getItem(NOTIF_KEY) || '{}'); } catch { return {}; }
+  }
+
+  function markSeen(tab) {
+    const counts = getSeenCounts();
+    const badge = document.getElementById(`badge-${tab}`);
+    if (badge) counts[tab] = parseInt(badge.textContent) || 0;
+    localStorage.setItem(NOTIF_KEY, JSON.stringify(counts));
+    // Remove dot
+    const dot = document.querySelector(`[data-view="${tab}"] .notif-dot`);
+    if (dot) dot.remove();
+  }
+
+  function checkNotifs(tab, currentCount) {
+    const seen = getSeenCounts();
+    const prev = seen[tab];
+    if (prev !== undefined && currentCount > prev) {
+      // Show dot on tab button if not currently viewing it
+      if (currentView !== tab) {
+        const btn = document.querySelector(`[data-view="${tab}"]`);
+        if (btn && !btn.querySelector('.notif-dot')) {
+          const dot = document.createElement('span');
+          dot.className = 'notif-dot';
+          btn.appendChild(dot);
+        }
+      }
+    }
+  }
+
   // ── Theme ───────────────────────────────────────────────────────────
   function applyTheme(theme) {
     document.documentElement.classList.remove('dark','light');
@@ -1017,6 +1096,7 @@
     document.getElementById('view-' + id).classList.add('active');
     document.querySelector(`[data-view="${id}"]`).classList.add('active');
     currentView = id;
+    markSeen(id);
   }
 
   // ── Clock ──────────────────────────────────────────────────────────────────
@@ -1051,6 +1131,21 @@
     return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
+  async function closeIssue(e, repoFull, number, cardEl) {
+    e.preventDefault(); e.stopPropagation();
+    if (!confirm(`Close issue #${number}?`)) return;
+    const [owner, repo] = repoFull.split('/');
+    try {
+      const res = await fetch(`/api/issues/${owner}/${repo}/${number}/close`, { method: 'POST' });
+      const data = await res.json();
+      if (data.ok) {
+        cardEl.style.transition = 'opacity 0.3s';
+        cardEl.style.opacity = '0';
+        setTimeout(() => cardEl.remove(), 300);
+      } else { alert('Failed: ' + data.error); }
+    } catch (err) { alert('Error: ' + err.message); }
+  }
+
   function renderIssueCard(issue) {
     const labels = issue.labels.slice(0, 3).map(l =>
       `<span class="issue-label ${labelClass(l.name)}">${l.name.replace(/[^\w\s-]/g,'').trim()}</span>`
@@ -1059,6 +1154,7 @@
     return `
       <a class="issue-card" href="${issue.url}" target="_blank"
         data-title="${escHtml(issue.title)}" data-repo="${issue.repo}" data-labels="${escHtml(labelStr)}">
+        <button class="issue-close-btn" onclick="closeIssue(event,'${issue.repoFull}',${issue.number},this.parentElement)" title="Close issue">&times;</button>
         <div class="issue-top">
           <div class="issue-title">${escHtml(issue.title)}</div>
           <div class="issue-num">#${issue.number}</div>
@@ -1113,6 +1209,9 @@
     document.getElementById('badge-urgent').textContent = data.urgent.length;
     document.getElementById('badge-active').textContent = data.active.length;
     document.getElementById('badge-backlog').textContent = data.deferred.length;
+    checkNotifs('urgent', data.urgent.length);
+    checkNotifs('active', data.active.length);
+    checkNotifs('backlog', data.deferred.length);
 
     document.getElementById('sub-urgent').textContent = `${data.urgent.length} issues · Updated ${timeAgo(data.updatedAt)}`;
     document.getElementById('sub-active').textContent = `${data.active.length} issues · Updated ${timeAgo(data.updatedAt)}`;
@@ -1240,6 +1339,7 @@
     if (!data.ok) throw new Error(data.error);
     const prs = data.prs;
     document.getElementById('badge-prs').textContent = prs.length;
+    checkNotifs('prs', prs.length);
     document.getElementById('sub-prs').textContent =
       `${prs.length} open · ${prs.filter(p=>p.isDraft).length} drafts · Updated ${timeAgo(data.updatedAt)}`;
     const el = document.getElementById('col-prs');
@@ -1522,17 +1622,30 @@
     try { await Promise.all([fetchIssues(), fetchCalendar(), fetchRepos(), fetchTasks(), fetchInfra(), fetchNotes(), fetchStandup(), fetchPRs()]); } catch(e) { console.error(e); }
   }
 
-  // ── Keyboard shortcut: / to focus search ─────────────────────────────
+  // ── Keyboard shortcuts ──────────────────────────────────────────────────
+  const TAB_SHORTCUTS = {
+    'h': 'home', 'u': 'urgent', 'a': 'active', 'b': 'backlog',
+    'p': 'prs', 'n': 'notes', 'i': 'infra', 't': 'tasks',
+    'c': 'calendar', 'r': 'repos'
+  };
+
+  let shortcutHelpVisible = false;
+  function toggleShortcutHelp() {
+    shortcutHelpVisible = !shortcutHelpVisible;
+    document.getElementById('shortcut-help').style.display = shortcutHelpVisible ? 'flex' : 'none';
+  }
+
   document.addEventListener('keydown', e => {
-    if (e.key === '/' && document.activeElement.tagName !== 'INPUT') {
-      e.preventDefault();
-      const input = document.querySelector(`#view-${currentView} .search-input`);
-      if (input) input.focus();
+    if (document.activeElement.tagName === 'INPUT') {
+      if (e.key === 'Escape') { document.activeElement.blur(); clearFilter(); }
+      return;
     }
-    if (e.key === 'Escape') {
-      document.activeElement.blur();
-      clearFilter();
-    }
+    if (e.key === '?') { toggleShortcutHelp(); return; }
+    if (e.key === 'Escape') { shortcutHelpVisible = false; document.getElementById('shortcut-help').style.display='none'; clearFilter(); return; }
+    if (e.key === '/') { e.preventDefault(); const inp = document.querySelector(`#view-${currentView} .search-input`); if (inp) inp.focus(); return; }
+    if (e.shiftKey && e.key === 'R') { refreshAll(); return; }
+    const view = TAB_SHORTCUTS[e.key.toLowerCase()];
+    if (view && !e.metaKey && !e.ctrlKey && !e.altKey) { e.preventDefault(); switchView(view); }
   });
 
   poll();
