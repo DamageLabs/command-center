@@ -200,6 +200,17 @@
     .issue-label.frontend { background: rgba(96,165,250,0.1); color: var(--blue-400); }
     .issue-label.backend { background: rgba(192,132,252,0.1); color: var(--purple-400); }
     .issue-age { font-size: 0.68rem; color: var(--text-muted); margin-left: auto; }
+    .issue-card { position: relative; }
+    .issue-close-btn {
+      position: absolute; top: 0.6rem; right: 0.6rem;
+      display: none; align-items: center; justify-content: center;
+      width: 22px; height: 22px; border-radius: 4px;
+      background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3);
+      color: var(--red-400); font-size: 0.8rem; cursor: pointer;
+      transition: background 0.15s; z-index: 1;
+    }
+    .issue-card:hover .issue-close-btn { display: flex; }
+    .issue-close-btn:hover { background: rgba(239,68,68,0.3); }
 
     /* ── Calendar ── */
     .cal-grid {
@@ -1120,6 +1131,21 @@
     return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
+  async function closeIssue(e, repoFull, number, cardEl) {
+    e.preventDefault(); e.stopPropagation();
+    if (!confirm(`Close issue #${number}?`)) return;
+    const [owner, repo] = repoFull.split('/');
+    try {
+      const res = await fetch(`/api/issues/${owner}/${repo}/${number}/close`, { method: 'POST' });
+      const data = await res.json();
+      if (data.ok) {
+        cardEl.style.transition = 'opacity 0.3s';
+        cardEl.style.opacity = '0';
+        setTimeout(() => cardEl.remove(), 300);
+      } else { alert('Failed: ' + data.error); }
+    } catch (err) { alert('Error: ' + err.message); }
+  }
+
   function renderIssueCard(issue) {
     const labels = issue.labels.slice(0, 3).map(l =>
       `<span class="issue-label ${labelClass(l.name)}">${l.name.replace(/[^\w\s-]/g,'').trim()}</span>`
@@ -1128,6 +1154,7 @@
     return `
       <a class="issue-card" href="${issue.url}" target="_blank"
         data-title="${escHtml(issue.title)}" data-repo="${issue.repo}" data-labels="${escHtml(labelStr)}">
+        <button class="issue-close-btn" onclick="closeIssue(event,'${issue.repoFull}',${issue.number},this.parentElement)" title="Close issue">&times;</button>
         <div class="issue-top">
           <div class="issue-title">${escHtml(issue.title)}</div>
           <div class="issue-num">#${issue.number}</div>

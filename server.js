@@ -445,6 +445,19 @@ app.get('/api/notes', (req, res) => {
   res.json({ ok: true, ...cache.notes });
 });
 
+// Quick issue close
+app.post('/api/issues/:owner/:repo/:number/close', (req, res) => {
+  try {
+    const { owner, repo, number } = req.params;
+    execSync(`gh issue close ${number} --repo ${owner}/${repo}`, { encoding: 'utf8' });
+    // Trigger background refresh
+    fetchGitHub();
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 app.post('/api/refresh', async (req, res) => {
   fetchGitHub();
   await fetchCalendars();
