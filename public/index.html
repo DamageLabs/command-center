@@ -236,7 +236,10 @@
     .repo-open {
       font-size: 0.72rem; font-weight: 700; color: var(--amber-400);
       background: rgba(245,158,11,0.1); padding: 0.2rem 0.55rem; border-radius: 999px;
+      border: none; cursor: pointer; font-family: inherit;
+      transition: background 0.15s;
     }
+    .repo-open:hover { background: rgba(245,158,11,0.2); }
     .repo-stats { display: flex; gap: 1.5rem; }
     .repo-stat { display: flex; flex-direction: column; gap: 0.2rem; }
     .repo-stat-label {
@@ -246,6 +249,36 @@
     .repo-stat-val { font-size: 1rem; font-weight: 700; color: var(--text); }
     .repo-stat-val.red { color: var(--red-400); }
     .repo-stat-val.blue { color: var(--blue-400); }
+
+    /* ── Search input ── */
+    .search-input {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 8px; padding: 0.35rem 0.75rem 0.35rem 2rem;
+      font-size: 0.8rem; color: var(--text); font-family: inherit;
+      width: 220px; outline: none; transition: border-color 0.15s;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: 0.5rem center;
+    }
+    .search-input:focus { border-color: var(--accent); }
+    .search-input::placeholder { color: var(--text-muted); }
+    .view-header-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    }
+
+    /* ── Filter pill ── */
+    .filter-pill {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      margin-top: 0.5rem;
+      padding: 0.25rem 0.6rem 0.25rem 0.75rem;
+      background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3);
+      border-radius: 999px; font-size: 0.75rem; color: var(--amber-400);
+    }
+    .filter-pill button {
+      background: none; border: none; cursor: pointer;
+      color: var(--amber-400); font-size: 1rem; line-height: 1;
+      padding: 0; margin: 0; opacity: 0.7;
+    }
+    .filter-pill button:hover { opacity: 1; }
 
     /* ── Home ── */
     .home-hero {
@@ -509,8 +542,13 @@
   <!-- Urgent -->
   <div class="view" id="view-urgent">
     <div class="view-header">
-      <div class="view-title">Urgent &amp; Bugs</div>
-      <div class="view-subtitle" id="sub-urgent">Loading…</div>
+      <div class="view-header-row">
+        <div>
+          <div class="view-title">Urgent &amp; Bugs</div>
+          <div class="view-subtitle" id="sub-urgent">Loading…</div>
+        </div>
+        <input class="search-input" data-search="issues" placeholder="Search issues…" oninput="onSearch(this,'issues')" />
+      </div>
     </div>
     <div class="view-body">
       <div class="skeletons" id="col-urgent">
@@ -522,8 +560,13 @@
   <!-- Active -->
   <div class="view" id="view-active">
     <div class="view-header">
-      <div class="view-title">Active</div>
-      <div class="view-subtitle" id="sub-active">Loading…</div>
+      <div class="view-header-row">
+        <div>
+          <div class="view-title">Active</div>
+          <div class="view-subtitle" id="sub-active">Loading…</div>
+        </div>
+        <input class="search-input" data-search="issues" placeholder="Search issues…" oninput="onSearch(this,'issues')" />
+      </div>
     </div>
     <div class="view-body">
       <div class="skeletons" id="col-active">
@@ -535,8 +578,13 @@
   <!-- Backlog -->
   <div class="view" id="view-backlog">
     <div class="view-header">
-      <div class="view-title">Backlog</div>
-      <div class="view-subtitle" id="sub-backlog">Loading…</div>
+      <div class="view-header-row">
+        <div>
+          <div class="view-title">Backlog</div>
+          <div class="view-subtitle" id="sub-backlog">Loading…</div>
+        </div>
+        <input class="search-input" data-search="issues" placeholder="Search issues…" oninput="onSearch(this,'issues')" />
+      </div>
     </div>
     <div class="view-body">
       <div class="skeletons" id="col-deferred">
@@ -605,8 +653,13 @@
   <!-- Tasks -->
   <div class="view" id="view-tasks">
     <div class="view-header">
-      <div class="view-title">Tasks</div>
-      <div class="view-subtitle" id="sub-tasks">Loading…</div>
+      <div class="view-header-row">
+        <div>
+          <div class="view-title">Tasks</div>
+          <div class="view-subtitle" id="sub-tasks">Loading…</div>
+        </div>
+        <input class="search-input" data-search="tasks" placeholder="Search tasks…" oninput="onSearch(this,'tasks')" />
+      </div>
     </div>
     <div class="view-body">
       <div class="skeletons" id="col-tasks">
@@ -631,8 +684,13 @@
   <!-- Repos -->
   <div class="view" id="view-repos">
     <div class="view-header">
-      <div class="view-title">Repositories</div>
-      <div class="view-subtitle" id="sub-repos">Loading…</div>
+      <div class="view-header-row">
+        <div>
+          <div class="view-title">Repositories</div>
+          <div class="view-subtitle" id="sub-repos">Loading…</div>
+        </div>
+        <input class="search-input" data-search="repos" placeholder="Search repos…" oninput="onSearch(this,'repos')" />
+      </div>
     </div>
     <div class="view-body">
       <div class="skeletons" id="col-repos">
@@ -644,6 +702,73 @@
 </div>
 
 <script>
+  // ── Filter state ──────────────────────────────────────────────────────────
+  let activeFilter = { repo: null, text: '' };
+
+  function applyFilter(cards) {
+    const { repo, text } = activeFilter;
+    const q = text.trim().toLowerCase();
+    cards.forEach(card => {
+      const title = (card.dataset.title || '').toLowerCase();
+      const cardRepo = (card.dataset.repo || '').toLowerCase();
+      const labels = (card.dataset.labels || '').toLowerCase();
+      const source = (card.dataset.source || '').toLowerCase();
+      const matchRepo = !repo || cardRepo === repo.toLowerCase();
+      const matchText = !q || title.includes(q) || cardRepo.includes(q) || labels.includes(q) || source.includes(q);
+      card.style.display = matchRepo && matchText ? '' : 'none';
+    });
+  }
+
+  function onSearch(input, type) {
+    activeFilter.text = input.value;
+    // Sync all search inputs of same type
+    document.querySelectorAll(`[data-search="${type}"]`).forEach(i => { if (i !== input) i.value = input.value; });
+    reapplyCurrentFilter();
+  }
+
+  function filterByRepo(repo) {
+    activeFilter.repo = repo;
+    activeFilter.text = '';
+    document.querySelectorAll('[data-search]').forEach(i => i.value = '');
+    switchView('active');
+    reapplyCurrentFilter();
+  }
+
+  function clearFilter() {
+    activeFilter = { repo: null, text: '' };
+    document.querySelectorAll('.filter-pill').forEach(p => p.remove());
+    document.querySelectorAll('[data-search]').forEach(i => i.value = '');
+    reapplyCurrentFilter();
+  }
+
+  function reapplyCurrentFilter() {
+    ['urgent','active','backlog'].forEach(id => {
+      const grid = document.getElementById('col-' + id);
+      if (grid) applyFilter([...grid.querySelectorAll('[data-title]')]);
+    });
+    const repoGrid = document.getElementById('col-repos');
+    if (repoGrid) applyFilter([...repoGrid.querySelectorAll('[data-title]')]);
+    const taskGrid = document.getElementById('col-tasks');
+    if (taskGrid) applyFilter([...taskGrid.querySelectorAll('[data-title]')]);
+    updateFilterPill();
+  }
+
+  function updateFilterPill() {
+    document.querySelectorAll('.filter-pill').forEach(p => p.remove());
+    if (!activeFilter.repo && !activeFilter.text) return;
+    const label = activeFilter.repo
+      ? `repo: ${activeFilter.repo}${activeFilter.text ? ' · "' + activeFilter.text + '"' : ''}`
+      : `"${activeFilter.text}"`;
+    ['urgent','active','backlog','repos','tasks'].forEach(id => {
+      const header = document.querySelector(`#view-${id} .view-header`);
+      if (!header) return;
+      const pill = document.createElement('div');
+      pill.className = 'filter-pill';
+      pill.innerHTML = `<span>🔍 ${label}</span><button onclick="clearFilter()">&times;</button>`;
+      header.appendChild(pill);
+    });
+  }
+
   // ── View switching ─────────────────────────────────────────────────────────
   let currentView = 'home';
   let _homeData = { issues: null, events: null, tasks: null, infra: null };
@@ -695,8 +820,10 @@
     const labels = issue.labels.slice(0, 3).map(l =>
       `<span class="issue-label ${labelClass(l.name)}">${l.name.replace(/[^\w\s-]/g,'').trim()}</span>`
     ).join('');
+    const labelStr = issue.labels.map(l => l.name).join(' ');
     return `
-      <a class="issue-card" href="${issue.url}" target="_blank">
+      <a class="issue-card" href="${issue.url}" target="_blank"
+        data-title="${escHtml(issue.title)}" data-repo="${issue.repo}" data-labels="${escHtml(labelStr)}">
         <div class="issue-top">
           <div class="issue-title">${escHtml(issue.title)}</div>
           <div class="issue-num">#${issue.number}</div>
@@ -712,13 +839,14 @@
 
   function renderRepoCard(repo) {
     return `
-      <a class="repo-card" href="https://github.com/${repo.repoFull}/issues" target="_blank">
+      <a class="repo-card" href="https://github.com/${repo.repoFull}/issues" target="_blank"
+        data-title="${repo.repo}">
         <div class="repo-top">
           <div class="repo-name">${repo.repo}</div>
           <div style="display:flex;align-items:center;gap:0.4rem">
             ${repo.archived ? `<span style="font-size:0.62rem;color:var(--text-muted);background:rgba(255,255,255,0.05);padding:0.1rem 0.35rem;border-radius:3px;font-weight:600">archived</span>` : ''}
             ${repo.tracked ? `<span style="font-size:0.62rem;color:var(--green-400);background:rgba(74,222,128,0.1);padding:0.1rem 0.35rem;border-radius:3px;font-weight:600">tracked</span>` : ''}
-            <div class="repo-open">${repo.openIssues} open</div>
+            <button onclick="event.preventDefault();event.stopPropagation();filterByRepo('${repo.repo}')" class="repo-open">${repo.openIssues} open ↗</button>
           </div>
         </div>
         <div class="repo-stats">
@@ -763,6 +891,7 @@
     render('col-urgent', data.urgent, 'issues-grid');
     render('col-active', data.active, 'issues-grid');
     render('col-deferred', data.deferred, 'issues-grid');
+    reapplyCurrentFilter();
     _homeData.issues = data; tryRenderHome();
   }
 
@@ -928,7 +1057,7 @@
     el.className = 'tasks-grid';
     if (!tasks.length) { el.innerHTML = '<div class="empty">All done! 🎉</div>'; return; }
     el.innerHTML = tasks.map(t => `
-      <div class="task-card ${t.color}">
+      <div class="task-card ${t.color}" data-title="${escHtml(t.title)}" data-source="${t.source}">
         <div class="task-title">${escHtml(t.title)}</div>
         <div class="task-meta">
           <span class="task-source ${t.color}">${t.source}</span>
@@ -938,6 +1067,7 @@
         </div>
       </div>
     `).join('');
+    reapplyCurrentFilter();
     _homeData.tasks = tasks; tryRenderHome();
   }
 
@@ -995,6 +1125,7 @@
     const el = document.getElementById('col-repos');
     el.className = 'repos-grid';
     el.innerHTML = repos.map(renderRepoCard).join('');
+    reapplyCurrentFilter();
   }
 
   async function refreshAll() {
@@ -1010,6 +1141,19 @@
   async function poll() {
     try { await Promise.all([fetchIssues(), fetchCalendar(), fetchRepos(), fetchTasks(), fetchInfra()]); } catch(e) { console.error(e); }
   }
+
+  // ── Keyboard shortcut: / to focus search ─────────────────────────────
+  document.addEventListener('keydown', e => {
+    if (e.key === '/' && document.activeElement.tagName !== 'INPUT') {
+      e.preventDefault();
+      const input = document.querySelector(`#view-${currentView} .search-input`);
+      if (input) input.focus();
+    }
+    if (e.key === 'Escape') {
+      document.activeElement.blur();
+      clearFilter();
+    }
+  });
 
   poll();
   setInterval(poll, 30000);
