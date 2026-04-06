@@ -250,6 +250,21 @@
     .repo-stat-val.red { color: var(--red-400); }
     .repo-stat-val.blue { color: var(--blue-400); }
 
+    /* ── Search input ── */
+    .search-input {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 8px; padding: 0.35rem 0.75rem 0.35rem 2rem;
+      font-size: 0.8rem; color: var(--text); font-family: inherit;
+      width: 220px; outline: none; transition: border-color 0.15s;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: 0.5rem center;
+    }
+    .search-input:focus { border-color: var(--accent); }
+    .search-input::placeholder { color: var(--text-muted); }
+    .view-header-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    }
+
     /* ── Filter pill ── */
     .filter-pill {
       display: inline-flex; align-items: center; gap: 0.4rem;
@@ -527,8 +542,13 @@
   <!-- Urgent -->
   <div class="view" id="view-urgent">
     <div class="view-header">
-      <div class="view-title">Urgent &amp; Bugs</div>
-      <div class="view-subtitle" id="sub-urgent">Loading…</div>
+      <div class="view-header-row">
+        <div>
+          <div class="view-title">Urgent &amp; Bugs</div>
+          <div class="view-subtitle" id="sub-urgent">Loading…</div>
+        </div>
+        <input class="search-input" data-search="issues" placeholder="Search issues…" oninput="onSearch(this,'issues')" />
+      </div>
     </div>
     <div class="view-body">
       <div class="skeletons" id="col-urgent">
@@ -540,8 +560,13 @@
   <!-- Active -->
   <div class="view" id="view-active">
     <div class="view-header">
-      <div class="view-title">Active</div>
-      <div class="view-subtitle" id="sub-active">Loading…</div>
+      <div class="view-header-row">
+        <div>
+          <div class="view-title">Active</div>
+          <div class="view-subtitle" id="sub-active">Loading…</div>
+        </div>
+        <input class="search-input" data-search="issues" placeholder="Search issues…" oninput="onSearch(this,'issues')" />
+      </div>
     </div>
     <div class="view-body">
       <div class="skeletons" id="col-active">
@@ -553,8 +578,13 @@
   <!-- Backlog -->
   <div class="view" id="view-backlog">
     <div class="view-header">
-      <div class="view-title">Backlog</div>
-      <div class="view-subtitle" id="sub-backlog">Loading…</div>
+      <div class="view-header-row">
+        <div>
+          <div class="view-title">Backlog</div>
+          <div class="view-subtitle" id="sub-backlog">Loading…</div>
+        </div>
+        <input class="search-input" data-search="issues" placeholder="Search issues…" oninput="onSearch(this,'issues')" />
+      </div>
     </div>
     <div class="view-body">
       <div class="skeletons" id="col-deferred">
@@ -623,8 +653,13 @@
   <!-- Tasks -->
   <div class="view" id="view-tasks">
     <div class="view-header">
-      <div class="view-title">Tasks</div>
-      <div class="view-subtitle" id="sub-tasks">Loading…</div>
+      <div class="view-header-row">
+        <div>
+          <div class="view-title">Tasks</div>
+          <div class="view-subtitle" id="sub-tasks">Loading…</div>
+        </div>
+        <input class="search-input" data-search="tasks" placeholder="Search tasks…" oninput="onSearch(this,'tasks')" />
+      </div>
     </div>
     <div class="view-body">
       <div class="skeletons" id="col-tasks">
@@ -649,8 +684,13 @@
   <!-- Repos -->
   <div class="view" id="view-repos">
     <div class="view-header">
-      <div class="view-title">Repositories</div>
-      <div class="view-subtitle" id="sub-repos">Loading…</div>
+      <div class="view-header-row">
+        <div>
+          <div class="view-title">Repositories</div>
+          <div class="view-subtitle" id="sub-repos">Loading…</div>
+        </div>
+        <input class="search-input" data-search="repos" placeholder="Search repos…" oninput="onSearch(this,'repos')" />
+      </div>
     </div>
     <div class="view-body">
       <div class="skeletons" id="col-repos">
@@ -677,6 +717,13 @@
       const matchText = !q || title.includes(q) || cardRepo.includes(q) || labels.includes(q) || source.includes(q);
       card.style.display = matchRepo && matchText ? '' : 'none';
     });
+  }
+
+  function onSearch(input, type) {
+    activeFilter.text = input.value;
+    // Sync all search inputs of same type
+    document.querySelectorAll(`[data-search="${type}"]`).forEach(i => { if (i !== input) i.value = input.value; });
+    reapplyCurrentFilter();
   }
 
   function filterByRepo(repo) {
@@ -1010,7 +1057,7 @@
     el.className = 'tasks-grid';
     if (!tasks.length) { el.innerHTML = '<div class="empty">All done! 🎉</div>'; return; }
     el.innerHTML = tasks.map(t => `
-      <div class="task-card ${t.color}">
+      <div class="task-card ${t.color}" data-title="${escHtml(t.title)}" data-source="${t.source}">
         <div class="task-title">${escHtml(t.title)}</div>
         <div class="task-meta">
           <span class="task-source ${t.color}">${t.source}</span>
@@ -1020,6 +1067,7 @@
         </div>
       </div>
     `).join('');
+    reapplyCurrentFilter();
     _homeData.tasks = tasks; tryRenderHome();
   }
 
@@ -1077,6 +1125,7 @@
     const el = document.getElementById('col-repos');
     el.className = 'repos-grid';
     el.innerHTML = repos.map(renderRepoCard).join('');
+    reapplyCurrentFilter();
   }
 
   async function refreshAll() {
@@ -1092,6 +1141,19 @@
   async function poll() {
     try { await Promise.all([fetchIssues(), fetchCalendar(), fetchRepos(), fetchTasks(), fetchInfra()]); } catch(e) { console.error(e); }
   }
+
+  // ── Keyboard shortcut: / to focus search ─────────────────────────────
+  document.addEventListener('keydown', e => {
+    if (e.key === '/' && document.activeElement.tagName !== 'INPUT') {
+      e.preventDefault();
+      const input = document.querySelector(`#view-${currentView} .search-input`);
+      if (input) input.focus();
+    }
+    if (e.key === 'Escape') {
+      document.activeElement.blur();
+      clearFilter();
+    }
+  });
 
   poll();
   setInterval(poll, 30000);
