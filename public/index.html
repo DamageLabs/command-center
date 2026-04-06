@@ -265,6 +265,58 @@
       display: flex; align-items: center; justify-content: space-between; gap: 1rem;
     }
 
+    /* ── Notes ── */
+    .daily-note-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 1.5rem;
+      border-left: 3px solid var(--purple-400);
+      margin-top: 1.5rem;
+    }
+    .daily-note-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 0.75rem;
+    }
+    .daily-note-title {
+      font-size: 0.95rem; font-weight: 700; color: var(--text);
+    }
+    .daily-note-date {
+      font-size: 0.72rem; color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .daily-note-badge {
+      font-size: 0.65rem; font-weight: 600; padding: 0.15rem 0.5rem;
+      border-radius: 999px; background: rgba(192,132,252,0.12); color: var(--purple-400);
+    }
+    .daily-note-preview {
+      font-size: 0.875rem; color: var(--text-secondary); line-height: 1.7;
+      margin: 0;
+    }
+    .notes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 0.75rem;
+    }
+    .decision-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 10px; padding: 1rem 1.25rem;
+      border-left: 3px solid var(--blue-400);
+    }
+    .decision-title {
+      font-size: 0.9rem; font-weight: 700; color: var(--text);
+      margin-bottom: 0.35rem; line-height: 1.3;
+    }
+    .decision-meta {
+      display: flex; gap: 0.5rem; align-items: center;
+      font-size: 0.72rem; color: var(--text-muted); margin-bottom: 0.5rem;
+    }
+    .decision-status {
+      padding: 0.1rem 0.4rem; border-radius: 3px; font-size: 0.65rem; font-weight: 600;
+      background: rgba(74,222,128,0.1); color: var(--green-400);
+    }
+    .decision-preview {
+      font-size: 0.8rem; color: var(--text-secondary); line-height: 1.6; margin: 0;
+    }
+
     /* ── Filter pill ── */
     .filter-pill {
       display: inline-flex; align-items: center; gap: 0.4rem;
@@ -507,6 +559,11 @@
       Calendar
       <span class="tab-badge badge-cal" id="badge-cal">0</span>
     </button>
+    <button class="nav-tab" data-view="notes" onclick="switchView('notes')">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--purple-400)" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      Notes
+      <span class="tab-badge" style="background:rgba(192,132,252,0.12);color:var(--purple-400)" id="badge-notes">0</span>
+    </button>
     <button class="nav-tab" data-view="infra" onclick="switchView('infra')">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--green-400)" stroke-width="2.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
       Infra
@@ -634,6 +691,23 @@
         </div>
       </div>
 
+      <!-- Daily note card (Option B) -->
+      <div id="home-daily-note"></div>
+
+    </div>
+  </div>
+
+  <!-- Notes -->
+  <div class="view" id="view-notes">
+    <div class="view-header">
+      <div class="view-title">Notes</div>
+      <div class="view-subtitle" id="sub-notes">Loading…</div>
+    </div>
+    <div class="view-body">
+      <div class="skeletons" id="col-notes">
+        <div class="skeleton" style="height:120px"></div>
+        <div class="skeleton" style="height:80px;margin-top:1rem"></div>
+      </div>
     </div>
   </div>
 
@@ -999,6 +1073,79 @@
   }
   function formatMem(b) { return b ? (b/1024/1024).toFixed(1)+' MB' : '0 MB'; }
 
+  async function fetchNotes() {
+    const res = await fetch('/api/notes');
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error);
+
+    const total = (data.dailyNote ? 1 : 0) + data.decisions.length;
+    document.getElementById('badge-notes').textContent = total;
+    document.getElementById('sub-notes').textContent =
+      `${data.dailyNote ? data.dailyNote.date : 'No recent daily note'} · ${data.decisions.length} decisions`;
+
+    // Option A: Notes tab
+    const el = document.getElementById('col-notes');
+    el.className = '';
+    el.style.cssText = 'display:flex;flex-direction:column;gap:1.5rem';
+
+    // Daily note section
+    let html = '';
+    if (data.dailyNote) {
+      html += `
+        <div>
+          <div class="home-section-title" style="margin-bottom:0.75rem">🗓️ Daily Note</div>
+          <div class="daily-note-card">
+            <div class="daily-note-header">
+              <div class="daily-note-title">${data.dailyNote.date}</div>
+              <span class="daily-note-badge">${data.dailyNote.isToday ? 'Today' : 'Most recent'}</span>
+            </div>
+            <p class="daily-note-preview">${escHtml(data.dailyNote.preview || 'No content')}</p>
+          </div>
+        </div>
+      `;
+    } else {
+      html += `<div class="empty">No recent daily notes found</div>`;
+    }
+
+    // Decisions section
+    if (data.decisions.length) {
+      html += `<div><div class="home-section-title" style="margin-bottom:0.75rem">📌 Recent Decisions</div><div class="notes-grid">`;
+      html += data.decisions.map(d => `
+        <div class="decision-card">
+          <div class="decision-title">${escHtml(d.title)}</div>
+          <div class="decision-meta">
+            <span class="daily-note-date">${d.date}</span>
+            ${d.status ? `<span class="decision-status">${escHtml(d.status)}</span>` : ''}
+          </div>
+          <p class="decision-preview">${escHtml(d.preview)}</p>
+        </div>
+      `).join('');
+      html += '</div></div>';
+    }
+    el.innerHTML = html;
+
+    // Option B: Home daily note card
+    const homeNote = document.getElementById('home-daily-note');
+    if (homeNote) {
+      if (data.dailyNote) {
+        homeNote.innerHTML = `
+          <div class="daily-note-card">
+            <div class="daily-note-header">
+              <div class="daily-note-title">🗓️ ${data.dailyNote.date}</div>
+              <div style="display:flex;align-items:center;gap:0.5rem">
+                <span class="daily-note-badge">${data.dailyNote.isToday ? 'Today' : 'Most recent'}</span>
+                <button onclick="switchView('notes')" style="background:none;border:none;cursor:pointer;font-size:0.72rem;color:var(--accent);font-family:inherit;">View all →</button>
+              </div>
+            </div>
+            <p class="daily-note-preview">${escHtml(data.dailyNote.preview || 'No content')}</p>
+          </div>
+        `;
+      } else {
+        homeNote.innerHTML = '';
+      }
+    }
+  }
+
   async function fetchInfra() {
     const res = await fetch('/api/infra');
     const data = await res.json();
@@ -1133,13 +1280,13 @@
     btn.classList.add('spinning');
     try {
       await fetch('/api/refresh', { method: 'POST' });
-      await Promise.all([fetchIssues(), fetchCalendar(), fetchRepos(), fetchTasks(), fetchInfra()]);
+      await Promise.all([fetchIssues(), fetchCalendar(), fetchRepos(), fetchTasks(), fetchInfra(), fetchNotes()]);
     } catch(e) { console.error(e); }
     btn.classList.remove('spinning');
   }
 
   async function poll() {
-    try { await Promise.all([fetchIssues(), fetchCalendar(), fetchRepos(), fetchTasks(), fetchInfra()]); } catch(e) { console.error(e); }
+    try { await Promise.all([fetchIssues(), fetchCalendar(), fetchRepos(), fetchTasks(), fetchInfra(), fetchNotes()]); } catch(e) { console.error(e); }
   }
 
   // ── Keyboard shortcut: / to focus search ─────────────────────────────
