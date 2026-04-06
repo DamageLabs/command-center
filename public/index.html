@@ -236,7 +236,10 @@
     .repo-open {
       font-size: 0.72rem; font-weight: 700; color: var(--amber-400);
       background: rgba(245,158,11,0.1); padding: 0.2rem 0.55rem; border-radius: 999px;
+      border: none; cursor: pointer; font-family: inherit;
+      transition: background 0.15s;
     }
+    .repo-open:hover { background: rgba(245,158,11,0.2); }
     .repo-stats { display: flex; gap: 1.5rem; }
     .repo-stat { display: flex; flex-direction: column; gap: 0.2rem; }
     .repo-stat-label {
@@ -676,6 +679,14 @@
     });
   }
 
+  function filterByRepo(repo) {
+    activeFilter.repo = repo;
+    activeFilter.text = '';
+    document.querySelectorAll('[data-search]').forEach(i => i.value = '');
+    switchView('active');
+    reapplyCurrentFilter();
+  }
+
   function clearFilter() {
     activeFilter = { repo: null, text: '' };
     document.querySelectorAll('.filter-pill').forEach(p => p.remove());
@@ -762,8 +773,10 @@
     const labels = issue.labels.slice(0, 3).map(l =>
       `<span class="issue-label ${labelClass(l.name)}">${l.name.replace(/[^\w\s-]/g,'').trim()}</span>`
     ).join('');
+    const labelStr = issue.labels.map(l => l.name).join(' ');
     return `
-      <a class="issue-card" href="${issue.url}" target="_blank">
+      <a class="issue-card" href="${issue.url}" target="_blank"
+        data-title="${escHtml(issue.title)}" data-repo="${issue.repo}" data-labels="${escHtml(labelStr)}">
         <div class="issue-top">
           <div class="issue-title">${escHtml(issue.title)}</div>
           <div class="issue-num">#${issue.number}</div>
@@ -779,13 +792,14 @@
 
   function renderRepoCard(repo) {
     return `
-      <a class="repo-card" href="https://github.com/${repo.repoFull}/issues" target="_blank">
+      <a class="repo-card" href="https://github.com/${repo.repoFull}/issues" target="_blank"
+        data-title="${repo.repo}">
         <div class="repo-top">
           <div class="repo-name">${repo.repo}</div>
           <div style="display:flex;align-items:center;gap:0.4rem">
             ${repo.archived ? `<span style="font-size:0.62rem;color:var(--text-muted);background:rgba(255,255,255,0.05);padding:0.1rem 0.35rem;border-radius:3px;font-weight:600">archived</span>` : ''}
             ${repo.tracked ? `<span style="font-size:0.62rem;color:var(--green-400);background:rgba(74,222,128,0.1);padding:0.1rem 0.35rem;border-radius:3px;font-weight:600">tracked</span>` : ''}
-            <div class="repo-open">${repo.openIssues} open</div>
+            <button onclick="event.preventDefault();event.stopPropagation();filterByRepo('${repo.repo}')" class="repo-open">${repo.openIssues} open ↗</button>
           </div>
         </div>
         <div class="repo-stats">
@@ -830,6 +844,7 @@
     render('col-urgent', data.urgent, 'issues-grid');
     render('col-active', data.active, 'issues-grid');
     render('col-deferred', data.deferred, 'issues-grid');
+    reapplyCurrentFilter();
     _homeData.issues = data; tryRenderHome();
   }
 
