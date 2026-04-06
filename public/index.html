@@ -247,6 +247,21 @@
     .repo-stat-val.red { color: var(--red-400); }
     .repo-stat-val.blue { color: var(--blue-400); }
 
+    /* ── Filter pill ── */
+    .filter-pill {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      margin-top: 0.5rem;
+      padding: 0.25rem 0.6rem 0.25rem 0.75rem;
+      background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3);
+      border-radius: 999px; font-size: 0.75rem; color: var(--amber-400);
+    }
+    .filter-pill button {
+      background: none; border: none; cursor: pointer;
+      color: var(--amber-400); font-size: 1rem; line-height: 1;
+      padding: 0; margin: 0; opacity: 0.7;
+    }
+    .filter-pill button:hover { opacity: 1; }
+
     /* ── Home ── */
     .home-hero {
       position: relative; overflow: hidden;
@@ -644,6 +659,58 @@
 </div>
 
 <script>
+  // ── Filter state ──────────────────────────────────────────────────────────
+  let activeFilter = { repo: null, text: '' };
+
+  function applyFilter(cards) {
+    const { repo, text } = activeFilter;
+    const q = text.trim().toLowerCase();
+    cards.forEach(card => {
+      const title = (card.dataset.title || '').toLowerCase();
+      const cardRepo = (card.dataset.repo || '').toLowerCase();
+      const labels = (card.dataset.labels || '').toLowerCase();
+      const source = (card.dataset.source || '').toLowerCase();
+      const matchRepo = !repo || cardRepo === repo.toLowerCase();
+      const matchText = !q || title.includes(q) || cardRepo.includes(q) || labels.includes(q) || source.includes(q);
+      card.style.display = matchRepo && matchText ? '' : 'none';
+    });
+  }
+
+  function clearFilter() {
+    activeFilter = { repo: null, text: '' };
+    document.querySelectorAll('.filter-pill').forEach(p => p.remove());
+    document.querySelectorAll('[data-search]').forEach(i => i.value = '');
+    reapplyCurrentFilter();
+  }
+
+  function reapplyCurrentFilter() {
+    ['urgent','active','backlog'].forEach(id => {
+      const grid = document.getElementById('col-' + id);
+      if (grid) applyFilter([...grid.querySelectorAll('[data-title]')]);
+    });
+    const repoGrid = document.getElementById('col-repos');
+    if (repoGrid) applyFilter([...repoGrid.querySelectorAll('[data-title]')]);
+    const taskGrid = document.getElementById('col-tasks');
+    if (taskGrid) applyFilter([...taskGrid.querySelectorAll('[data-title]')]);
+    updateFilterPill();
+  }
+
+  function updateFilterPill() {
+    document.querySelectorAll('.filter-pill').forEach(p => p.remove());
+    if (!activeFilter.repo && !activeFilter.text) return;
+    const label = activeFilter.repo
+      ? `repo: ${activeFilter.repo}${activeFilter.text ? ' · "' + activeFilter.text + '"' : ''}`
+      : `"${activeFilter.text}"`;
+    ['urgent','active','backlog','repos','tasks'].forEach(id => {
+      const header = document.querySelector(`#view-${id} .view-header`);
+      if (!header) return;
+      const pill = document.createElement('div');
+      pill.className = 'filter-pill';
+      pill.innerHTML = `<span>🔍 ${label}</span><button onclick="clearFilter()">&times;</button>`;
+      header.appendChild(pill);
+    });
+  }
+
   // ── View switching ─────────────────────────────────────────────────────────
   let currentView = 'home';
   let _homeData = { issues: null, events: null, tasks: null, infra: null };
