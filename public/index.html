@@ -15,6 +15,7 @@
       --navy-700: #253057;
       --amber-400: #fbbf24;
       --amber-500: #f59e0b;
+      --amber-600: #d97706;
       --slate-100: #f1f5f9;
       --slate-400: #94a3b8;
       --slate-500: #64748b;
@@ -25,7 +26,10 @@
       --yellow-400: #facc15;
       --blue-400: #60a5fa;
       --purple-400: #c084fc;
+    }
 
+    /* Dark mode (default) */
+    :root, html.dark {
       --bg: var(--navy-950);
       --bg-secondary: var(--navy-900);
       --bg-card: var(--navy-800);
@@ -35,6 +39,19 @@
       --text-muted: var(--slate-500);
       --accent: var(--amber-500);
       --border: rgba(255,255,255,0.07);
+    }
+
+    /* Light mode */
+    html.light {
+      --bg: #ffffff;
+      --bg-secondary: #f8fafc;
+      --bg-card: #f1f5f9;
+      --bg-hover: #e2e8f0;
+      --text: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #94a3b8;
+      --accent: var(--amber-600);
+      --border: rgba(0,0,0,0.08);
     }
     *, *::before, *::after { box-sizing: border-box; }
     body {
@@ -678,6 +695,15 @@
   <div class="header-right">
     <div class="live-dot"></div>
     <span class="header-clock" id="clock">—</span>
+    <button class="btn-sm" id="theme-btn" onclick="toggleTheme()" aria-label="Toggle theme">
+      <svg id="theme-icon-dark" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none">
+        <circle cx="12" cy="12" r="5"/>
+        <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+      </svg>
+      <svg id="theme-icon-light" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+      </svg>
+    </button>
     <button class="btn-sm" id="refresh-btn" onclick="refreshAll()">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
         <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
@@ -892,6 +918,25 @@
 </div>
 
 <script>
+  // ── Theme ───────────────────────────────────────────────────────────
+  function applyTheme(theme) {
+    document.documentElement.classList.remove('dark','light');
+    document.documentElement.classList.add(theme);
+    localStorage.setItem('cc-theme', theme);
+    document.getElementById('theme-icon-dark').style.display = theme === 'light' ? '' : 'none';
+    document.getElementById('theme-icon-light').style.display = theme === 'dark' ? '' : 'none';
+  }
+  function toggleTheme() {
+    const current = localStorage.getItem('cc-theme') || 'dark';
+    applyTheme(current === 'dark' ? 'light' : 'dark');
+  }
+  // Init theme from storage or system preference
+  (() => {
+    const saved = localStorage.getItem('cc-theme');
+    const preferred = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    applyTheme(saved || preferred);
+  })();
+
   // ── Filter state ──────────────────────────────────────────────────────────
   let activeFilter = { repo: null, text: '' };
 
