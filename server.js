@@ -23,6 +23,8 @@ const ACTIVE_REPOS = [
   'DamageLabs/sports-card-tracker',
   'DamageLabs/brain',
   'DamageLabs/command-center',
+  'fusion94/fusion94.org',
+  'fusion94/clawd',
 ];
 
 const TASKS_DIR = '/Users/guntharp/Documents/guntharp-personal/02 - Action/01 - Tasks';
@@ -241,9 +243,13 @@ function fetchTasks() {
 function fetchGitHub() {
   console.log('[github] fetching issues...');
   try {
-    // Fetch all DamageLabs repos dynamically
-    const allRepos = gh('repo list DamageLabs --json name,isArchived,pushedAt --limit 200')
+    // Fetch all DamageLabs + fusion94 repos dynamically
+    const damagelabsRepos = gh('repo list DamageLabs --json name,isArchived,pushedAt --limit 200')
       .map(r => ({ name: `DamageLabs/${r.name}`, archived: r.isArchived }));
+    const fusion94Repos = gh('repo list fusion94 --json name,isArchived,pushedAt --limit 100')
+      .filter(r => ['fusion94.org','clawd','dotfiles','homeassistant'].includes(r.name))
+      .map(r => ({ name: `fusion94/${r.name}`, archived: r.isArchived }));
+    const allRepos = [...damagelabsRepos, ...fusion94Repos];
 
     const allIssues = [];
     const repoStats = [];
