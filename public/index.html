@@ -1165,7 +1165,7 @@
     const total = (data.dailyNote ? 1 : 0) + data.decisions.length;
     document.getElementById('badge-notes').textContent = total;
     document.getElementById('sub-notes').textContent =
-      `${data.dailyNote ? data.dailyNote.date : 'No recent daily note'} · ${data.decisions.length} decisions`;
+      `${data.dailyNote ? data.dailyNote.date : 'No recent daily note'} · ${data.decisions.length} decisions · Updated ${timeAgo(data.updatedAt)}`;
 
     // Option A: Notes tab
     const el = document.getElementById('col-notes');
@@ -1239,7 +1239,7 @@
     const down = procs.filter(p => p.status !== 'online').length;
     const restarts = procs.reduce((s,p) => s + (p.restarts||0), 0);
     document.getElementById('badge-infra').textContent = online + '/' + procs.length;
-    document.getElementById('sub-infra').textContent = `${online} online · ${down} down · ${restarts} total restarts`;
+    document.getElementById('sub-infra').textContent = `${online} online · ${down} down · ${restarts} restarts · Updated ${timeAgo(data.updatedAt)}`;
     const el = document.getElementById('col-infra');
     el.className = '';
     el.style.cssText = 'display:flex;flex-direction:column;gap:0';
@@ -1283,7 +1283,7 @@
     if (!data.ok) throw new Error(data.error);
     const tasks = data.tasks;
     document.getElementById('badge-tasks').textContent = tasks.length;
-    document.getElementById('sub-tasks').textContent = `${tasks.length} open tasks · General, CA, TX`;
+    document.getElementById('sub-tasks').textContent = `${tasks.length} open tasks · Updated ${timeAgo(data.updatedAt)}`;
     const el = document.getElementById('col-tasks');
     el.className = 'tasks-grid';
     if (!tasks.length) { el.innerHTML = '<div class="empty">All done! 🎉</div>'; return; }
@@ -1310,7 +1310,7 @@
     const now = new Date();
     const events = data.events;
     document.getElementById('badge-cal').textContent = events.length;
-    document.getElementById('sub-calendar').textContent = `${events.length} upcoming events · next 30 days`;
+    document.getElementById('sub-calendar').textContent = `${events.length} upcoming events · Updated ${timeAgo(data.updatedAt)}`;
 
     const col = document.getElementById('col-calendar');
     col.className = 'cal-grid';
@@ -1352,7 +1352,7 @@
     if (!data.ok) throw new Error(data.error);
     const repos = data.repos.sort((a,b) => b.openIssues - a.openIssues);
     document.getElementById('badge-repos').textContent = repos.length;
-    document.getElementById('sub-repos').textContent = `${repos.length} repos · ${repos.reduce((s,r) => s + r.openIssues, 0)} open issues total`;
+    document.getElementById('sub-repos').textContent = `${repos.length} repos · ${repos.reduce((s,r) => s + r.openIssues, 0)} open · Updated ${timeAgo(data.updatedAt)}`;
     const el = document.getElementById('col-repos');
     el.className = 'repos-grid';
     el.innerHTML = repos.map(renderRepoCard).join('');
