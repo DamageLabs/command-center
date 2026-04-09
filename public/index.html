@@ -827,6 +827,10 @@
     .task-card.amber { border-left-color: var(--amber-400); }
     .task-card.blue { border-left-color: var(--blue-400); }
     .task-card.green { border-left-color: var(--green-400); }
+    .task-card.completed {
+      border-left-color: var(--slate-400);
+      background: color-mix(in srgb, var(--bg-card) 92%, var(--bg-secondary) 8%);
+    }
     .task-card:hover { border-color: rgba(192,132,252,0.4); }
     .task-card { position: relative; }
     .task-card .card-pin-btn {
@@ -861,6 +865,10 @@
       color: var(--red-400); margin-left: auto;
     }
     .task-recurring { font-size: 0.68rem; color: var(--text-muted); }
+    .task-completed {
+      font-size: 0.68rem; font-family: 'JetBrains Mono', monospace;
+      color: var(--green-400); margin-left: auto;
+    }
 
     /* ── Empty / skeleton ── */
     .empty {
@@ -930,6 +938,11 @@
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--purple-400)" stroke-width="2.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
       Tasks
       <span class="tab-badge" style="background:rgba(192,132,252,0.12);color:var(--purple-400)" id="badge-tasks">0</span>
+    </button>
+    <button class="nav-tab" data-view="done" onclick="switchView('done')">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--green-400)" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>
+      Done
+      <span class="tab-badge" style="background:rgba(148,163,184,0.14);color:var(--slate-300)" id="badge-done">0</span>
     </button>
     <button class="nav-tab" data-view="repos" onclick="switchView('repos')">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--blue-400)" stroke-width="2.5"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
@@ -1155,6 +1168,24 @@
     </div>
   </div>
 
+  <!-- Done -->
+  <div class="view" id="view-done">
+    <div class="view-header">
+      <div class="view-header-row">
+        <div>
+          <div class="view-title">Completed Tasks</div>
+          <div class="view-subtitle" id="sub-done">Loading…</div>
+        </div>
+        <input class="search-input" data-search="tasks" placeholder="Search completed tasks…" oninput="onSearch(this,'tasks')" />
+      </div>
+    </div>
+    <div class="view-body">
+      <div class="skeletons" id="col-tasks-done">
+        <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- Calendar -->
   <div class="view" id="view-calendar">
     <div class="view-header">
@@ -1200,9 +1231,10 @@
       <div><kbd>A</kbd> Active</div><div><kbd>B</kbd> Backlog</div>
       <div><kbd>P</kbd> PRs</div><div><kbd>N</kbd> Notes</div>
       <div><kbd>I</kbd> Infra</div><div><kbd>T</kbd> Tasks</div>
-      <div><kbd>C</kbd> Calendar</div><div><kbd>R</kbd> Repos</div>
-      <div><kbd>/</kbd> Search</div><div><kbd>Shift+R</kbd> Refresh</div>
-      <div><kbd>?</kbd> This help</div><div><kbd>Esc</kbd> Close/Clear</div>
+      <div><kbd>D</kbd> Done</div><div><kbd>C</kbd> Calendar</div>
+      <div><kbd>R</kbd> Repos</div><div><kbd>/</kbd> Search</div>
+      <div><kbd>Shift+R</kbd> Refresh</div><div><kbd>?</kbd> This help</div>
+      <div><kbd>Esc</kbd> Close/Clear</div><div></div>
     </div>
   </div>
 </div>
@@ -1323,6 +1355,8 @@
     if (repoGrid) applyFilter([...repoGrid.querySelectorAll('[data-title]')]);
     const taskGrid = document.getElementById('col-tasks');
     if (taskGrid) applyFilter([...taskGrid.querySelectorAll('[data-title]')]);
+    const completedTaskGrid = document.getElementById('col-tasks-done');
+    if (completedTaskGrid) applyFilter([...completedTaskGrid.querySelectorAll('[data-title]')]);
     updateFilterPill();
   }
 
@@ -1332,7 +1366,7 @@
     const label = activeFilter.repo
       ? `repo: ${activeFilter.repo}${activeFilter.text ? ' · "' + activeFilter.text + '"' : ''}`
       : `"${activeFilter.text}"`;
-    ['urgent','active','backlog','repos','tasks'].forEach(id => {
+    ['urgent','active','backlog','repos','tasks','done'].forEach(id => {
       const header = document.querySelector(`#view-${id} .view-header`);
       if (!header) return;
       const pill = document.createElement('div');
@@ -2120,6 +2154,20 @@
     `;
   }
 
+  function renderCompletedTaskCard(t) {
+    return `
+      <div class="task-card completed ${t.color}" data-title="${escHtml(t.title)}" data-source="${t.source}">
+        <div class="task-title">${escHtml(t.title)}</div>
+        <div class="task-meta">
+          <span class="task-source ${t.color}">${t.source}</span>
+          ${t.section ? `<span class="task-section">${escHtml(t.section)}</span>` : ''}
+          ${t.recurring ? '<span class="task-recurring">🔁 recurring</span>' : ''}
+          ${t.completedAt ? `<span class="task-completed">✓ ${t.completedAt}</span>` : '<span class="task-completed">✓ completed</span>'}
+        </div>
+      </div>
+    `;
+  }
+
   function renderTaskColumns(tasks) {
     const el = document.getElementById('col-tasks');
     el.className = 'tasks-grid';
@@ -2134,7 +2182,14 @@
     }
     html += unpinned.map(renderTaskCard).join('');
     el.innerHTML = html;
-    reapplyCurrentFilter();
+  }
+
+  function renderCompletedTaskColumns(completedTasks) {
+    const doneEl = document.getElementById('col-tasks-done');
+    doneEl.className = 'tasks-grid';
+    doneEl.innerHTML = completedTasks.length
+      ? completedTasks.map(renderCompletedTaskCard).join('')
+      : '<div class="empty">No completed tasks found yet</div>';
   }
 
   async function fetchTasks() {
@@ -2142,10 +2197,17 @@
     const data = await res.json();
     if (!data.ok) throw new Error(data.error);
     const tasks = data.tasks;
+    const completedTasks = data.completedTasks || [];
     window._lastTasksData = tasks;
     document.getElementById('badge-tasks').textContent = tasks.length;
+    document.getElementById('badge-done').textContent = completedTasks.length;
+    checkNotifs('tasks', tasks.length);
+    checkNotifs('done', completedTasks.length);
     document.getElementById('sub-tasks').textContent = `${tasks.length} open tasks · Updated ${timeAgo(data.updatedAt)}`;
+    document.getElementById('sub-done').textContent = `${completedTasks.length} completed tasks · Updated ${timeAgo(data.updatedAt)}`;
     renderTaskColumns(tasks);
+    renderCompletedTaskColumns(completedTasks);
+    reapplyCurrentFilter();
     _homeData.tasks = tasks; tryRenderHome();
   }
 
@@ -2257,7 +2319,7 @@
   const TAB_SHORTCUTS = {
     'h': 'home', 'u': 'urgent', 'a': 'active', 'b': 'backlog',
     'p': 'prs', 'n': 'notes', 'i': 'infra', 't': 'tasks',
-    'c': 'calendar', 'r': 'repos'
+    'd': 'done', 'c': 'calendar', 'r': 'repos'
   };
 
   let shortcutHelpVisible = false;

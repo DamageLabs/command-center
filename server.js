@@ -61,6 +61,7 @@ let cache = {
   repoStats: null,
   events: null,
   tasks: null,
+  completedTasks: null,
   notes: null,
   standup: null,
   prs: null,
@@ -69,6 +70,28 @@ let cache = {
   eventsUpdatedAt: null,
   tasksUpdatedAt: null,
 };
+
+function parseTaskRecord(raw, label, color, section, completed = false) {
+  const dueMatch = raw.match(/📅\s*(\d{4}-\d{2}-\d{2})/);
+  const completedAtMatch = raw.match(/✅\s*(\d{4}-\d{2}-\d{2})/);
+  const title = raw
+    .replace(/📅\s*\d{4}-\d{2}-\d{2}/g, '')
+    .replace(/✅\s*\d{4}-\d{2}-\d{2}/g, '')
+    .replace(/#\w+/g, '')
+    .replace(/🔁[^\n]*/g, '')
+    .trim();
+  if (!title) return null;
+  return {
+    title,
+    source: label,
+    color,
+    section,
+    due: dueMatch ? dueMatch[1] : null,
+    recurring: raw.includes('🔁'),
+    completed,
+    completedAt: completedAtMatch ? completedAtMatch[1] : null,
+  };
+}
 
 // ── Pull Requests ───────────────────────────────────────────────────────────────
 function fetchPRs() {
@@ -229,6 +252,7 @@ function fetchTasks() {
   console.log('[tasks] reading obsidian tasks...');
   try {
     const result = [];
+    const completed = [];
     for (const { file, label, color } of TASK_FILES) {
       const fullPath = `${TASKS_DIR}/${file}`;
       if (!fs.existsSync(fullPath)) continue;
@@ -238,31 +262,28 @@ function fetchTasks() {
         // Track headings as sections
         const headingMatch = line.match(/^#+\s+(.+)/);
         if (headingMatch) { currentSection = headingMatch[1].trim(); continue; }
-        // Open tasks only: - [ ] ...
-        const taskMatch = line.match(/^\s*- \[ \]\s+(.+)/);
-        if (!taskMatch) continue;
-        const raw = taskMatch[1];
-        // Skip pure recurring without todo tag if desired (keep all open)
-        const dueMatch = raw.match(/📅\s*(\d{4}-\d{2}-\d{2})/);
-        const title = raw
-          .replace(/📅\s*\d{4}-\d{2}-\d{2}/g, '')
-          .replace(/#\w+/g, '')
-          .replace(/🔁[^\n]*/g, '')
-          .trim();
-        if (!title) continue;
-        result.push({
-          title,
-          source: label,
-          color,
-          section: currentSection,
-          due: dueMatch ? dueMatch[1] : null,
-          recurring: raw.includes('🔁'),
-        });
+        const openTaskMatch = line.match(/^\s*- \[ \]\s+(.+)/);
+        if (openTaskMatch) {
+          const task = parseTaskRecord(openTaskMatch[1], label, color, currentSection, false);
+          if (task) result.push(task);
+          continue;
+        }
+        const completedTaskMatch = line.match(/^\s*- \[[xX]\]\s+(.+)/);
+        if (completedTaskMatch) {
+          const task = parseTaskRecord(completedTaskMatch[1], label, color, currentSection, true);
+          if (task) completed.push(task);
+        }
       }
     }
     cache.tasks = result;
+    cache.completedTasks = completed.sort((a, b) => {
+      if (a.completedAt && b.completedAt) return b.completedAt.localeCompare(a.completedAt);
+      if (a.completedAt) return -1;
+      if (b.completedAt) return 1;
+      return 0;
+    });
     cache.tasksUpdatedAt = Date.now();
-    console.log(`[tasks] found ${result.length} open tasks`);
+    console.log(`[tasks] found ${result.length} open tasks, ${completed.length} completed tasks`);
   } catch (err) {
     console.error('[tasks] error:', err.message);
   }
@@ -428,7 +449,7 @@ app.get('/api/infra', (req, res) => {
 
 app.get('/api/tasks', (req, res) => {
   if (!cache.tasks) return res.status(503).json({ ok: false, error: 'loading' });
-  res.json({ ok: true, tasks: cache.tasks, updatedAt: cache.tasksUpdatedAt });
+  res.json({ ok: true, tasks: cache.tasks, completedTasks: cache.completedTasks || [], updatedAt: cache.tasksUpdatedAt });
 });
 
 app.get('/api/prs', (req, res) => {
