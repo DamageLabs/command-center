@@ -251,6 +251,19 @@
     .event-card.work { border-left-color: var(--blue-400); }
     .event-card.soon { border-left-color: var(--red-400); }
     .event-card.today { border-left-color: var(--green-400); }
+    .event-card { position: relative; }
+    .event-card .card-pin-btn {
+      position: absolute; top: 0.6rem; right: 0.6rem;
+      display: none; align-items: center; justify-content: center;
+      width: 22px; height: 22px; border-radius: 4px;
+      background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.25);
+      color: var(--text-muted); font-size: 0.75rem; cursor: pointer;
+      transition: all 0.15s; z-index: 1;
+    }
+    .event-card:hover .card-pin-btn { display: flex; }
+    .event-card .card-pin-btn:hover { background: rgba(245,158,11,0.25); color: var(--amber-400); border-color: rgba(245,158,11,0.5); }
+    .event-card.pinned { border-left-color: var(--amber-400) !important; }
+    .event-card.pinned .card-pin-btn { display: flex; color: var(--amber-400); background: rgba(245,158,11,0.15); border-color: rgba(245,158,11,0.4); }
     .event-title {
       font-size: 0.9rem; font-weight: 600; color: var(--text);
       margin-bottom: 0.35rem; line-height: 1.3;
@@ -282,6 +295,19 @@
       transition: border-color 0.15s, transform 0.15s;
     }
     .repo-card:hover { border-color: rgba(245,158,11,0.3); transform: translateY(-1px); }
+    .repo-card { position: relative; }
+    .repo-card .card-pin-btn {
+      position: absolute; top: 0.75rem; right: 0.75rem;
+      display: none; align-items: center; justify-content: center;
+      width: 22px; height: 22px; border-radius: 4px;
+      background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.25);
+      color: var(--text-muted); font-size: 0.75rem; cursor: pointer;
+      transition: all 0.15s; z-index: 1;
+    }
+    .repo-card:hover .card-pin-btn { display: flex; }
+    .repo-card .card-pin-btn:hover { background: rgba(245,158,11,0.25); color: var(--amber-400); border-color: rgba(245,158,11,0.5); }
+    .repo-card.pinned { border: 1px solid rgba(245,158,11,0.4); border-left: 3px solid var(--amber-400); }
+    .repo-card.pinned .card-pin-btn { display: flex; color: var(--amber-400); background: rgba(245,158,11,0.15); border-color: rgba(245,158,11,0.4); }
     .repo-top {
       display: flex; align-items: center;
       justify-content: space-between; margin-bottom: 0.875rem;
@@ -334,6 +360,19 @@
     }
     .pr-card.draft { border-left-color: var(--text-muted); opacity: 0.7; }
     .pr-card:hover { border-color: rgba(74,222,128,0.3); background: var(--bg-hover); }
+    .pr-card { position: relative; }
+    .pr-card .card-pin-btn {
+      position: absolute; top: 0.6rem; right: 0.6rem;
+      display: none; align-items: center; justify-content: center;
+      width: 22px; height: 22px; border-radius: 4px;
+      background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.25);
+      color: var(--text-muted); font-size: 0.75rem; cursor: pointer;
+      transition: all 0.15s; z-index: 1;
+    }
+    .pr-card:hover .card-pin-btn { display: flex; }
+    .pr-card .card-pin-btn:hover { background: rgba(245,158,11,0.25); color: var(--amber-400); border-color: rgba(245,158,11,0.5); }
+    .pr-card.pinned { border-left: 3px solid var(--amber-400); }
+    .pr-card.pinned .card-pin-btn { display: flex; color: var(--amber-400); background: rgba(245,158,11,0.15); border-color: rgba(245,158,11,0.4); }
     .pr-top {
       display: flex; align-items: flex-start;
       justify-content: space-between; gap: 0.5rem; margin-bottom: 0.4rem;
@@ -631,6 +670,19 @@
     .task-card.blue { border-left-color: var(--blue-400); }
     .task-card.green { border-left-color: var(--green-400); }
     .task-card:hover { border-color: rgba(192,132,252,0.4); }
+    .task-card { position: relative; }
+    .task-card .card-pin-btn {
+      position: absolute; top: 0.5rem; right: 0.5rem;
+      display: none; align-items: center; justify-content: center;
+      width: 22px; height: 22px; border-radius: 4px;
+      background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.25);
+      color: var(--text-muted); font-size: 0.75rem; cursor: pointer;
+      transition: all 0.15s; z-index: 1;
+    }
+    .task-card:hover .card-pin-btn { display: flex; }
+    .task-card .card-pin-btn:hover { background: rgba(245,158,11,0.25); color: var(--amber-400); border-color: rgba(245,158,11,0.5); }
+    .task-card.pinned { border-left: 3px solid var(--amber-400) !important; }
+    .task-card.pinned .card-pin-btn { display: flex; color: var(--amber-400); background: rgba(245,158,11,0.15); border-color: rgba(245,158,11,0.4); }
     .task-title {
       font-size: 0.875rem; font-weight: 600; color: var(--text);
       margin-bottom: 0.35rem; line-height: 1.35;
@@ -1161,17 +1213,48 @@
   function getPinned() {
     try { return JSON.parse(localStorage.getItem(PIN_KEY) || '{}'); } catch { return {}; }
   }
-  function isPinned(repoFull, number) {
-    return !!getPinned()[`${repoFull}#${number}`];
+  function isPinned(type, id) {
+    return !!getPinned()[`${type}:${id}`];
   }
-  function togglePin(e, repoFull, number) {
-    e.preventDefault(); e.stopPropagation();
-    const key = `${repoFull}#${number}`;
+  function togglePinKey(type, id, reRenderFn) {
+    const key = `${type}:${id}`;
     const pins = getPinned();
     if (pins[key]) { delete pins[key]; } else { pins[key] = true; }
     localStorage.setItem(PIN_KEY, JSON.stringify(pins));
-    // Re-render all issue columns
-    if (window._lastIssuesData) renderIssueColumns(window._lastIssuesData);
+    reRenderFn();
+  }
+  // Convenience wrappers called from inline onclick handlers
+  function togglePinIssue(e, repoFull, number) {
+    e.preventDefault(); e.stopPropagation();
+    togglePinKey('issue', `${repoFull}#${number}`, () => {
+      if (window._lastIssuesData) renderIssueColumns(window._lastIssuesData);
+      if (window._lastPRsData) renderPRColumns(window._lastPRsData); // re-render home
+      if (_homeData.issues) tryRenderHome();
+    });
+  }
+  function togglePinPR(e, repoFull, number) {
+    e.preventDefault(); e.stopPropagation();
+    togglePinKey('pr', `${repoFull}#${number}`, () => {
+      if (window._lastPRsData) renderPRColumns(window._lastPRsData);
+    });
+  }
+  function togglePinTask(e, titleKey) {
+    e.preventDefault(); e.stopPropagation();
+    togglePinKey('task', titleKey, () => {
+      if (window._lastTasksData) renderTaskColumns(window._lastTasksData);
+    });
+  }
+  function togglePinEvent(e, titleKey) {
+    e.preventDefault(); e.stopPropagation();
+    togglePinKey('event', titleKey, () => {
+      if (window._lastEventsData) renderCalendarColumns(window._lastEventsData);
+    });
+  }
+  function togglePinRepo(e, repoFull) {
+    e.preventDefault(); e.stopPropagation();
+    togglePinKey('repo', repoFull, () => {
+      if (window._lastReposData) renderRepoColumns(window._lastReposData);
+    });
   }
 
   async function closeIssue(e, repoFull, number, cardEl) {
@@ -1194,12 +1277,12 @@
       `<span class="issue-label ${labelClass(l.name)}">${l.name.replace(/[^\w\s-]/g,'').trim()}</span>`
     ).join('');
     const labelStr = issue.labels.map(l => l.name).join(' ');
-    const pinned = isPinned(issue.repoFull, issue.number);
+    const pinned = isPinned('issue', `${issue.repoFull}#${issue.number}`);
     const pinTitle = pinned ? 'Unpin card' : 'Pin to top';
     return `
       <a class="issue-card${pinned ? ' pinned' : ''}" href="${issue.url}" target="_blank"
         data-title="${escHtml(issue.title)}" data-repo="${issue.repo}" data-labels="${escHtml(labelStr)}">
-        <button class="issue-pin-btn" onclick="togglePin(event,'${issue.repoFull}',${issue.number})" title="${pinTitle}">📌</button>
+        <button class="issue-pin-btn" onclick="togglePinIssue(event,'${issue.repoFull}',${issue.number})" title="${pinTitle}">📌</button>
         <button class="issue-close-btn" onclick="closeIssue(event,'${issue.repoFull}',${issue.number},this.parentElement)" title="Close issue">&times;</button>
         <div class="issue-top">
           <div class="issue-title">${escHtml(issue.title)}</div>
@@ -1215,9 +1298,11 @@
   }
 
   function renderRepoCard(repo) {
+    const pinned = isPinned('repo', repo.repoFull);
     return `
-      <a class="repo-card" href="https://github.com/${repo.repoFull}/issues" target="_blank"
+      <a class="repo-card${pinned?' pinned':''}" href="https://github.com/${repo.repoFull}/issues" target="_blank"
         data-title="${repo.repo}">
+        <button class="card-pin-btn" onclick="togglePinRepo(event,'${repo.repoFull}')" title="${pinned?'Unpin':'Pin to top'}">📌</button>
         <div class="repo-top">
           <div class="repo-name">${repo.repo}</div>
           <div style="display:flex;align-items:center;gap:0.4rem">
@@ -1273,8 +1358,8 @@
       const el = document.getElementById(id);
       el.className = 'issues-grid';
       if (!arr.length) { el.innerHTML = '<div class="empty">Nothing here 🎉</div>'; return; }
-      const pinned = arr.filter(i => isPinned(i.repoFull, i.number));
-      const unpinned = arr.filter(i => !isPinned(i.repoFull, i.number));
+      const pinned = arr.filter(i => isPinned('issue', `${i.repoFull}#${i.number}`));
+      const unpinned = arr.filter(i => !isPinned('issue', `${i.repoFull}#${i.number}`));
       let html = '';
       if (pinned.length) {
         html += `<div class="pinned-section-header"><span>📌</span> Pinned</div>`;
@@ -1303,8 +1388,8 @@
     const totalServices = infra.length;
     const nextEvents = events.filter(e => new Date(e.start) > new Date()).slice(0, 3);
     const allIssues = [...issues.urgent, ...issues.active, ...issues.deferred];
-    const pinnedIssues = allIssues.filter(i => isPinned(i.repoFull, i.number));
-    const recentIssues = [...issues.urgent, ...issues.active].filter(i => !isPinned(i.repoFull, i.number)).slice(0, 4);
+    const pinnedIssues = allIssues.filter(i => isPinned('issue', `${i.repoFull}#${i.number}`));
+    const recentIssues = [...issues.urgent, ...issues.active].filter(i => !isPinned('issue', `${i.repoFull}#${i.number}`)).slice(0, 4);
     const homeIssues = [...pinnedIssues, ...recentIssues].slice(0, 6);
     const openTasks = tasks.slice(0, 4);
 
@@ -1361,7 +1446,7 @@
     if (issuesTitle) issuesTitle.textContent = pinnedIssues.length ? `Recent Issues · ${pinnedIssues.length} pinned` : 'Recent Issues';
     document.getElementById('home-issues').innerHTML = homeIssues.length
       ? homeIssues.map(i => {
-          const pinned = isPinned(i.repoFull, i.number);
+          const pinned = isPinned('issue', `${i.repoFull}#${i.number}`);
           return `<a class="home-issue-item" href="${i.url}" target="_blank"
             style="${pinned ? 'border-left:3px solid var(--amber-400)' : ''}">
             <div class="home-item-title">${pinned ? '<span style="font-size:0.7rem;margin-right:0.3rem">📌</span>' : ''}${escHtml(i.title)}</div>
@@ -1402,41 +1487,59 @@
   }
   function formatMem(b) { return b ? (b/1024/1024).toFixed(1)+' MB' : '0 MB'; }
 
+  function renderPRCard(pr) {
+    const reviewBadge = pr.reviewDecision === 'APPROVED'
+      ? '<span class="pr-badge approved">✓ Approved</span>'
+      : pr.reviewDecision === 'CHANGES_REQUESTED'
+      ? '<span class="pr-badge changes">✕ Changes requested</span>'
+      : '';
+    const draftBadge = pr.isDraft ? '<span class="pr-badge draft">Draft</span>' : '';
+    const pinned = isPinned('pr', `${pr.repoFull}#${pr.number}`);
+    return `
+      <a class="pr-card${pr.isDraft?' draft':''}${pinned?' pinned':''}" href="${pr.url}" target="_blank"
+        data-title="${escHtml(pr.title)}" data-repo="${pr.repo}" data-source="prs">
+        <button class="card-pin-btn" onclick="togglePinPR(event,'${pr.repoFull}',${pr.number})" title="${pinned?'Unpin':'Pin to top'}">📌</button>
+        <div class="pr-top">
+          <div class="pr-title">${escHtml(pr.title)}</div>
+          <div class="pr-num">#${pr.number}</div>
+        </div>
+        <div class="pr-meta">
+          <span class="pr-repo">${pr.repo}</span>
+          <span class="pr-branch">${escHtml(pr.headRefName)}</span>
+          <span class="pr-author">@${escHtml(pr.author?.login || '')}</span>
+          ${draftBadge}${reviewBadge}
+          <span class="pr-age">${timeAgo(pr.createdAt)}</span>
+        </div>
+      </a>`;
+  }
+
+  function renderPRColumns(prs) {
+    const el = document.getElementById('col-prs');
+    el.className = 'pr-grid';
+    if (!prs.length) { el.innerHTML = '<div class="empty">No open PRs 🎉</div>'; return; }
+    const pinned = prs.filter(p => isPinned('pr', `${p.repoFull}#${p.number}`));
+    const unpinned = prs.filter(p => !isPinned('pr', `${p.repoFull}#${p.number}`));
+    let html = '';
+    if (pinned.length) {
+      html += `<div class="pinned-section-header"><span>📌</span> Pinned</div>`;
+      html += pinned.map(renderPRCard).join('');
+      if (unpinned.length) html += '<hr class="pinned-divider">';
+    }
+    html += unpinned.map(renderPRCard).join('');
+    el.innerHTML = html;
+  }
+
   async function fetchPRs() {
     const res = await fetch('/api/prs');
     const data = await res.json();
     if (!data.ok) throw new Error(data.error);
     const prs = data.prs;
+    window._lastPRsData = prs;
     document.getElementById('badge-prs').textContent = prs.length;
     checkNotifs('prs', prs.length);
     document.getElementById('sub-prs').textContent =
       `${prs.length} open · ${prs.filter(p=>p.isDraft).length} drafts · Updated ${timeAgo(data.updatedAt)}`;
-    const el = document.getElementById('col-prs');
-    el.className = 'pr-grid';
-    if (!prs.length) { el.innerHTML = '<div class="empty">No open PRs 🎉</div>'; return; }
-    el.innerHTML = prs.map(pr => {
-      const reviewBadge = pr.reviewDecision === 'APPROVED'
-        ? '<span class="pr-badge approved">✓ Approved</span>'
-        : pr.reviewDecision === 'CHANGES_REQUESTED'
-        ? '<span class="pr-badge changes">✕ Changes requested</span>'
-        : '';
-      const draftBadge = pr.isDraft ? '<span class="pr-badge draft">Draft</span>' : '';
-      return `
-        <a class="pr-card${pr.isDraft?' draft':''}" href="${pr.url}" target="_blank"
-          data-title="${escHtml(pr.title)}" data-repo="${pr.repo}" data-source="prs">
-          <div class="pr-top">
-            <div class="pr-title">${escHtml(pr.title)}</div>
-            <div class="pr-num">#${pr.number}</div>
-          </div>
-          <div class="pr-meta">
-            <span class="pr-repo">${pr.repo}</span>
-            <span class="pr-branch">${escHtml(pr.headRefName)}</span>
-            <span class="pr-author">@${escHtml(pr.author?.login || '')}</span>
-            ${draftBadge}${reviewBadge}
-            <span class="pr-age">${timeAgo(pr.createdAt)}</span>
-          </div>
-        </a>`;
-    }).join('');
+    renderPRColumns(prs);
   }
 
   async function fetchStandup() {
@@ -1595,18 +1698,14 @@
     _homeData.infra = procs; tryRenderHome();
   }
 
-  async function fetchTasks() {
-    const res = await fetch('/api/tasks');
-    const data = await res.json();
-    if (!data.ok) throw new Error(data.error);
-    const tasks = data.tasks;
-    document.getElementById('badge-tasks').textContent = tasks.length;
-    document.getElementById('sub-tasks').textContent = `${tasks.length} open tasks · Updated ${timeAgo(data.updatedAt)}`;
-    const el = document.getElementById('col-tasks');
-    el.className = 'tasks-grid';
-    if (!tasks.length) { el.innerHTML = '<div class="empty">All done! 🎉</div>'; return; }
-    el.innerHTML = tasks.map(t => `
-      <div class="task-card ${t.color}" data-title="${escHtml(t.title)}" data-source="${t.source}">
+  function taskKey(t) { return encodeURIComponent(t.title).substring(0, 80); }
+
+  function renderTaskCard(t) {
+    const key = taskKey(t);
+    const pinned = isPinned('task', key);
+    return `
+      <div class="task-card ${t.color}${pinned?' pinned':''}" data-title="${escHtml(t.title)}" data-source="${t.source}">
+        <button class="card-pin-btn" onclick="togglePinTask(event,'${key}')" title="${pinned?'Unpin':'Pin to top'}">📌</button>
         <div class="task-title">${escHtml(t.title)}</div>
         <div class="task-meta">
           <span class="task-source ${t.color}">${t.source}</span>
@@ -1615,53 +1714,114 @@
           ${t.due ? `<span class="task-due">📅 ${t.due}</span>` : ''}
         </div>
       </div>
-    `).join('');
+    `;
+  }
+
+  function renderTaskColumns(tasks) {
+    const el = document.getElementById('col-tasks');
+    el.className = 'tasks-grid';
+    if (!tasks.length) { el.innerHTML = '<div class="empty">All done! 🎉</div>'; return; }
+    const pinned = tasks.filter(t => isPinned('task', taskKey(t)));
+    const unpinned = tasks.filter(t => !isPinned('task', taskKey(t)));
+    let html = '';
+    if (pinned.length) {
+      html += `<div class="pinned-section-header"><span>📌</span> Pinned</div>`;
+      html += pinned.map(renderTaskCard).join('');
+      if (unpinned.length) html += '<hr class="pinned-divider">';
+    }
+    html += unpinned.map(renderTaskCard).join('');
+    el.innerHTML = html;
     reapplyCurrentFilter();
+  }
+
+  async function fetchTasks() {
+    const res = await fetch('/api/tasks');
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error);
+    const tasks = data.tasks;
+    window._lastTasksData = tasks;
+    document.getElementById('badge-tasks').textContent = tasks.length;
+    document.getElementById('sub-tasks').textContent = `${tasks.length} open tasks · Updated ${timeAgo(data.updatedAt)}`;
+    renderTaskColumns(tasks);
     _homeData.tasks = tasks; tryRenderHome();
+  }
+
+  function eventKey(e) { return encodeURIComponent((e.title + e.start).substring(0, 80)); }
+
+  function renderEventCard(e, now) {
+    now = now || new Date();
+    const start = new Date(e.start);
+    const end = new Date(e.end);
+    const isToday = start.toDateString() === now.toDateString();
+    const isSoon = start > now && (start - now) < 2 * 60 * 60 * 1000;
+    const isPast = end < now;
+    let cardClass = e.calendar === 'Work' ? 'work' : '';
+    if (isSoon) cardClass = 'soon';
+    if (isToday && !isSoon) cardClass = 'today';
+    const key = eventKey(e);
+    const pinned = isPinned('event', key);
+    if (pinned) cardClass = cardClass ? cardClass + ' pinned' : 'pinned';
+    const timeStr = e.allDay ? 'All day' :
+      start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Chicago' }) +
+      ' – ' + end.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Chicago' });
+    const dateStr = isToday ? 'Today' :
+      start.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'America/Chicago' });
+    return `
+      <div class="event-card ${cardClass}" style="${isPast&&!pinned ? 'opacity:0.45' : ''}">
+        <button class="card-pin-btn" onclick="togglePinEvent(event,'${key}')" title="${pinned?'Unpin':'Pin to top'}">📌</button>
+        <div class="event-title">${escHtml(e.title)}</div>
+        <div class="event-time">${dateStr} · ${timeStr}</div>
+        <div class="event-sub">
+          <span class="event-cal-badge ${e.calendar === 'Personal' ? 'personal' : ''}">${e.calendar}</span>
+          ${e.location ? `<span>📍 ${escHtml(e.location.substring(0,40))}</span>` : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderCalendarColumns(events) {
+    const now = new Date();
+    const col = document.getElementById('col-calendar');
+    col.className = 'cal-grid';
+    if (!events.length) { col.innerHTML = '<div class="empty">No upcoming events 🎉</div>'; return; }
+    const pinned = events.filter(e => isPinned('event', eventKey(e)));
+    const unpinned = events.filter(e => !isPinned('event', eventKey(e)));
+    let html = '';
+    if (pinned.length) {
+      html += `<div class="pinned-section-header"><span>📌</span> Pinned</div>`;
+      html += pinned.map(e => renderEventCard(e, now)).join('');
+      if (unpinned.length) html += '<hr class="pinned-divider">';
+    }
+    html += unpinned.map(e => renderEventCard(e, now)).join('');
+    col.innerHTML = html;
   }
 
   async function fetchCalendar() {
     const res = await fetch('/api/calendar');
     const data = await res.json();
     if (!data.ok) throw new Error(data.error);
-
-    const now = new Date();
     const events = data.events;
+    window._lastEventsData = events;
     document.getElementById('badge-cal').textContent = events.length;
     document.getElementById('sub-calendar').textContent = `${events.length} upcoming events · Updated ${timeAgo(data.updatedAt)}`;
-
-    const col = document.getElementById('col-calendar');
-    col.className = 'cal-grid';
-    if (!events.length) {
-      col.innerHTML = '<div class="empty">No upcoming events 🎉</div>';
-      return;
-    }
-    col.innerHTML = events.map(e => {
-      const start = new Date(e.start);
-      const end = new Date(e.end);
-      const isToday = start.toDateString() === now.toDateString();
-      const isSoon = start > now && (start - now) < 2 * 60 * 60 * 1000;
-      const isPast = end < now;
-      let cardClass = e.calendar === 'Work' ? 'work' : '';
-      if (isSoon) cardClass = 'soon';
-      if (isToday && !isSoon) cardClass = 'today';
-      const timeStr = e.allDay ? 'All day' :
-        start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Chicago' }) +
-        ' – ' + end.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Chicago' });
-      const dateStr = isToday ? 'Today' :
-        start.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'America/Chicago' });
-      return `
-        <div class="event-card ${cardClass}" style="${isPast ? 'opacity:0.45' : ''}">
-          <div class="event-title">${escHtml(e.title)}</div>
-          <div class="event-time">${dateStr} · ${timeStr}</div>
-          <div class="event-sub">
-            <span class="event-cal-badge ${e.calendar === 'Personal' ? 'personal' : ''}">${e.calendar}</span>
-            ${e.location ? `<span>📍 ${escHtml(e.location.substring(0,40))}</span>` : ''}
-          </div>
-        </div>
-      `;
-    }).join('');
+    renderCalendarColumns(events);
     _homeData.events = events; tryRenderHome();
+  }
+
+  function renderRepoColumns(repos) {
+    const el = document.getElementById('col-repos');
+    el.className = 'repos-grid';
+    const pinned = repos.filter(r => isPinned('repo', r.repoFull));
+    const unpinned = repos.filter(r => !isPinned('repo', r.repoFull));
+    let html = '';
+    if (pinned.length) {
+      html += `<div class="pinned-section-header"><span>📌</span> Pinned</div>`;
+      html += pinned.map(renderRepoCard).join('');
+      if (unpinned.length) html += '<hr class="pinned-divider">';
+    }
+    html += unpinned.map(renderRepoCard).join('');
+    el.innerHTML = html;
+    reapplyCurrentFilter();
   }
 
   async function fetchRepos() {
@@ -1669,12 +1829,10 @@
     const data = await res.json();
     if (!data.ok) throw new Error(data.error);
     const repos = data.repos.sort((a,b) => b.openIssues - a.openIssues);
+    window._lastReposData = repos;
     document.getElementById('badge-repos').textContent = repos.length;
     document.getElementById('sub-repos').textContent = `${repos.length} repos · ${repos.reduce((s,r) => s + r.openIssues, 0)} open · Updated ${timeAgo(data.updatedAt)}`;
-    const el = document.getElementById('col-repos');
-    el.className = 'repos-grid';
-    el.innerHTML = repos.map(renderRepoCard).join('');
-    reapplyCurrentFilter();
+    renderRepoColumns(repos);
   }
 
   async function refreshAll() {
