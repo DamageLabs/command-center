@@ -211,6 +211,31 @@
     }
     .issue-card:hover .issue-close-btn { display: flex; }
     .issue-close-btn:hover { background: rgba(239,68,68,0.3); }
+    .issue-pin-btn {
+      position: absolute; top: 0.6rem; right: 2rem;
+      display: none; align-items: center; justify-content: center;
+      width: 22px; height: 22px; border-radius: 4px;
+      background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.25);
+      color: var(--text-muted); font-size: 0.75rem; cursor: pointer;
+      transition: all 0.15s; z-index: 1;
+    }
+    .issue-card:hover .issue-pin-btn { display: flex; }
+    .issue-pin-btn:hover { background: rgba(245,158,11,0.25); color: var(--amber-400); border-color: rgba(245,158,11,0.5); }
+    .issue-card.pinned { border-left: 3px solid var(--amber-400); }
+    .issue-card.pinned .issue-pin-btn { display: flex; color: var(--amber-400); background: rgba(245,158,11,0.15); border-color: rgba(245,158,11,0.4); }
+    .pinned-section-header {
+      grid-column: 1 / -1;
+      display: flex; align-items: center; gap: 0.5rem;
+      font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.07em; color: var(--amber-400);
+      padding-bottom: 0.25rem; border-bottom: 1px solid rgba(245,158,11,0.2);
+      margin-bottom: 0.25rem;
+    }
+    .pinned-divider {
+      grid-column: 1 / -1;
+      border: none; border-top: 1px solid var(--border);
+      margin: 0.25rem 0;
+    }
 
     /* ── Calendar ── */
     .cal-grid {
@@ -1131,6 +1156,24 @@
     return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
+  // ── Pin state ─────────────────────────────────────────────────────────────
+  const PIN_KEY = 'cc-pinned';
+  function getPinned() {
+    try { return JSON.parse(localStorage.getItem(PIN_KEY) || '{}'); } catch { return {}; }
+  }
+  function isPinned(repoFull, number) {
+    return !!getPinned()[`${repoFull}#${number}`];
+  }
+  function togglePin(e, repoFull, number) {
+    e.preventDefault(); e.stopPropagation();
+    const key = `${repoFull}#${number}`;
+    const pins = getPinned();
+    if (pins[key]) { delete pins[key]; } else { pins[key] = true; }
+    localStorage.setItem(PIN_KEY, JSON.stringify(pins));
+    // Re-render all issue columns
+    if (window._lastIssuesData) renderIssueColumns(window._lastIssuesData);
+  }
+
   async function closeIssue(e, repoFull, number, cardEl) {
     e.preventDefault(); e.stopPropagation();
     if (!confirm(`Close issue #${number}?`)) return;
@@ -1151,9 +1194,12 @@
       `<span class="issue-label ${labelClass(l.name)}">${l.name.replace(/[^\w\s-]/g,'').trim()}</span>`
     ).join('');
     const labelStr = issue.labels.map(l => l.name).join(' ');
+    const pinned = isPinned(issue.repoFull, issue.number);
+    const pinTitle = pinned ? 'Unpin card' : 'Pin to top';
     return `
-      <a class="issue-card" href="${issue.url}" target="_blank"
+      <a class="issue-card${pinned ? ' pinned' : ''}" href="${issue.url}" target="_blank"
         data-title="${escHtml(issue.title)}" data-repo="${issue.repo}" data-labels="${escHtml(labelStr)}">
+        <button class="issue-pin-btn" onclick="togglePin(event,'${issue.repoFull}',${issue.number})" title="${pinTitle}">📌</button>
         <button class="issue-close-btn" onclick="closeIssue(event,'${issue.repoFull}',${issue.number},this.parentElement)" title="Close issue">&times;</button>
         <div class="issue-top">
           <div class="issue-title">${escHtml(issue.title)}</div>
@@ -1217,16 +1263,31 @@
     document.getElementById('sub-active').textContent = `${data.active.length} issues · Updated ${timeAgo(data.updatedAt)}`;
     document.getElementById('sub-backlog').textContent = `${data.deferred.length} issues · Updated ${timeAgo(data.updatedAt)}`;
 
-    const render = (id, arr, cls) => {
-      const el = document.getElementById(id);
-      el.className = cls;
-      el.innerHTML = arr.length ? arr.map(renderIssueCard).join('') : '<div class="empty">Nothing here 🎉</div>';
-    };
-    render('col-urgent', data.urgent, 'issues-grid');
-    render('col-active', data.active, 'issues-grid');
-    render('col-deferred', data.deferred, 'issues-grid');
-    reapplyCurrentFilter();
+    window._lastIssuesData = data;
+    renderIssueColumns(data);
     _homeData.issues = data; tryRenderHome();
+  }
+
+  function renderIssueColumns(data) {
+    const renderCol = (id, arr) => {
+      const el = document.getElementById(id);
+      el.className = 'issues-grid';
+      if (!arr.length) { el.innerHTML = '<div class="empty">Nothing here 🎉</div>'; return; }
+      const pinned = arr.filter(i => isPinned(i.repoFull, i.number));
+      const unpinned = arr.filter(i => !isPinned(i.repoFull, i.number));
+      let html = '';
+      if (pinned.length) {
+        html += `<div class="pinned-section-header"><span>📌</span> Pinned</div>`;
+        html += pinned.map(renderIssueCard).join('');
+        if (unpinned.length) html += '<hr class="pinned-divider">';
+      }
+      html += unpinned.map(renderIssueCard).join('');
+      el.innerHTML = html;
+    };
+    renderCol('col-urgent', data.urgent);
+    renderCol('col-active', data.active);
+    renderCol('col-deferred', data.deferred);
+    reapplyCurrentFilter();
   }
 
   // ── Home view ────────────────────────────────────────────────────────────
