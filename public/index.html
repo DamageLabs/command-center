@@ -626,6 +626,94 @@
     .home-pinned-unpin:hover { background: rgba(239,68,68,0.2); color: var(--red-400); }
     .home-pinned-empty { color: var(--text-muted); font-size: 0.85rem; padding: 0.5rem 0; }
 
+    /* ── Reminders ── */
+    .reminder-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 1rem 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+    .reminder-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 0.75rem;
+    }
+    .reminder-title {
+      font-size: 0.8rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.07em; color: var(--text-muted);
+      display: flex; align-items: center; gap: 0.4rem;
+    }
+    .reminder-badge {
+      font-size: 0.65rem; font-weight: 700;
+      background: rgba(245,158,11,0.2); color: var(--amber-400);
+      padding: 0.1rem 0.4rem; border-radius: 10px;
+    }
+    .reminder-add-btn {
+      display: flex; align-items: center; gap: 0.3rem;
+      font-size: 0.75rem; font-weight: 600; color: var(--accent);
+      background: rgba(99,179,237,0.08); border: 1px solid rgba(99,179,237,0.2);
+      border-radius: 6px; padding: 0.3rem 0.7rem; cursor: pointer;
+      transition: all 0.15s;
+    }
+    .reminder-add-btn:hover { background: rgba(99,179,237,0.15); border-color: rgba(99,179,237,0.4); }
+    .reminder-input-row {
+      display: none; gap: 0.5rem; margin-bottom: 0.75rem; align-items: center;
+    }
+    .reminder-input-row.visible { display: flex; }
+    .reminder-text-input {
+      flex: 1; background: var(--bg-hover); border: 1px solid var(--border);
+      border-radius: 6px; padding: 0.4rem 0.75rem;
+      color: var(--text); font-size: 0.85rem; font-family: inherit;
+      outline: none; transition: border-color 0.15s;
+    }
+    .reminder-text-input:focus { border-color: var(--accent); }
+    .reminder-date-input {
+      background: var(--bg-hover); border: 1px solid var(--border);
+      border-radius: 6px; padding: 0.4rem 0.6rem;
+      color: var(--text); font-size: 0.8rem; font-family: inherit;
+      outline: none; cursor: pointer; transition: border-color 0.15s;
+      width: 130px;
+    }
+    .reminder-date-input:focus { border-color: var(--accent); }
+    .reminder-save-btn {
+      background: var(--accent); color: #000; font-weight: 700;
+      border: none; border-radius: 6px; padding: 0.4rem 0.85rem;
+      font-size: 0.8rem; cursor: pointer; transition: opacity 0.15s;
+    }
+    .reminder-save-btn:hover { opacity: 0.85; }
+    .reminder-cancel-btn {
+      background: transparent; border: 1px solid var(--border);
+      color: var(--text-muted); border-radius: 6px;
+      padding: 0.4rem 0.7rem; font-size: 0.8rem; cursor: pointer;
+    }
+    .reminder-list { display: flex; flex-direction: column; gap: 0.4rem; }
+    .reminder-item {
+      display: flex; align-items: center; gap: 0.75rem;
+      padding: 0.5rem 0.6rem; border-radius: 8px;
+      background: var(--bg-hover); transition: opacity 0.4s;
+    }
+    .reminder-item.fading { opacity: 0; }
+    .reminder-check {
+      width: 16px; height: 16px; flex-shrink: 0;
+      accent-color: var(--accent); cursor: pointer;
+    }
+    .reminder-item-text {
+      flex: 1; font-size: 0.85rem; color: var(--text); line-height: 1.3;
+    }
+    .reminder-item-text.done { text-decoration: line-through; color: var(--text-muted); }
+    .reminder-item-due {
+      font-size: 0.7rem; color: var(--text-muted); flex-shrink: 0;
+    }
+    .reminder-item-due.overdue { color: var(--amber-400); font-weight: 600; }
+    .reminder-dismiss {
+      flex-shrink: 0; width: 18px; height: 18px;
+      background: transparent; border: none; color: var(--text-muted);
+      cursor: pointer; font-size: 0.85rem; opacity: 0;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 4px; transition: opacity 0.15s, background 0.15s;
+    }
+    .reminder-item:hover .reminder-dismiss { opacity: 1; }
+    .reminder-dismiss:hover { background: rgba(239,68,68,0.2); color: var(--red-400); }
+    .reminder-empty { font-size: 0.8rem; color: var(--text-muted); padding: 0.25rem 0; }
+
     /* ── Infra ── */
     .infra-grid {
       display: grid;
@@ -919,6 +1007,24 @@
         <div class="home-stat-card skeleton" style="height:110px"></div>
         <div class="home-stat-card skeleton" style="height:110px"></div>
         <div class="home-stat-card skeleton" style="height:110px"></div>
+      </div>
+
+      <!-- Reminders -->
+      <div class="reminder-card">
+        <div class="reminder-header">
+          <div class="reminder-title">
+            📝 Reminders
+            <span class="reminder-badge" id="reminder-badge" style="display:none">0</span>
+          </div>
+          <button class="reminder-add-btn" onclick="reminderShowInput()" id="reminder-add-btn">＋ Add</button>
+        </div>
+        <div class="reminder-input-row" id="reminder-input-row">
+          <input class="reminder-text-input" id="reminder-text" placeholder="What do you need to do?" onkeydown="reminderInputKey(event)" />
+          <input class="reminder-date-input" id="reminder-date" type="date" />
+          <button class="reminder-save-btn" onclick="reminderSave()">Save</button>
+          <button class="reminder-cancel-btn" onclick="reminderHideInput()">Cancel</button>
+        </div>
+        <div class="reminder-list" id="reminder-list"></div>
       </div>
 
       <!-- Pinned items -->
@@ -1349,6 +1455,96 @@
   }
 
   // ── Pin state ─────────────────────────────────────────────────────────────
+  // ── Reminders ─────────────────────────────────────────────────────────────────────────────
+  const REM_KEY = 'cc-reminders';
+  function getReminders() {
+    try { return JSON.parse(localStorage.getItem(REM_KEY) || '[]'); } catch { return []; }
+  }
+  function saveReminders(list) {
+    localStorage.setItem(REM_KEY, JSON.stringify(list));
+  }
+  function reminderShowInput() {
+    document.getElementById('reminder-input-row').classList.add('visible');
+    document.getElementById('reminder-add-btn').style.display = 'none';
+    const inp = document.getElementById('reminder-text');
+    inp.value = '';
+    document.getElementById('reminder-date').value = '';
+    setTimeout(() => inp.focus(), 50);
+  }
+  function reminderHideInput() {
+    document.getElementById('reminder-input-row').classList.remove('visible');
+    document.getElementById('reminder-add-btn').style.display = '';
+  }
+  function reminderInputKey(e) {
+    if (e.key === 'Enter') reminderSave();
+    if (e.key === 'Escape') reminderHideInput();
+  }
+  function reminderSave() {
+    const text = document.getElementById('reminder-text').value.trim();
+    if (!text) return;
+    const due = document.getElementById('reminder-date').value || null;
+    const list = getReminders();
+    list.push({ id: Date.now().toString(36), text, due, done: false, createdAt: new Date().toISOString() });
+    saveReminders(list);
+    reminderHideInput();
+    renderReminders();
+  }
+  function reminderComplete(id) {
+    const el = document.querySelector(`.reminder-item[data-id="${id}"]`);
+    if (el) {
+      el.querySelector('.reminder-item-text').classList.add('done');
+      el.classList.add('fading');
+      setTimeout(() => {
+        const list = getReminders().filter(r => r.id !== id);
+        saveReminders(list);
+        renderReminders();
+      }, 600);
+    }
+  }
+  function reminderDismiss(id) {
+    saveReminders(getReminders().filter(r => r.id !== id));
+    renderReminders();
+  }
+  function renderReminders() {
+    const list = getReminders();
+    const badge = document.getElementById('reminder-badge');
+    const container = document.getElementById('reminder-list');
+    if (!badge || !container) return;
+    const active = list.filter(r => !r.done);
+    badge.textContent = active.length;
+    badge.style.display = active.length ? '' : 'none';
+    if (!list.length) {
+      container.innerHTML = '<div class="reminder-empty">No reminders — add one above</div>';
+      return;
+    }
+    const today = new Date().toISOString().slice(0, 10);
+    container.innerHTML = list.map(r => {
+      const isOverdue = r.due && r.due < today && !r.done;
+      const dueLabel = r.due
+        ? `<span class="reminder-item-due${isOverdue ? ' overdue' : ''}">${isOverdue ? '⚠️ ' : '📅 '}${r.due}</span>`
+        : '';
+      return `
+        <div class="reminder-item" data-id="${r.id}">
+          <input type="checkbox" class="reminder-check" ${r.done ? 'checked' : ''}
+            onchange="reminderComplete('${r.id}')">
+          <span class="reminder-item-text${r.done ? ' done' : ''}">${escHtml(r.text)}</span>
+          ${dueLabel}
+          <button class="reminder-dismiss" onclick="reminderDismiss('${r.id}')" title="Dismiss">×</button>
+        </div>`;
+    }).join('');
+  }
+  // Initial render + keyboard shortcut
+  renderReminders();
+  document.addEventListener('keydown', e => {
+    if (e.key === 'n' || e.key === 'N') {
+      const tag = document.activeElement?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      if (currentView !== 'home') return;
+      e.preventDefault();
+      reminderShowInput();
+    }
+  });
+
   const PIN_KEY = 'cc-pinned';
   function getPinned() {
     try { return JSON.parse(localStorage.getItem(PIN_KEY) || '{}'); } catch { return {}; }
