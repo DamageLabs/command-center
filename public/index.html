@@ -588,6 +588,43 @@
       display: flex; align-items: center; gap: 0.4rem;
     }
     .home-item-accent { color: var(--accent); }
+    .home-pinned-item {
+      background: var(--bg-card); border: 1px solid rgba(245,158,11,0.3);
+      border-left: 3px solid var(--amber-400);
+      border-radius: 10px; padding: 0.75rem 1rem;
+      margin-bottom: 0.5rem; cursor: pointer;
+      transition: border-color 0.15s;
+      text-decoration: none; display: flex;
+      align-items: center; gap: 0.75rem;
+      position: relative;
+    }
+    .home-pinned-item:hover { border-color: rgba(245,158,11,0.6); }
+    .home-pinned-type {
+      font-size: 0.6rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.05em; padding: 0.15rem 0.4rem; border-radius: 3px;
+      flex-shrink: 0;
+      background: rgba(245,158,11,0.12); color: var(--amber-400);
+    }
+    .home-pinned-body { flex: 1; min-width: 0; }
+    .home-pinned-title {
+      font-size: 0.85rem; font-weight: 600; color: var(--text);
+      margin-bottom: 0.2rem; line-height: 1.3;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .home-pinned-meta {
+      font-size: 0.72rem; color: var(--text-muted);
+      display: flex; align-items: center; gap: 0.4rem;
+    }
+    .home-pinned-unpin {
+      flex-shrink: 0; width: 20px; height: 20px;
+      border-radius: 4px; border: none; background: transparent;
+      color: var(--text-muted); cursor: pointer; font-size: 0.75rem;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; transition: opacity 0.15s, background 0.15s;
+    }
+    .home-pinned-item:hover .home-pinned-unpin { opacity: 1; }
+    .home-pinned-unpin:hover { background: rgba(239,68,68,0.2); color: var(--red-400); }
+    .home-pinned-empty { color: var(--text-muted); font-size: 0.85rem; padding: 0.5rem 0; }
 
     /* ── Infra ── */
     .infra-grid {
@@ -873,6 +910,12 @@
           </div>
           <p class="home-tagline" id="home-tagline">Loading…</p>
         </div>
+      </div>
+
+      <!-- Pinned items -->
+      <div id="home-pinned-section" style="display:none;margin-bottom:1.5rem">
+        <div class="home-section-title" style="margin-bottom:0.75rem">📌 Pinned</div>
+        <div id="home-pinned-items"></div>
       </div>
 
       <!-- Stat cards -->
@@ -1162,10 +1205,107 @@
 
   // ── View switching ─────────────────────────────────────────────────────────
   let currentView = 'home';
+  function renderHomePinned() {
+    const pins = getPinned();
+    const section = document.getElementById('home-pinned-section');
+    const container = document.getElementById('home-pinned-items');
+    if (!section || !container) return;
+
+    const items = [];
+
+    // Issues
+    const allIssues = window._lastIssuesData
+      ? [...(window._lastIssuesData.urgent||[]), ...(window._lastIssuesData.active||[]), ...(window._lastIssuesData.deferred||[])]
+      : [];
+    allIssues.filter(i => pins[`issue:${i.repoFull}#${i.number}`]).forEach(i => {
+      items.push({
+        type: 'Issue', id: `issue:${i.repoFull}#${i.number}`,
+        title: i.title, meta: `${i.repo} · #${i.number}`,
+        href: i.url, external: true,
+        unpin: () => { togglePinIssue({ preventDefault:()=>{}, stopPropagation:()=>{} }, i.repoFull, i.number); }
+      });
+    });
+
+    // PRs
+    const allPRs = window._lastPRsData || [];
+    allPRs.filter(p => pins[`pr:${p.repoFull}#${p.number}`]).forEach(p => {
+      items.push({
+        type: 'PR', id: `pr:${p.repoFull}#${p.number}`,
+        title: p.title, meta: `${p.repo} · #${p.number}${p.isDraft ? ' · Draft' : ''}`,
+        href: p.url, external: true,
+        unpin: () => { togglePinPR({ preventDefault:()=>{}, stopPropagation:()=>{} }, p.repoFull, p.number); }
+      });
+    });
+
+    // Tasks
+    const allTasks = window._lastTasksData || [];
+    allTasks.filter(t => pins[`task:${taskKey(t)}`]).forEach(t => {
+      items.push({
+        type: 'Task', id: `task:${taskKey(t)}`,
+        title: t.title, meta: `${t.source}${t.section ? ' · ' + t.section : ''}${t.due ? ' · 📅 ' + t.due : ''}`,
+        href: null, tab: 'tasks',
+        unpin: () => { togglePinTask({ preventDefault:()=>{}, stopPropagation:()=>{} }, taskKey(t)); }
+      });
+    });
+
+    // Calendar events
+    const allEvents = window._lastEventsData || [];
+    allEvents.filter(e => pins[`event:${eventKey(e)}`]).forEach(e => {
+      const start = new Date(e.start);
+      const dateStr = start.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric', timeZone:'America/Chicago' });
+      items.push({
+        type: 'Event', id: `event:${eventKey(e)}`,
+        title: e.title, meta: `${dateStr} · ${e.calendar}`,
+        href: null, tab: 'calendar',
+        unpin: () => { togglePinEvent({ preventDefault:()=>{}, stopPropagation:()=>{} }, eventKey(e)); }
+      });
+    });
+
+    // Repos
+    const allRepos = window._lastReposData || [];
+    allRepos.filter(r => pins[`repo:${r.repoFull}`]).forEach(r => {
+      items.push({
+        type: 'Repo', id: `repo:${r.repoFull}`,
+        title: r.repo, meta: `${r.openIssues} open issues`,
+        href: `https://github.com/${r.repoFull}/issues`, external: true,
+        unpin: () => { togglePinRepo({ preventDefault:()=>{}, stopPropagation:()=>{} }, r.repoFull); }
+      });
+    });
+
+    section.style.display = items.length ? '' : 'none';
+    if (!items.length) return;
+
+    container.innerHTML = items.map((item, idx) => {
+      const clickAttr = item.external
+        ? `href="${item.href}" target="_blank"`
+        : `href="#" onclick="event.preventDefault();switchView('${item.tab}')"`;
+      return `
+        <a class="home-pinned-item" ${clickAttr}>
+          <span class="home-pinned-type">${item.type}</span>
+          <div class="home-pinned-body">
+            <div class="home-pinned-title">${escHtml(item.title)}</div>
+            <div class="home-pinned-meta">${escHtml(item.meta)}</div>
+          </div>
+          <button class="home-pinned-unpin" onclick="event.preventDefault();event.stopPropagation();_homePinnedUnpin(${idx})" title="Unpin">×</button>
+        </a>`;
+    }).join('');
+
+    // stash unpin callbacks indexed by position
+    window._homePinnedCallbacks = items.map(i => i.unpin);
+  }
+
+  window._homePinnedUnpin = function(idx) {
+    if (window._homePinnedCallbacks && window._homePinnedCallbacks[idx]) {
+      window._homePinnedCallbacks[idx]();
+      renderHomePinned();
+    }
+  };
+
   let _homeData = { issues: null, events: null, tasks: null, infra: null };
   function tryRenderHome() {
     const { issues, events, tasks, infra } = _homeData;
     if (issues && events && tasks && infra) renderHome(issues, events, tasks, null, infra);
+    renderHomePinned();
   }
   function switchView(id) {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -1228,32 +1368,36 @@
     e.preventDefault(); e.stopPropagation();
     togglePinKey('issue', `${repoFull}#${number}`, () => {
       if (window._lastIssuesData) renderIssueColumns(window._lastIssuesData);
-      if (window._lastPRsData) renderPRColumns(window._lastPRsData); // re-render home
       if (_homeData.issues) tryRenderHome();
+      renderHomePinned();
     });
   }
   function togglePinPR(e, repoFull, number) {
     e.preventDefault(); e.stopPropagation();
     togglePinKey('pr', `${repoFull}#${number}`, () => {
       if (window._lastPRsData) renderPRColumns(window._lastPRsData);
+      renderHomePinned();
     });
   }
   function togglePinTask(e, titleKey) {
     e.preventDefault(); e.stopPropagation();
     togglePinKey('task', titleKey, () => {
       if (window._lastTasksData) renderTaskColumns(window._lastTasksData);
+      renderHomePinned();
     });
   }
   function togglePinEvent(e, titleKey) {
     e.preventDefault(); e.stopPropagation();
     togglePinKey('event', titleKey, () => {
       if (window._lastEventsData) renderCalendarColumns(window._lastEventsData);
+      renderHomePinned();
     });
   }
   function togglePinRepo(e, repoFull) {
     e.preventDefault(); e.stopPropagation();
     togglePinKey('repo', repoFull, () => {
       if (window._lastReposData) renderRepoColumns(window._lastReposData);
+      renderHomePinned();
     });
   }
 
@@ -1540,6 +1684,7 @@
     document.getElementById('sub-prs').textContent =
       `${prs.length} open · ${prs.filter(p=>p.isDraft).length} drafts · Updated ${timeAgo(data.updatedAt)}`;
     renderPRColumns(prs);
+    renderHomePinned();
   }
 
   async function fetchStandup() {
@@ -1833,6 +1978,7 @@
     document.getElementById('badge-repos').textContent = repos.length;
     document.getElementById('sub-repos').textContent = `${repos.length} repos · ${repos.reduce((s,r) => s + r.openIssues, 0)} open · Updated ${timeAgo(data.updatedAt)}`;
     renderRepoColumns(repos);
+    renderHomePinned();
   }
 
   async function refreshAll() {
