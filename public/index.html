@@ -710,8 +710,41 @@
       display: flex; align-items: center; justify-content: center;
       border-radius: 4px; transition: opacity 0.15s, background 0.15s;
     }
-    .reminder-item:hover .reminder-dismiss { opacity: 1; }
+    .reminder-item:hover .reminder-dismiss,
+    .reminder-item:hover .reminder-edit { opacity: 1; }
     .reminder-dismiss:hover { background: rgba(239,68,68,0.2); color: var(--red-400); }
+    .reminder-edit {
+      flex-shrink: 0; width: 18px; height: 18px;
+      background: transparent; border: none; color: var(--text-muted);
+      cursor: pointer; font-size: 0.75rem; opacity: 0;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 4px; transition: opacity 0.15s, background 0.15s;
+    }
+    .reminder-edit:hover { background: rgba(99,179,237,0.15); color: var(--accent); }
+    .reminder-inline-edit {
+      display: flex; align-items: center; gap: 0.4rem; flex: 1;
+    }
+    .reminder-inline-text {
+      flex: 1; background: var(--bg-card); border: 1px solid var(--accent);
+      border-radius: 5px; padding: 0.25rem 0.5rem;
+      color: var(--text); font-size: 0.85rem; font-family: inherit; outline: none;
+    }
+    .reminder-inline-date {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 5px; padding: 0.25rem 0.4rem;
+      color: var(--text); font-size: 0.78rem; font-family: inherit; outline: none;
+      width: 120px; cursor: pointer;
+    }
+    .reminder-inline-save {
+      background: var(--accent); color: #000; font-weight: 700;
+      border: none; border-radius: 5px; padding: 0.25rem 0.6rem;
+      font-size: 0.75rem; cursor: pointer;
+    }
+    .reminder-inline-cancel {
+      background: transparent; border: 1px solid var(--border);
+      color: var(--text-muted); border-radius: 5px;
+      padding: 0.25rem 0.5rem; font-size: 0.75rem; cursor: pointer;
+    }
     .reminder-empty { font-size: 0.8rem; color: var(--text-muted); padding: 0.25rem 0; }
 
     /* ── Infra ── */
@@ -1505,6 +1538,34 @@
     saveReminders(getReminders().filter(r => r.id !== id));
     renderReminders();
   }
+  function reminderEdit(id) {
+    const r = getReminders().find(x => x.id === id);
+    if (!r) return;
+    const item = document.querySelector(`.reminder-item[data-id="${id}"]`);
+    if (!item) return;
+    item.innerHTML = `
+      <input type="checkbox" class="reminder-check" ${r.done ? 'checked' : ''} disabled>
+      <div class="reminder-inline-edit">
+        <input class="reminder-inline-text" id="redit-text-${id}" value="${escHtml(r.text)}"
+          onkeydown="reminderEditKey(event,'${id}')">
+        <input class="reminder-inline-date" id="redit-date-${id}" type="date" value="${r.due || ''}">
+        <button class="reminder-inline-save" onclick="reminderSaveEdit('${id}')">Save</button>
+        <button class="reminder-inline-cancel" onclick="renderReminders()">Cancel</button>
+      </div>`;
+    document.getElementById(`redit-text-${id}`)?.focus();
+  }
+  function reminderEditKey(e, id) {
+    if (e.key === 'Enter') reminderSaveEdit(id);
+    if (e.key === 'Escape') renderReminders();
+  }
+  function reminderSaveEdit(id) {
+    const text = document.getElementById(`redit-text-${id}`)?.value.trim();
+    const due  = document.getElementById(`redit-date-${id}`)?.value || null;
+    if (!text) return;
+    const list = getReminders().map(r => r.id === id ? { ...r, text, due } : r);
+    saveReminders(list);
+    renderReminders();
+  }
   function renderReminders() {
     const list = getReminders();
     const badge = document.getElementById('reminder-badge');
@@ -1529,6 +1590,7 @@
             onchange="reminderComplete('${r.id}')">
           <span class="reminder-item-text${r.done ? ' done' : ''}">${escHtml(r.text)}</span>
           ${dueLabel}
+          <button class="reminder-edit" onclick="reminderEdit('${r.id}')" title="Edit">✏️</button>
           <button class="reminder-dismiss" onclick="reminderDismiss('${r.id}')" title="Dismiss">×</button>
         </div>`;
     }).join('');
