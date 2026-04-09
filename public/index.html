@@ -839,7 +839,7 @@
           <div id="home-events"><div class="skeleton" style="height:72px"></div></div>
         </div>
         <div class="home-section">
-          <div class="home-section-title">Recent Issues</div>
+          <div class="home-section-title" id="home-issues-title">Recent Issues</div>
           <div id="home-issues"><div class="skeleton" style="height:72px"></div><div class="skeleton" style="height:72px;margin-top:0.5rem"></div></div>
         </div>
         <div class="home-section">
@@ -1302,7 +1302,10 @@
     const onlineServices = infra.filter(p => p.status === 'online').length;
     const totalServices = infra.length;
     const nextEvents = events.filter(e => new Date(e.start) > new Date()).slice(0, 3);
-    const recentIssues = [...issues.urgent, ...issues.active].slice(0, 4);
+    const allIssues = [...issues.urgent, ...issues.active, ...issues.deferred];
+    const pinnedIssues = allIssues.filter(i => isPinned(i.repoFull, i.number));
+    const recentIssues = [...issues.urgent, ...issues.active].filter(i => !isPinned(i.repoFull, i.number)).slice(0, 4);
+    const homeIssues = [...pinnedIssues, ...recentIssues].slice(0, 6);
     const openTasks = tasks.slice(0, 4);
 
     // Tagline
@@ -1353,13 +1356,18 @@
         }).join('')
       : '<div class="empty" style="padding:1rem">No upcoming events</div>';
 
-    // Recent issues
-    document.getElementById('home-issues').innerHTML = recentIssues.length
-      ? recentIssues.map(i => `
-          <a class="home-issue-item" href="${i.url}" target="_blank">
-            <div class="home-item-title">${escHtml(i.title)}</div>
+    // Recent issues (pinned first)
+    const issuesTitle = document.getElementById('home-issues-title');
+    if (issuesTitle) issuesTitle.textContent = pinnedIssues.length ? `Recent Issues · ${pinnedIssues.length} pinned` : 'Recent Issues';
+    document.getElementById('home-issues').innerHTML = homeIssues.length
+      ? homeIssues.map(i => {
+          const pinned = isPinned(i.repoFull, i.number);
+          return `<a class="home-issue-item" href="${i.url}" target="_blank"
+            style="${pinned ? 'border-left:3px solid var(--amber-400)' : ''}">
+            <div class="home-item-title">${pinned ? '<span style="font-size:0.7rem;margin-right:0.3rem">📌</span>' : ''}${escHtml(i.title)}</div>
             <div class="home-item-meta"><span class="home-item-accent">${i.repo}</span><span>#${i.number}</span><span>${timeAgo(i.createdAt)}</span></div>
-          </a>`).join('')
+          </a>`;
+        }).join('')
       : '<div class="empty" style="padding:1rem">No urgent issues 🎉</div>';
 
     // Open tasks
