@@ -121,6 +121,97 @@ function fetchPRs() {
 }
 
 // ── Standup ───────────────────────────────────────────────────────────────────
+function parseStandupSections(content) {
+  const yesterdayMatch = content.match(/## Yesterday\s*\n([\s\S]*?)(?=\n## [^\n]+|$)/);
+  const yesterday = (yesterdayMatch ? yesterdayMatch[1] : content).trim();
+  const lines = yesterday.split('\n');
+  const sections = [];
+
+  let current = null;
+  let currentCategory = null;
+
+  const finalizeCurrent = () => {
+    if (!current) return;
+
+    if (current.noActivity) {
+      sections.push({
+        repo: current.repo,
+        stats: '',
+        bullets: [current.noActivity],
+      });
+      current = null;
+      currentCategory = null;
+      return;
+    }
+
+    const nonEmptyCategories = current.categories.filter(cat => cat.items.length || cat.label);
+    const stats = nonEmptyCategories
+      .filter(cat => cat.items.length)
+      .map(cat => `${cat.items.length} ${cat.label}`)
+      .join(' · ');
+
+    const bullets = [];
+    for (const cat of nonEmptyCategories) {
+      if (!cat.items.length) {
+        bullets.push(cat.label);
+        continue;
+      }
+      for (const item of cat.items) {
+        bullets.push(`${cat.label}: ${item}`);
+        if (bullets.length >= 4) break;
+      }
+      if (bullets.length >= 4) break;
+    }
+
+    sections.push({
+      repo: current.repo,
+      stats,
+      bullets: bullets.length ? bullets : ['No parsed items'],
+    });
+
+    current = null;
+    currentCategory = null;
+  };
+
+  for (const rawLine of lines) {
+    const line = rawLine.replace(/\r$/, '');
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    if (line.startsWith('### ')) {
+      finalizeCurrent();
+      current = { repo: line.slice(4).trim(), noActivity: null, categories: [] };
+      currentCategory = null;
+      continue;
+    }
+
+    if (!current) continue;
+
+    if (/^- No (GitHub )?activity/i.test(trimmed)) {
+      current.noActivity = trimmed.replace(/^-\s*/, '').replace(/\.$/, '');
+      currentCategory = null;
+      continue;
+    }
+
+    if (/^\s+- /.test(line) && !/^- /.test(line) && currentCategory) {
+      currentCategory.items.push(
+        trimmed.replace(/^-\s*/, '').replace(/\*Closes[^*]*\*/g, '').replace(/`/g, '').trim()
+      );
+      continue;
+    }
+
+    if (/^- /.test(line)) {
+      const label = trimmed.replace(/^-\s*/, '').replace(/:$/, '').trim();
+      currentCategory = { label, items: [] };
+      current.categories.push(currentCategory);
+      continue;
+    }
+  }
+
+  finalizeCurrent();
+  return sections;
+}
+
 function fetchStandup() {
   console.log('[standup] reading latest standup...');
   try {
@@ -136,20 +227,7 @@ function fetchStandup() {
     const latest = files[0];
     const date = latest.replace('.md', '');
     const content = fs.readFileSync(`${STANDUP_DIR}/${latest}`, 'utf8');
-
-    // Parse sections: split on ### headings (repos)
-    const sections = [];
-    const repoBlocks = content.split(/\n### /);
-    for (const block of repoBlocks.slice(1)) {
-      const lines = block.split('\n');
-      const repo = lines[0].trim();
-      const statsMatch = lines[1]?.match(/(\d+ PRs?[^|]*)?\|?\s*(\d+ Commits?)?\|?\s*(\d+ Issues?[^*]*)/);
-      const bullets = lines
-        .filter(l => l.startsWith('- '))
-        .slice(0, 4)
-        .map(l => l.replace(/^- /, '').replace(/\*Closes[^*]*\*/g, '').trim());
-      sections.push({ repo, stats: lines[1]?.replace(/\*\*/g,'').trim() || '', bullets });
-    }
+    const sections = parseStandupSections(content);
 
     const now = new Date();
     const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
