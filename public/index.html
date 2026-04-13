@@ -944,6 +944,9 @@
       Done
       <span class="tab-badge" style="background:rgba(148,163,184,0.14);color:var(--slate-300)" id="badge-done">0</span>
     </button>
+    <button class="nav-tab" data-view="analytics" onclick="switchView('analytics')">
+      📊 Analytics
+    </button>
     <button class="nav-tab" data-view="repos" onclick="switchView('repos')">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--blue-400)" stroke-width="2.5"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
       Repos
@@ -1213,6 +1216,23 @@
     <div class="view-body">
       <div class="skeletons" id="col-repos">
         <div class="skeleton"></div><div class="skeleton"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="view" id="view-analytics">
+    <div class="view-header">
+      <div class="view-header-row">
+        <div>
+          <div class="view-title">📊 Analytics</div>
+          <div class="view-subtitle" id="sub-analytics">Last 30 days — all properties</div>
+        </div>
+        <button onclick="loadAnalytics()" style="background:var(--bg-card);border:1px solid var(--border);color:var(--text-secondary);padding:0.4rem 0.9rem;border-radius:8px;cursor:pointer;font-size:0.82rem;">Refresh</button>
+      </div>
+    </div>
+    <div class="view-body" id="analytics-body">
+      <div class="skeletons">
+        <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
       </div>
     </div>
   </div>
@@ -1487,6 +1507,7 @@
     document.querySelector(`[data-view="${id}"]`).classList.add('active');
     currentView = id;
     markSeen(id);
+    if (id === 'analytics') loadAnalytics();
   }
 
   // ── Clock ──────────────────────────────────────────────────────────────────
@@ -2301,18 +2322,116 @@
     renderHomePinned();
   }
 
+  // ── Analytics ─────────────────────────────────────────────────────
+  async function loadAnalytics() {
+    const body = document.getElementById('analytics-body');
+    try {
+      const res = await fetch('/api/analytics');
+      if (!res.ok) throw new Error('loading');
+      const data = await res.json();
+      if (!data.totals) throw new Error('no data');
+
+      const { totals, sites, updatedAt, range } = data;
+      const avgBounce = totals.visits > 0 ? Math.round((totals.bounces / totals.visits) * 100) : 0;
+      const avgDuration = totals.visits > 0 ? Math.round(totals.totaltime / totals.visits) : 0;
+      const durationStr = avgDuration >= 60
+        ? `${Math.floor(avgDuration/60)}m ${avgDuration%60}s`
+        : `${avgDuration}s`;
+
+      document.getElementById('sub-analytics').textContent =
+        `Last 30 days — ${sites.length} properties · Updated ${timeAgo(updatedAt)}`;
+
+      body.innerHTML = `
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem;">
+          <div class="card" style="padding:1.25rem;text-align:center;">
+            <div style="font-size:1.75rem;font-weight:800;color:var(--accent);">${totals.pageviews.toLocaleString()}</div>
+            <div style="font-size:0.78rem;color:var(--text-muted);margin-top:0.25rem;">Page Views</div>
+          </div>
+          <div class="card" style="padding:1.25rem;text-align:center;">
+            <div style="font-size:1.75rem;font-weight:800;color:var(--blue-400);">${totals.visitors.toLocaleString()}</div>
+            <div style="font-size:0.78rem;color:var(--text-muted);margin-top:0.25rem;">Unique Visitors</div>
+          </div>
+          <div class="card" style="padding:1.25rem;text-align:center;">
+            <div style="font-size:1.75rem;font-weight:800;color:var(--green-400);">${totals.visits.toLocaleString()}</div>
+            <div style="font-size:0.78rem;color:var(--text-muted);margin-top:0.25rem;">Sessions</div>
+          </div>
+          <div class="card" style="padding:1.25rem;text-align:center;">
+            <div style="font-size:1.75rem;font-weight:800;color:var(--purple-400);">${avgBounce}%</div>
+            <div style="font-size:0.78rem;color:var(--text-muted);margin-top:0.25rem;">Avg Bounce Rate</div>
+          </div>
+        </div>
+
+        <div class="card" style="overflow:hidden;">
+          <table style="width:100%;border-collapse:collapse;font-size:0.85rem;">
+            <thead>
+              <tr style="border-bottom:1px solid var(--border);">
+                <th style="text-align:left;padding:0.75rem 1rem;color:var(--text-muted);font-weight:600;">Property</th>
+                <th style="text-align:right;padding:0.75rem 1rem;color:var(--text-muted);font-weight:600;">Page Views</th>
+                <th style="text-align:right;padding:0.75rem 1rem;color:var(--text-muted);font-weight:600;">Visitors</th>
+                <th style="text-align:right;padding:0.75rem 1rem;color:var(--text-muted);font-weight:600;">Sessions</th>
+                <th style="text-align:right;padding:0.75rem 1rem;color:var(--text-muted);font-weight:600;">Bounce</th>
+                <th style="text-align:right;padding:0.75rem 1rem;color:var(--text-muted);font-weight:600;">Avg Duration</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${sites.map((s, i) => {
+                const bounce = s.visits > 0 ? Math.round((s.bounces / s.visits) * 100) : 0;
+                const dur = s.visits > 0 ? Math.round(s.totaltime / s.visits) : 0;
+                const durStr = dur >= 60 ? `${Math.floor(dur/60)}m ${dur%60}s` : `${dur}s`;
+                const pct = totals.pageviews > 0 ? Math.round((s.pageviews / totals.pageviews) * 100) : 0;
+                return `
+                  <tr style="border-bottom:1px solid var(--border);transition:background 0.15s;" onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background=''">
+                    <td style="padding:0.75rem 1rem;">
+                      <div style="font-weight:600;">${s.name}</div>
+                      <div style="font-size:0.75rem;color:var(--text-muted);">
+                        <a href="https://${s.domain}" target="_blank" rel="noopener" style="color:var(--text-muted);text-decoration:none;">${s.domain}</a>
+                      </div>
+                      <div style="margin-top:4px;height:3px;background:var(--border);border-radius:2px;width:100px;">
+                        <div style="height:3px;background:var(--accent);border-radius:2px;width:${pct}%;"></div>
+                      </div>
+                    </td>
+                    <td style="text-align:right;padding:0.75rem 1rem;font-weight:600;color:var(--accent);">${s.pageviews.toLocaleString()}</td>
+                    <td style="text-align:right;padding:0.75rem 1rem;color:var(--blue-400);">${s.visitors.toLocaleString()}</td>
+                    <td style="text-align:right;padding:0.75rem 1rem;">${s.visits.toLocaleString()}</td>
+                    <td style="text-align:right;padding:0.75rem 1rem;color:${bounce > 70 ? 'var(--red-400)' : bounce > 50 ? 'var(--yellow-400)' : 'var(--green-400)'}">${bounce}%</td>
+                    <td style="text-align:right;padding:0.75rem 1rem;color:var(--text-secondary);">${durStr}</td>
+                  </tr>`;
+              }).join('')}
+            </tbody>
+            <tfoot>
+              <tr style="border-top:2px solid var(--border);font-weight:700;">
+                <td style="padding:0.75rem 1rem;">Total (${sites.length} sites)</td>
+                <td style="text-align:right;padding:0.75rem 1rem;color:var(--accent);">${totals.pageviews.toLocaleString()}</td>
+                <td style="text-align:right;padding:0.75rem 1rem;color:var(--blue-400);">${totals.visitors.toLocaleString()}</td>
+                <td style="text-align:right;padding:0.75rem 1rem;">${totals.visits.toLocaleString()}</td>
+                <td style="text-align:right;padding:0.75rem 1rem;">${avgBounce}%</td>
+                <td style="text-align:right;padding:0.75rem 1rem;">${durationStr}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        <div style="text-align:right;margin-top:0.75rem;font-size:0.75rem;color:var(--text-muted);">
+          Data from <a href="https://analytics.damagelabs.io" target="_blank" rel="noopener" style="color:var(--accent);">analytics.damagelabs.io</a>
+          &middot; Refreshes every 15 min
+        </div>`;
+    } catch(e) {
+      body.innerHTML = `<div style="color:var(--text-muted);padding:2rem;text-align:center;">Analytics unavailable — ${e.message}</div>`;
+    }
+  }
+
   async function refreshAll() {
     const btn = document.getElementById('refresh-btn');
     btn.classList.add('spinning');
     try {
       await fetch('/api/refresh', { method: 'POST' });
-      await Promise.all([fetchIssues(), fetchCalendar(), fetchRepos(), fetchTasks(), fetchInfra(), fetchNotes(), fetchStandup(), fetchPRs()]);
+      await Promise.all([fetchIssues(), fetchCalendar(), fetchRepos(), fetchTasks(), fetchInfra(), fetchNotes(), fetchStandup(), fetchPRs(), loadAnalytics()]);
     } catch(e) { console.error(e); }
     btn.classList.remove('spinning');
   }
 
   async function poll() {
-    try { await Promise.all([fetchIssues(), fetchCalendar(), fetchRepos(), fetchTasks(), fetchInfra(), fetchNotes(), fetchStandup(), fetchPRs()]); } catch(e) { console.error(e); }
+    try { await Promise.all([fetchIssues(), fetchCalendar(), fetchRepos(), fetchTasks(), fetchInfra(), fetchNotes(), fetchStandup(), fetchPRs(), loadAnalytics()]); } catch(e) { console.error(e); }
   }
 
   // ── Keyboard shortcuts ──────────────────────────────────────────────────
