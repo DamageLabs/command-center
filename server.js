@@ -65,6 +65,7 @@ let cache = {
   notes: null,
   standup: null,
   prs: null,
+  analytics: null,
   prsUpdatedAt: null,
   issuesUpdatedAt: null,
   eventsUpdatedAt: null,
@@ -468,6 +469,103 @@ async function fetchCalendars() {
   }
 }
 
+// ── Umami Analytics ─────────────────────────────────────────────────────────
+const UMAMI_URL = process.env.UMAMI_URL || '';
+const UMAMI_USERNAME = process.env.UMAMI_USERNAME || '';
+const UMAMI_PASSWORD = process.env.UMAMI_PASSWORD || '';
+let umamiToken = null;
+let umamiTokenExpiry = 0;
+
+async function getUmamiToken() {
+  if (umamiToken && Date.now() < umamiTokenExpiry) return umamiToken;
+  try {
+    const res = await fetch(`${UMAMI_URL}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: UMAMI_USERNAME, password: UMAMI_PASSWORD }),
+      signal: AbortSignal.timeout(10000),
+    });
+    const data = await res.json();
+    umamiToken = data.token;
+    umamiTokenExpiry = Date.now() + 23 * 60 * 60 * 1000; // 23h
+    return umamiToken;
+  } catch (e) {
+    console.error('[umami] auth error:', e.message);
+    return null;
+  }
+}
+
+async function fetchAnalytics() {
+  console.log('[umami] fetchAnalytics called, URL:', UMAMI_URL ? 'set' : 'MISSING');
+  if (!UMAMI_URL || !UMAMI_USERNAME) { console.log('[umami] skipping - missing config'); return; }
+  console.log('[umami] fetching analytics...');
+  try {
+    const token = await getUmamiToken();
+    if (!token) return;
+
+    const endAt = Date.now();
+    const startAt = endAt - 30 * 24 * 60 * 60 * 1000; // 30 days
+
+    // Get all websites
+    const sitesRes = await fetch(`${UMAMI_URL}/api/websites?pageSize=50`, {
+      headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(10000),
+    });
+    const sitesData = await sitesRes.json();
+    const sites = sitesData.data || sitesData || [];
+
+    // Fetch stats for each site in parallel
+    const siteStats = await Promise.all(
+      sites.map(async (site) => {
+        try {
+          const statsRes = await fetch(
+            `${UMAMI_URL}/api/websites/${site.id}/stats?startAt=${startAt}&endAt=${endAt}`,
+            { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(10000) }
+          );
+          const stats = await statsRes.json();
+          return {
+            id: site.id,
+            name: site.name,
+            domain: site.domain,
+            pageviews: stats.pageviews || 0,
+            visitors: stats.visitors || 0,
+            visits: stats.visits || 0,
+            bounces: stats.bounces || 0,
+            totaltime: stats.totaltime || 0,
+          };
+        } catch {
+          return { id: site.id, name: site.name, domain: site.domain, pageviews: 0, visitors: 0, visits: 0, bounces: 0, totaltime: 0 };
+        }
+      })
+    );
+
+    // Sort by pageviews desc
+    siteStats.sort((a, b) => b.pageviews - a.pageviews);
+
+    // Aggregate totals
+    const totals = siteStats.reduce(
+      (acc, s) => ({
+        pageviews: acc.pageviews + s.pageviews,
+        visitors: acc.visitors + s.visitors,
+        visits: acc.visits + s.visits,
+        bounces: acc.bounces + s.bounces,
+        totaltime: acc.totaltime + s.totaltime,
+      }),
+      { pageviews: 0, visitors: 0, visits: 0, bounces: 0, totaltime: 0 }
+    );
+
+    cache.analytics = {
+      totals,
+      sites: siteStats,
+      updatedAt: new Date().toISOString(),
+      range: '30d',
+    };
+    console.log(`[umami] fetched ${siteStats.length} sites, ${totals.pageviews} total pageviews`);
+  } catch (e) {
+    console.error('[umami] fetch error:', e.message);
+  }
+}
+
 // ── Schedules ─────────────────────────────────────────────────────────────────
 cron.schedule('*/5 * * * *', fetchGitHub);
 cron.schedule('*/10 * * * *', fetchCalendars);
@@ -475,6 +573,7 @@ cron.schedule('*/2 * * * *', fetchTasks);
 cron.schedule('*/5 * * * *', fetchNotes);
 cron.schedule('*/10 * * * *', fetchStandup);
 cron.schedule('*/5 * * * *', fetchPRs);
+cron.schedule('*/15 * * * *', fetchAnalytics);
 
 fetchGitHub();
 fetchCalendars();
@@ -482,6 +581,7 @@ fetchTasks();
 fetchNotes();
 fetchStandup();
 fetchPRs();
+fetchAnalytics();
 
 // ── Routes ────────────────────────────────────────────────────────────────────
 app.use(express.static(path.join(__dirname, 'public')));
@@ -537,6 +637,11 @@ app.get('/api/prs', (req, res) => {
 
 app.get('/api/standup', (req, res) => {
   res.json({ ok: true, standup: cache.standup || null });
+});
+
+app.get('/api/analytics', (req, res) => {
+  if (!cache.analytics) return res.status(503).json({ ok: false, error: 'loading' });
+  res.json(cache.analytics);
 });
 
 app.get('/api/notes', (req, res) => {
