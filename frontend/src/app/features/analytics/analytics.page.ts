@@ -10,7 +10,7 @@ import { StatePanelComponent } from '../../shared/ui/state-panel.component';
   template: `
     <app-view-shell eyebrow="Analytics" title="Analytics" subtitle="Traffic summary and site-level metrics." [meta]="meta()">
       <div view-actions class="flex flex-wrap items-center gap-3">
-        <button type="button" (click)="analytics.refresh()" class="inline-flex items-center rounded-full border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] px-4 py-2 text-sm font-medium text-[var(--cc-text-muted)] transition hover:border-amber-300/40 hover:text-[var(--cc-text)]">Refresh</button>
+        <button type="button" (click)="analytics.refresh()" class="cc-action-button">Refresh</button>
       </div>
 
       @if (analytics.isLoading()) {
@@ -21,13 +21,13 @@ import { StatePanelComponent } from '../../shared/ui/state-panel.component';
         <cc-state-panel kind="empty" title="No analytics data" message="No analytics site rows were returned for the current range."></cc-state-panel>
       } @else {
         <section class="grid gap-4 md:grid-cols-4">
-          <div class="rounded-2xl border border-[var(--cc-border)] bg-[var(--cc-surface)] p-5"><div class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--cc-text-soft)]">Page Views</div><div class="mt-3 text-3xl font-semibold text-amber-300">{{ analytics.data()!.totals.pageviews.toLocaleString() }}</div></div>
-          <div class="rounded-2xl border border-[var(--cc-border)] bg-[var(--cc-surface)] p-5"><div class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--cc-text-soft)]">Unique Visitors</div><div class="mt-3 text-3xl font-semibold text-sky-300">{{ analytics.data()!.totals.visitors.toLocaleString() }}</div></div>
-          <div class="rounded-2xl border border-[var(--cc-border)] bg-[var(--cc-surface)] p-5"><div class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--cc-text-soft)]">Sessions</div><div class="mt-3 text-3xl font-semibold text-emerald-300">{{ analytics.data()!.totals.visits.toLocaleString() }}</div></div>
-          <div class="rounded-2xl border border-[var(--cc-border)] bg-[var(--cc-surface)] p-5"><div class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--cc-text-soft)]">Avg Bounce</div><div class="mt-3 text-3xl font-semibold text-fuchsia-300">{{ averageBounce() }}%</div></div>
+          <div class="cc-list-card p-5"><div class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--cc-text-soft)]">Page Views</div><div class="mt-3 text-3xl font-semibold text-amber-300">{{ analytics.data()!.totals.pageviews.toLocaleString() }}</div></div>
+          <div class="cc-list-card p-5"><div class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--cc-text-soft)]">Unique Visitors</div><div class="mt-3 text-3xl font-semibold text-sky-300">{{ analytics.data()!.totals.visitors.toLocaleString() }}</div></div>
+          <div class="cc-list-card p-5"><div class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--cc-text-soft)]">Sessions</div><div class="mt-3 text-3xl font-semibold text-emerald-300">{{ analytics.data()!.totals.visits.toLocaleString() }}</div></div>
+          <div class="cc-list-card p-5"><div class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--cc-text-soft)]">Avg Bounce</div><div class="mt-3 text-3xl font-semibold text-fuchsia-300">{{ averageBounce() }}%</div></div>
         </section>
 
-        <section class="overflow-hidden rounded-3xl border border-[var(--cc-border)] bg-[var(--cc-surface)]">
+        <section class="overflow-hidden rounded-[28px] border border-white/10 bg-slate-950/65 shadow-[0_30px_90px_-48px_rgba(15,23,42,1)] backdrop-blur-xl">
           <div class="overflow-x-auto">
             <table class="min-w-full border-collapse text-sm">
               <thead>
@@ -45,8 +45,8 @@ import { StatePanelComponent } from '../../shared/ui/state-panel.component';
                   <tr class="border-b border-[var(--cc-border)] align-top">
                     <td class="px-5 py-4">
                       <div class="font-semibold text-[var(--cc-text)]">{{ site.name }}</div>
-                      <a [href]="'https://' + site.domain" target="_blank" class="mt-1 inline-flex text-xs text-[var(--cc-text-soft)]">{{ site.domain }}</a>
-                      <div class="mt-3 h-1.5 w-28 overflow-hidden rounded-full bg-[var(--cc-surface-muted)]">
+                      <a [href]="'https://' + site.domain" target="_blank" class="mt-1 inline-flex text-xs text-[var(--cc-text-soft)] transition hover:text-[var(--cc-text)]">{{ site.domain }}</a>
+                      <div class="mt-3 h-1.5 w-28 overflow-hidden rounded-full bg-white/10">
                         <div class="h-full rounded-full bg-amber-300" [style.width.%]="shareOfPageviews(site.pageviews)"></div>
                       </div>
                     </td>

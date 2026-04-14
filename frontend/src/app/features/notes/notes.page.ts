@@ -32,7 +32,7 @@ import { StatePanelComponent } from '../../shared/ui/state-panel.component';
                 <div class="space-y-4">
                   <div class="text-sm text-[var(--cc-text-muted)]">{{ standup.data()!.title }}</div>
                   @for (section of standup.data()!.sections; track section.repo) {
-                    <div class="rounded-2xl border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] p-4">
+                    <div class="cc-list-card p-4">
                       <div class="flex items-center justify-between gap-4">
                         <div class="text-sm font-semibold text-[var(--cc-text)]">{{ section.repo }}</div>
                         <div class="text-xs text-[var(--cc-text-soft)]">{{ section.stats }}</div>
@@ -61,7 +61,7 @@ import { StatePanelComponent } from '../../shared/ui/state-panel.component';
               } @else if (!notes.data()?.dailyNote) {
                 <cc-state-panel kind="empty" title="No recent daily note" message="No recent daily note was found in the configured Obsidian paths."></cc-state-panel>
               } @else {
-                <div class="rounded-2xl border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] p-5">
+                <div class="cc-list-card p-5">
                   <div class="flex items-center justify-between gap-4">
                     <div class="text-sm font-semibold text-[var(--cc-text)]">{{ notes.data()!.dailyNote!.date }}</div>
                     <cc-pill tone="info">{{ notes.data()!.dailyNote!.isToday ? 'Today' : 'Most recent' }}</cc-pill>
@@ -84,7 +84,7 @@ import { StatePanelComponent } from '../../shared/ui/state-panel.component';
               } @else {
                 <div class="space-y-3">
                   @for (decision of notes.data()!.decisions; track decision.title + decision.date) {
-                    <div class="rounded-2xl border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] p-4">
+                    <div class="cc-list-card p-4">
                       <div class="flex items-center justify-between gap-3">
                         <div class="text-sm font-semibold text-[var(--cc-text)]">{{ decision.title }}</div>
                         <div class="text-xs text-[var(--cc-text-soft)]">{{ decision.date }}</div>
