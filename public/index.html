@@ -1497,7 +1497,7 @@
   let _homeData = { issues: null, events: null, tasks: null, infra: null };
   function tryRenderHome() {
     const { issues, events, tasks, infra } = _homeData;
-    if (issues && events && tasks && infra) renderHome(issues, events, tasks, null, infra);
+    if (issues && events && tasks && infra !== null) renderHome(issues, events, tasks, null, infra);
     renderHomePinned();
   }
   function switchView(id) {
@@ -1834,15 +1834,17 @@
 
   // ── Home view ────────────────────────────────────────────────────────────
   function renderHome(issues, events, tasks, repos, infra) {
-    if (!issues || !events || !tasks || !infra) return;
+    if (!issues || !events || !tasks || infra === null) return;
 
+    const infraAvailable = infra.ok !== false;
+    const infraProcesses = infraAvailable ? (infra.processes || []) : [];
     const urgent = issues.urgent.length;
     const active = issues.active.length;
     const backlog = issues.deferred.length;
     const totalIssues = urgent + active + backlog;
     const totalTasks = tasks.length;
-    const onlineServices = infra.filter(p => p.status === 'online').length;
-    const totalServices = infra.length;
+    const onlineServices = infraProcesses.filter(p => p.status === 'online').length;
+    const totalServices = infraProcesses.length;
     const nextEvents = events.filter(e => new Date(e.start) > new Date()).slice(0, 3);
     const allIssues = [...issues.urgent, ...issues.active, ...issues.deferred];
     const pinnedIssues = allIssues.filter(i => isPinned('issue', `${i.repoFull}#${i.number}`));
@@ -1878,10 +1880,13 @@
         <div class="home-stat-val" style="color:var(--purple-400)">${totalTasks}</div>
         <div class="home-stat-sub">open in Obsidian</div>
       </button>
-      <button class="home-stat-card" onclick="switchView('infra')" style="border-left:3px solid var(--green-400)">
+      <button class="home-stat-card" onclick="switchView('infra')" style="border-left:3px solid ${infraAvailable ? 'var(--green-400)' : 'var(--slate-500)'}">
         <div class="home-stat-label">Infra</div>
-        <div class="home-stat-val" style="color:var(--green-400)">${onlineServices}<span style="font-size:1rem;font-weight:600;color:var(--text-muted)">/${totalServices}</span></div>
-        <div class="home-stat-sub">services online</div>
+        ${infraAvailable
+          ? `<div class="home-stat-val" style="color:var(--green-400)">${onlineServices}<span style="font-size:1rem;font-weight:600;color:var(--text-muted)">/${totalServices}</span></div>
+        <div class="home-stat-sub">services online</div>`
+          : `<div class="home-stat-val" style="color:var(--text-muted)">—</div>
+        <div class="home-stat-sub">monitoring unavailable</div>`}
       </button>
     `;
 
@@ -2110,50 +2115,68 @@
   }
 
   async function fetchInfra() {
-    const res = await fetch('/api/infra');
-    const data = await res.json();
-    if (!data.ok) throw new Error(data.error);
-    const procs = data.processes;
-    const online = procs.filter(p => p.status === 'online').length;
-    const down = procs.filter(p => p.status !== 'online').length;
-    const restarts = procs.reduce((s,p) => s + (p.restarts||0), 0);
-    document.getElementById('badge-infra').textContent = online + '/' + procs.length;
-    document.getElementById('sub-infra').textContent = `${online} online · ${down} down · ${restarts} restarts · Updated ${timeAgo(data.updatedAt)}`;
     const el = document.getElementById('col-infra');
-    el.className = '';
-    el.style.cssText = 'display:flex;flex-direction:column;gap:0';
-    el.innerHTML = `
-      <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-bottom:1.5rem;">
-        <div class="infra-stat"><div class="infra-stat-label">Total</div><div class="infra-stat-val">${procs.length}</div></div>
-        <div class="infra-stat"><div class="infra-stat-label">Online</div><div class="infra-stat-val green">${online}</div></div>
-        <div class="infra-stat"><div class="infra-stat-label">Down</div><div class="infra-stat-val red">${down}</div></div>
-        <div class="infra-stat"><div class="infra-stat-label">Restarts</div><div class="infra-stat-val amber">${restarts}</div></div>
-      </div>
-      <div class="infra-grid">
-        ${procs.map(p => {
-          const sc = p.status === 'online' ? 'online' : p.status === 'erroring' ? 'erroring' : 'stopped';
-          const domain = SERVICE_DOMAINS[p.name];
-          return `
-            <div class="process-card ${sc}">
-              <div class="process-top">
-                <div class="process-name">${p.name}</div>
-                <div class="process-badge ${sc}"><div class="dot"></div>${p.status}</div>
+    try {
+      const res = await fetch('/api/infra');
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error);
+      const procs = data.processes;
+      const online = procs.filter(p => p.status === 'online').length;
+      const down = procs.filter(p => p.status !== 'online').length;
+      const restarts = procs.reduce((s,p) => s + (p.restarts||0), 0);
+      document.getElementById('badge-infra').textContent = online + '/' + procs.length;
+      document.getElementById('sub-infra').textContent = `${online} online · ${down} down · ${restarts} restarts · Updated ${timeAgo(data.updatedAt)}`;
+      el.className = '';
+      el.style.cssText = 'display:flex;flex-direction:column;gap:0';
+      el.innerHTML = `
+        <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-bottom:1.5rem;">
+          <div class="infra-stat"><div class="infra-stat-label">Total</div><div class="infra-stat-val">${procs.length}</div></div>
+          <div class="infra-stat"><div class="infra-stat-label">Online</div><div class="infra-stat-val green">${online}</div></div>
+          <div class="infra-stat"><div class="infra-stat-label">Down</div><div class="infra-stat-val red">${down}</div></div>
+          <div class="infra-stat"><div class="infra-stat-label">Restarts</div><div class="infra-stat-val amber">${restarts}</div></div>
+        </div>
+        <div class="infra-grid">
+          ${procs.map(p => {
+            const sc = p.status === 'online' ? 'online' : p.status === 'erroring' ? 'erroring' : 'stopped';
+            const domain = SERVICE_DOMAINS[p.name];
+            return `
+              <div class="process-card ${sc}">
+                <div class="process-top">
+                  <div class="process-name">${p.name}</div>
+                  <div class="process-badge ${sc}"><div class="dot"></div>${p.status}</div>
+                </div>
+                <div class="process-metrics">
+                  <div class="pm"><div class="pm-label">Uptime</div><div class="pm-val accent">${formatUptime(p.uptime)}</div></div>
+                  <div class="pm"><div class="pm-label">Memory</div><div class="pm-val">${formatMem(p.memory)}</div></div>
+                  <div class="pm"><div class="pm-label">Restarts</div><div class="pm-val ${p.restarts > 5 ? 'accent' : ''}">${p.restarts}</div></div>
+                </div>
+                <div class="process-id">
+                  #${p.id} · PID ${p.pid || '—'}
+                  ${domain ? ` · <a href="https://${domain}" target="_blank" style="color:var(--accent);text-decoration:none;">↗ ${domain}</a>` : ''}
+                </div>
               </div>
-              <div class="process-metrics">
-                <div class="pm"><div class="pm-label">Uptime</div><div class="pm-val accent">${formatUptime(p.uptime)}</div></div>
-                <div class="pm"><div class="pm-label">Memory</div><div class="pm-val">${formatMem(p.memory)}</div></div>
-                <div class="pm"><div class="pm-label">Restarts</div><div class="pm-val ${p.restarts > 5 ? 'accent' : ''}">${p.restarts}</div></div>
-              </div>
-              <div class="process-id">
-                #${p.id} · PID ${p.pid || '—'}
-                ${domain ? ` · <a href="https://${domain}" target="_blank" style="color:var(--accent);text-decoration:none;">↗ ${domain}</a>` : ''}
-              </div>
-            </div>
-          `;
-        }).join('')}
-      </div>
-    `;
-    _homeData.infra = procs; tryRenderHome();
+            `;
+          }).join('')}
+        </div>
+      `;
+      _homeData.infra = { ok: true, processes: procs, updatedAt: data.updatedAt, error: null };
+    } catch (e) {
+      const message = (e && e.message) ? e.message : 'Infra unavailable';
+      document.getElementById('badge-infra').textContent = '—';
+      document.getElementById('sub-infra').textContent = 'Infra unavailable';
+      el.className = '';
+      el.style.cssText = 'display:flex;flex-direction:column;gap:1rem';
+      el.innerHTML = `
+        <div class="card" style="padding:1.25rem;display:flex;flex-direction:column;gap:0.6rem;">
+          <div style="font-size:0.82rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);">Infra unavailable</div>
+          <div style="font-size:1rem;font-weight:600;color:var(--text-primary);">Process monitoring could not be loaded.</div>
+          <div style="font-size:0.85rem;color:var(--text-secondary);line-height:1.5;">The rest of command-center is still working, but the Infra source failed. This commonly happens when PM2 is not installed or not available in the runtime environment.</div>
+          <pre style="margin:0;padding:0.85rem 1rem;border:1px solid var(--border);border-radius:12px;background:var(--bg-elev);color:var(--text-muted);font-size:0.78rem;white-space:pre-wrap;word-break:break-word;">${escHtml(message)}</pre>
+        </div>
+      `;
+      _homeData.infra = { ok: false, processes: [], updatedAt: null, error: message };
+    }
+    tryRenderHome();
   }
 
   function taskKey(t) { return encodeURIComponent(t.title).substring(0, 80); }
