@@ -73,13 +73,33 @@ export interface IssuesViewModel {
   updatedAt: number | null;
 }
 
+export interface RepoSummary {
+  repo: string;
+  repoFull: string;
+  openIssues: number;
+  bugs: number;
+  enhancements: number;
+  lastActivity: string | null;
+  tracked: boolean;
+  archived: boolean;
+}
+
 export interface ReposResponse extends ApiEnvelope {
-  repos: unknown[];
+  repos: RepoSummary[];
   updatedAt: number | null;
 }
 
+export interface CalendarEvent {
+  title: string;
+  start: string;
+  end: string;
+  allDay: boolean;
+  calendar: string;
+  location?: string | null;
+}
+
 export interface CalendarResponse extends ApiEnvelope {
-  events: unknown[];
+  events: CalendarEvent[];
   updatedAt: number | null;
 }
 
@@ -99,19 +119,59 @@ export interface InfraResponse extends ApiEnvelope {
   updatedAt: number | null;
 }
 
+export interface TaskItem {
+  title: string;
+  source: string;
+  section?: string | null;
+  recurring?: boolean;
+  due?: string | null;
+  color: string;
+  completedAt?: string | null;
+}
+
 export interface TasksResponse extends ApiEnvelope {
-  tasks: unknown[];
-  completedTasks: unknown[];
+  tasks: TaskItem[];
+  completedTasks: TaskItem[];
   updatedAt: number | null;
+}
+
+export interface PullRequestAuthor {
+  login?: string;
+}
+
+export interface PullRequestItem {
+  number: number;
+  title: string;
+  url: string;
+  repo: string;
+  repoFull: string;
+  headRefName: string;
+  author?: PullRequestAuthor | null;
+  createdAt: string;
+  isDraft: boolean;
+  reviewDecision?: string | null;
 }
 
 export interface PrsResponse extends ApiEnvelope {
-  prs: unknown[];
+  prs: PullRequestItem[];
   updatedAt: number | null;
 }
 
+export interface StandupSection {
+  repo: string;
+  stats: string;
+  bullets: string[];
+}
+
+export interface StandupSummary {
+  title: string;
+  date: string;
+  isToday: boolean;
+  sections: StandupSection[];
+}
+
 export interface StandupResponse extends ApiEnvelope {
-  standup: unknown | null;
+  standup: StandupSummary | null;
   updatedAt: number | null;
 }
 
@@ -122,11 +182,29 @@ export interface AnalyticsResponse extends ApiEnvelope {
   updatedAt: string | null;
 }
 
+export interface DailyNote {
+  date: string;
+  isToday: boolean;
+  preview: string;
+}
+
+export interface DecisionNote {
+  title: string;
+  date: string;
+  status?: string | null;
+  preview: string;
+}
+
 export interface NotesResponse extends ApiEnvelope {
-  daily: unknown;
-  decisions: unknown[];
+  dailyNote: DailyNote | null;
+  decisions: DecisionNote[];
 }
 
 export interface RefreshResponse {
   ok: boolean;
+}
+
+export interface CloseIssueResponse {
+  ok: boolean;
+  error?: string;
 }

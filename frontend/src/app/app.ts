@@ -11,8 +11,13 @@ import { NavItem } from './shared/models/nav-item';
 })
 export class App {
   protected readonly navItems: NavItem[] = [
-    { path: '/', label: 'Scaffold Home' },
-    { path: '/issues', label: 'Issue Views' },
-    { path: '/notes', label: 'Secondary Views' },
+    { path: '/', label: 'Home' },
+    { path: '/issues/urgent', label: 'Urgent' },
+    { path: '/issues/active', label: 'Active' },
+    { path: '/issues/backlog', label: 'Backlog' },
+    { path: '/prs', label: 'PRs' },
+    { path: '/tasks', label: 'Tasks' },
+    { path: '/done', label: 'Done' },
+    { path: '/notes', label: 'Next up' },
   ];
 }
