@@ -27,9 +27,16 @@ const STANDUP_DIR = runtimeConfig.standup.dir;
 
 const CALENDAR_URLS = runtimeConfig.calendar.icalUrls;
 
+const ANGULAR_DIST_DIR = path.join(__dirname, 'frontend', 'dist', 'frontend', 'browser');
+const ANGULAR_INDEX_FILE = path.join(ANGULAR_DIST_DIR, 'index.html');
+const HAS_ANGULAR_DIST = fs.existsSync(ANGULAR_INDEX_FILE);
+
 console.log(`[config] loaded ${path.relative(__dirname, configPath) || configPath}`);
 for (const warning of configWarnings) {
   console.warn(`[config] ${warning}`);
+}
+if (!HAS_ANGULAR_DIST) {
+  console.warn('[frontend] Angular build output not found. Run "npm run build:web" for the shipped UI or use "npm run dev" for local development.');
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -744,7 +751,9 @@ fetchPRs();
 fetchAnalytics();
 
 // ── Routes ────────────────────────────────────────────────────────────────────
-app.use(express.static(path.join(__dirname, 'public')));
+if (HAS_ANGULAR_DIST) {
+  app.use(express.static(ANGULAR_DIST_DIR));
+}
 
 app.get('/api/issues', (req, res) => {
   const source = sourceMeta('github');
@@ -857,6 +866,14 @@ app.post('/api/refresh', async (req, res) => {
   fetchStandup();
   fetchPRs();
   res.json({ ok: true });
+});
+
+app.get(/^(?!\/api(?:\/|$)).*/, (req, res) => {
+  if (!HAS_ANGULAR_DIST) {
+    return res.status(503).send('Angular build output not found. Run "npm run build:web" or start the dev server with "npm run dev".');
+  }
+
+  return res.sendFile(ANGULAR_INDEX_FILE);
 });
 
 app.listen(PORT, HOST, () => {
