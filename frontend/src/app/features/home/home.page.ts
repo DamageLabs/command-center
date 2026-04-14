@@ -25,14 +25,12 @@ interface PinnedHomeItem {
   imports: [ViewShellComponent, CardComponent, PillComponent, StatePanelComponent],
   template: `
     <app-view-shell
-      eyebrow="Layer 2"
-      title="Home dashboard"
-      subtitle="Angular Home now carries the daily command-center view, including reminders, pinned items, upcoming events, issue/task summaries, the latest daily note, and standup context."
+      eyebrow="Overview"
+      title="Home"
+      subtitle="Your daily command-center view, including reminders, pinned items, upcoming events, issue and task summaries, the latest daily note, and standup context."
       [meta]="homeMeta()"
     >
       <div view-actions class="flex flex-wrap items-center gap-3">
-        <cc-pill tone="accent">Angular Home</cc-pill>
-        <cc-pill tone="info">Two-layer migration</cc-pill>
         <button type="button" (click)="refreshAll()" [disabled]="refreshingAll()" class="inline-flex items-center rounded-full border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] px-4 py-2 text-sm font-medium text-[var(--cc-text-muted)] transition hover:border-amber-300/40 hover:text-[var(--cc-text)] disabled:cursor-not-allowed disabled:opacity-60">
           {{ refreshingAll() ? 'Refreshing…' : 'Refresh sources' }}
         </button>
