@@ -15,15 +15,15 @@ import { ThemeToggleComponent } from './theme-toggle.component';
           <div class="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
             <div>
               <p class="text-xs font-semibold uppercase tracking-[0.35em] text-[var(--cc-text-soft)]">command.center rewrite</p>
-              <h1 class="mt-3 text-3xl font-semibold tracking-tight text-[var(--cc-text)] sm:text-4xl">Shared Angular shell and UI primitives</h1>
+              <h1 class="mt-3 text-3xl font-semibold tracking-tight text-[var(--cc-text)] sm:text-4xl">Angular daily-use views are live</h1>
               <p class="mt-3 max-w-3xl text-sm leading-7 text-[var(--cc-text-muted)]">
-                Angular now has a reusable dashboard frame, theme support, and shared components so the real view migration can happen without duplicating markup.
+                The rewrite now includes real Angular versions of Home, Issues, PRs, Tasks, and Done, backed by the shared shell, data layer, and interaction state services.
               </p>
             </div>
 
             <div class="flex flex-wrap items-center gap-3">
-              <cc-pill tone="accent">Issue #69</cc-pill>
-              <cc-pill>Shell • Theme • Primitives</cc-pill>
+              <cc-pill tone="accent">Issue #71</cc-pill>
+              <cc-pill>Daily-use Angular views</cc-pill>
               <app-theme-toggle></app-theme-toggle>
             </div>
           </div>

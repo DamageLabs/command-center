@@ -17,10 +17,10 @@ describe('App', () => {
     expect(app).toBeTruthy();
   });
 
-  it('should render the shared shell heading', async () => {
+  it('should render the Angular daily-views heading', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain('Shared Angular shell and UI primitives');
+    expect(compiled.querySelector('h1')?.textContent).toContain('Angular daily-use views are live');
   });
 });

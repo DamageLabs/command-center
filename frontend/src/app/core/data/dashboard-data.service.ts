@@ -31,7 +31,7 @@ export class DashboardDataService {
   private prsResource?: DashboardResource<PrsResponse['prs']>;
   private standupResource?: DashboardResource<StandupResponse['standup']>;
   private analyticsResource?: DashboardResource<{ totals: AnalyticsResponse['totals']; sites: AnalyticsResponse['sites']; range: AnalyticsResponse['range']; updatedAt: AnalyticsResponse['updatedAt'] }>;
-  private notesResource?: DashboardResource<{ daily: NotesResponse['daily']; decisions: NotesResponse['decisions'] }>;
+  private notesResource?: DashboardResource<{ dailyNote: NotesResponse['dailyNote']; decisions: NotesResponse['decisions'] }>;
 
   issues(): DashboardResource<IssuesViewModel> {
     return this.issuesResource ??= createDashboardResource({
@@ -117,12 +117,26 @@ export class DashboardDataService {
     });
   }
 
-  notes(): DashboardResource<{ daily: NotesResponse['daily']; decisions: NotesResponse['decisions'] }> {
+  notes(): DashboardResource<{ dailyNote: NotesResponse['dailyNote']; decisions: NotesResponse['decisions'] }> {
     return this.notesResource ??= createDashboardResource({
       load: () => this.api.getNotes(),
-      selectData: (response: NotesResponse) => ({ daily: response.daily, decisions: response.decisions }),
-      isEmpty: (data) => !data.daily && data.decisions.length === 0,
+      selectData: (response: NotesResponse) => ({ dailyNote: response.dailyNote, decisions: response.decisions }),
+      isEmpty: (data) => !data.dailyNote && data.decisions.length === 0,
       intervalMs: 180_000,
+    });
+  }
+
+  closeIssue(repoFull: string, number: number): void {
+    const [owner, repo] = repoFull.split('/');
+    if (!owner || !repo) return;
+
+    this.api.closeIssue(owner, repo, number).pipe(take(1)).subscribe({
+      next: () => {
+        this.issuesResource?.refresh();
+      },
+      error: () => {
+        this.issuesResource?.refresh();
+      },
     });
   }
 

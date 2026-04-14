@@ -5,6 +5,7 @@ import { Observable } from 'rxjs';
 import {
   AnalyticsResponse,
   CalendarResponse,
+  CloseIssueResponse,
   InfraResponse,
   IssuesResponse,
   NotesResponse,
@@ -57,5 +58,9 @@ export class CommandCenterApiService {
 
   refreshAll(): Observable<RefreshResponse> {
     return this.http.post<RefreshResponse>('/api/refresh', {});
+  }
+
+  closeIssue(owner: string, repo: string, number: number): Observable<CloseIssueResponse> {
+    return this.http.post<CloseIssueResponse>(`/api/issues/${owner}/${repo}/${number}/close`, {});
   }
 }
