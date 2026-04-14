@@ -153,7 +153,20 @@
     }
     .view-subtitle {
       font-size: 0.8rem; color: var(--text-muted);
+      display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap;
     }
+    .source-pill {
+      display: inline-flex; align-items: center; gap: 0.3rem;
+      padding: 0.12rem 0.5rem; border-radius: 999px;
+      border: 1px solid transparent;
+      font-size: 0.68rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .source-pill.fresh { background: rgba(34,197,94,0.12); color: var(--green-400); border-color: rgba(34,197,94,0.18); }
+    .source-pill.refreshing { background: rgba(96,165,250,0.12); color: var(--blue-400); border-color: rgba(96,165,250,0.18); }
+    .source-pill.loading { background: rgba(148,163,184,0.12); color: var(--text-muted); border-color: rgba(148,163,184,0.18); }
+    .source-pill.stale { background: rgba(245,158,11,0.12); color: var(--amber-400); border-color: rgba(245,158,11,0.18); }
+    .source-pill.failed { background: rgba(248,113,113,0.12); color: var(--red-400); border-color: rgba(248,113,113,0.18); }
     .view-body {
       flex: 1; overflow-y: auto; padding: 1.25rem 2rem;
     }
@@ -1522,11 +1535,61 @@
 
   // ── Helpers ────────────────────────────────────────────────────────────────
   function timeAgo(iso) {
+    if (!iso) return 'unknown';
     const s = Math.floor((Date.now() - new Date(iso)) / 1000);
+    if (!Number.isFinite(s)) return 'unknown';
     if (s < 60) return `${s}s ago`;
     if (s < 3600) return `${Math.floor(s/60)}m ago`;
     if (s < 86400) return `${Math.floor(s/3600)}h ago`;
     return `${Math.floor(s/86400)}d ago`;
+  }
+
+  function truncateText(value, max = 96) {
+    const text = String(value || '').trim();
+    if (!text || text.length <= max) return text;
+    return `${text.slice(0, max - 1)}…`;
+  }
+
+  function sourceStatusLabel(status) {
+    if (status === 'refreshing') return 'Refreshing';
+    if (status === 'stale') return 'Stale';
+    if (status === 'failed') return 'Failed';
+    if (status === 'loading') return 'Loading';
+    return 'Fresh';
+  }
+
+  function sourceStatusTone(status) {
+    if (status === 'refreshing') return 'refreshing';
+    if (status === 'stale') return 'stale';
+    if (status === 'failed') return 'failed';
+    if (status === 'loading') return 'loading';
+    return 'fresh';
+  }
+
+  function formatSourceSubtitle(summary, source) {
+    if (!source) return escHtml(summary);
+
+    let detail = summary || source.label;
+    if (source.status === 'loading') {
+      detail = `Loading ${source.label.toLowerCase()}…`;
+    } else if (source.status === 'refreshing') {
+      detail = `${summary} · Refreshing now`;
+    } else if (source.status === 'stale') {
+      detail = `${summary} · Last good update ${timeAgo(source.updatedAt)}`;
+    } else if (source.status === 'failed') {
+      detail = truncateText(source.error || `${source.label} is unavailable`);
+    } else if (source.updatedAt) {
+      detail = `${summary} · Updated ${timeAgo(source.updatedAt)}`;
+    }
+
+    return `<span class="source-pill ${sourceStatusTone(source.status)}">${escHtml(sourceStatusLabel(source.status))}</span><span>${escHtml(detail)}</span>`;
+  }
+
+  function setViewSubtitle(id, summary, source) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = formatSourceSubtitle(summary, source);
+    el.dataset.state = source?.status || 'unknown';
   }
 
   function labelClass(name) {
@@ -1792,7 +1855,12 @@
   async function fetchIssues() {
     const res = await fetch('/api/issues');
     const data = await res.json();
-    if (!data.ok) throw new Error(data.error);
+    if (!data.ok) {
+      setViewSubtitle('sub-urgent', 'Issues unavailable', data.source);
+      setViewSubtitle('sub-active', 'Issues unavailable', data.source);
+      setViewSubtitle('sub-backlog', 'Issues unavailable', data.source);
+      throw new Error(data.error);
+    }
 
     document.getElementById('badge-urgent').textContent = data.urgent.length;
     document.getElementById('badge-active').textContent = data.active.length;
@@ -1801,9 +1869,9 @@
     checkNotifs('active', data.active.length);
     checkNotifs('backlog', data.deferred.length);
 
-    document.getElementById('sub-urgent').textContent = `${data.urgent.length} issues · Updated ${timeAgo(data.updatedAt)}`;
-    document.getElementById('sub-active').textContent = `${data.active.length} issues · Updated ${timeAgo(data.updatedAt)}`;
-    document.getElementById('sub-backlog').textContent = `${data.deferred.length} issues · Updated ${timeAgo(data.updatedAt)}`;
+    setViewSubtitle('sub-urgent', `${data.urgent.length} issues`, data.source);
+    setViewSubtitle('sub-active', `${data.active.length} issues`, data.source);
+    setViewSubtitle('sub-backlog', `${data.deferred.length} issues`, data.source);
 
     window._lastIssuesData = data;
     renderIssueColumns(data);
@@ -1994,13 +2062,15 @@
   async function fetchPRs() {
     const res = await fetch('/api/prs');
     const data = await res.json();
-    if (!data.ok) throw new Error(data.error);
+    if (!data.ok) {
+      setViewSubtitle('sub-prs', 'PRs unavailable', data.source);
+      throw new Error(data.error);
+    }
     const prs = data.prs;
     window._lastPRsData = prs;
     document.getElementById('badge-prs').textContent = prs.length;
     checkNotifs('prs', prs.length);
-    document.getElementById('sub-prs').textContent =
-      `${prs.length} open · ${prs.filter(p=>p.isDraft).length} drafts · Updated ${timeAgo(data.updatedAt)}`;
+    setViewSubtitle('sub-prs', `${prs.length} open · ${prs.filter(p=>p.isDraft).length} drafts`, data.source);
     renderPRColumns(prs);
     renderHomePinned();
   }
@@ -2044,12 +2114,14 @@
   async function fetchNotes() {
     const res = await fetch('/api/notes');
     const data = await res.json();
-    if (!data.ok) throw new Error(data.error);
+    if (!data.ok) {
+      setViewSubtitle('sub-notes', 'Notes unavailable', data.source);
+      throw new Error(data.error);
+    }
 
     const total = (data.dailyNote ? 1 : 0) + data.decisions.length;
     document.getElementById('badge-notes').textContent = total;
-    document.getElementById('sub-notes').textContent =
-      `${data.dailyNote ? data.dailyNote.date : 'No recent daily note'} · ${data.decisions.length} decisions · Updated ${timeAgo(data.updatedAt)}`;
+    setViewSubtitle('sub-notes', `${data.dailyNote ? data.dailyNote.date : 'No recent daily note'} · ${data.decisions.length} decisions`, data.source);
 
     // Option A: Notes tab
     const el = document.getElementById('col-notes');
@@ -2119,13 +2191,16 @@
     try {
       const res = await fetch('/api/infra');
       const data = await res.json();
-      if (!data.ok) throw new Error(data.error);
+      if (!data.ok) {
+        setViewSubtitle('sub-infra', 'Infra unavailable', data.source || { status: 'failed', label: 'Infra', error: data.error });
+        throw new Error(data.error);
+      }
       const procs = data.processes;
       const online = procs.filter(p => p.status === 'online').length;
       const down = procs.filter(p => p.status !== 'online').length;
       const restarts = procs.reduce((s,p) => s + (p.restarts||0), 0);
       document.getElementById('badge-infra').textContent = online + '/' + procs.length;
-      document.getElementById('sub-infra').textContent = `${online} online · ${down} down · ${restarts} restarts · Updated ${timeAgo(data.updatedAt)}`;
+      setViewSubtitle('sub-infra', `${online} online · ${down} down · ${restarts} restarts`, data.source);
       el.className = '';
       el.style.cssText = 'display:flex;flex-direction:column;gap:0';
       el.innerHTML = `
@@ -2163,7 +2238,7 @@
     } catch (e) {
       const message = (e && e.message) ? e.message : 'Infra unavailable';
       document.getElementById('badge-infra').textContent = '—';
-      document.getElementById('sub-infra').textContent = 'Infra unavailable';
+      setViewSubtitle('sub-infra', 'Infra unavailable', { status: 'failed', label: 'Infra', error: message });
       el.className = '';
       el.style.cssText = 'display:flex;flex-direction:column;gap:1rem';
       el.innerHTML = `
@@ -2239,7 +2314,11 @@
   async function fetchTasks() {
     const res = await fetch('/api/tasks');
     const data = await res.json();
-    if (!data.ok) throw new Error(data.error);
+    if (!data.ok) {
+      setViewSubtitle('sub-tasks', 'Tasks unavailable', data.source);
+      setViewSubtitle('sub-done', 'Completed tasks unavailable', data.source);
+      throw new Error(data.error);
+    }
     const tasks = data.tasks;
     const completedTasks = data.completedTasks || [];
     window._lastTasksData = tasks;
@@ -2247,8 +2326,8 @@
     document.getElementById('badge-done').textContent = completedTasks.length;
     checkNotifs('tasks', tasks.length);
     checkNotifs('done', completedTasks.length);
-    document.getElementById('sub-tasks').textContent = `${tasks.length} open tasks · Updated ${timeAgo(data.updatedAt)}`;
-    document.getElementById('sub-done').textContent = `${completedTasks.length} completed tasks · Updated ${timeAgo(data.updatedAt)}`;
+    setViewSubtitle('sub-tasks', `${tasks.length} open tasks`, data.source);
+    setViewSubtitle('sub-done', `${completedTasks.length} completed tasks`, data.source);
     renderTaskColumns(tasks);
     renderCompletedTaskColumns(completedTasks);
     reapplyCurrentFilter();
@@ -2308,11 +2387,14 @@
   async function fetchCalendar() {
     const res = await fetch('/api/calendar');
     const data = await res.json();
-    if (!data.ok) throw new Error(data.error);
+    if (!data.ok) {
+      setViewSubtitle('sub-calendar', 'Calendar unavailable', data.source);
+      throw new Error(data.error);
+    }
     const events = data.events;
     window._lastEventsData = events;
     document.getElementById('badge-cal').textContent = events.length;
-    document.getElementById('sub-calendar').textContent = `${events.length} upcoming events · Updated ${timeAgo(data.updatedAt)}`;
+    setViewSubtitle('sub-calendar', `${events.length} upcoming events`, data.source);
     renderCalendarColumns(events);
     _homeData.events = events; tryRenderHome();
   }
@@ -2336,11 +2418,14 @@
   async function fetchRepos() {
     const res = await fetch('/api/repos');
     const data = await res.json();
-    if (!data.ok) throw new Error(data.error);
+    if (!data.ok) {
+      setViewSubtitle('sub-repos', 'Repos unavailable', data.source);
+      throw new Error(data.error);
+    }
     const repos = data.repos.sort((a,b) => b.openIssues - a.openIssues);
     window._lastReposData = repos;
     document.getElementById('badge-repos').textContent = repos.length;
-    document.getElementById('sub-repos').textContent = `${repos.length} repos · ${repos.reduce((s,r) => s + r.openIssues, 0)} open · Updated ${timeAgo(data.updatedAt)}`;
+    setViewSubtitle('sub-repos', `${repos.length} repos · ${repos.reduce((s,r) => s + r.openIssues, 0)} open`, data.source);
     renderRepoColumns(repos);
     renderHomePinned();
   }
@@ -2350,8 +2435,9 @@
     const body = document.getElementById('analytics-body');
     try {
       const res = await fetch('/api/analytics');
-      if (!res.ok) throw new Error('loading');
       const data = await res.json();
+      setViewSubtitle('sub-analytics', `Last 30 days — ${(data.sites || []).length} properties`, data.source);
+      if (!res.ok) throw new Error(data.error || data.source?.error || 'loading');
       if (!data.totals) throw new Error('no data');
 
       const { totals, sites, updatedAt, range } = data;
@@ -2361,8 +2447,7 @@
         ? `${Math.floor(avgDuration/60)}m ${avgDuration%60}s`
         : `${avgDuration}s`;
 
-      document.getElementById('sub-analytics').textContent =
-        `Last 30 days — ${sites.length} properties · Updated ${timeAgo(updatedAt)}`;
+      setViewSubtitle('sub-analytics', `Last 30 days — ${sites.length} properties`, data.source);
 
       body.innerHTML = `
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem;">

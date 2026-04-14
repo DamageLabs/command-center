@@ -86,7 +86,86 @@ let cache = {
   issuesUpdatedAt: null,
   eventsUpdatedAt: null,
   tasksUpdatedAt: null,
+  notesUpdatedAt: null,
+  standupUpdatedAt: null,
+  analyticsUpdatedAt: null,
 };
+
+const SOURCE_CONFIG = {
+  github: { label: 'GitHub', staleAfterMs: 15 * 60 * 1000 },
+  calendar: { label: 'Calendar', staleAfterMs: 30 * 60 * 1000 },
+  tasks: { label: 'Tasks', staleAfterMs: 10 * 60 * 1000 },
+  notes: { label: 'Notes', staleAfterMs: 30 * 60 * 1000 },
+  standup: { label: 'Standup', staleAfterMs: 36 * 60 * 60 * 1000 },
+  prs: { label: 'PRs', staleAfterMs: 15 * 60 * 1000 },
+  analytics: { label: 'Analytics', staleAfterMs: 30 * 60 * 1000 },
+  infra: { label: 'Infra', staleAfterMs: 5 * 60 * 1000 },
+};
+
+let sourceState = Object.fromEntries(
+  Object.keys(SOURCE_CONFIG).map(key => [key, {
+    loading: true,
+    lastAttemptAt: null,
+    lastSuccessAt: null,
+    error: null,
+    errorAt: null,
+  }])
+);
+
+function beginSource(key) {
+  if (!sourceState[key]) return;
+  sourceState[key].loading = true;
+  sourceState[key].lastAttemptAt = Date.now();
+}
+
+function succeedSource(key, updatedAt = Date.now()) {
+  if (!sourceState[key]) return;
+  sourceState[key].loading = false;
+  sourceState[key].lastSuccessAt = updatedAt;
+  sourceState[key].error = null;
+  sourceState[key].errorAt = null;
+}
+
+function failSource(key, error) {
+  if (!sourceState[key]) return;
+  sourceState[key].loading = false;
+  sourceState[key].error = error?.message || String(error);
+  sourceState[key].errorAt = Date.now();
+}
+
+function sourceMeta(key, overrides = {}) {
+  const cfg = SOURCE_CONFIG[key] || { label: key, staleAfterMs: 15 * 60 * 1000 };
+  const state = sourceState[key] || {};
+  const now = Date.now();
+  const updatedAt = state.lastSuccessAt || null;
+  const ageMs = updatedAt ? now - updatedAt : null;
+
+  let status = 'fresh';
+  if (state.loading && !updatedAt) status = 'loading';
+  else if (!updatedAt && state.error) status = 'failed';
+  else if (updatedAt && state.error) status = 'stale';
+  else if (updatedAt && ageMs !== null && ageMs > cfg.staleAfterMs) status = 'stale';
+  else if (state.loading) status = 'refreshing';
+
+  return {
+    key,
+    label: cfg.label,
+    status,
+    loading: status === 'loading' || status === 'refreshing',
+    stale: status === 'stale',
+    updatedAt,
+    ageMs,
+    lastAttemptAt: state.lastAttemptAt || null,
+    error: state.error || null,
+    errorAt: state.errorAt || null,
+    staleAfterMs: cfg.staleAfterMs,
+    ...overrides,
+  };
+}
+
+function sourceResponseStatus(source) {
+  return source.status === 'failed' ? 500 : 503;
+}
 
 function parseTaskRecord(raw, label, color, section, completed = false) {
   const dueMatch = raw.match(/📅\s*(\d{4}-\d{2}-\d{2})/);
@@ -113,10 +192,12 @@ function parseTaskRecord(raw, label, color, section, completed = false) {
 // ── Pull Requests ───────────────────────────────────────────────────────────────
 function fetchPRs() {
   console.log('[prs] fetching open PRs...');
+  beginSource('prs');
   try {
     if (!ACTIVE_REPOS.length) {
       cache.prs = [];
       cache.prsUpdatedAt = Date.now();
+      succeedSource('prs', cache.prsUpdatedAt);
       console.log('[prs] skipped, no github.trackedRepos configured');
       return;
     }
@@ -138,8 +219,10 @@ function fetchPRs() {
     allPRs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     cache.prs = allPRs;
     cache.prsUpdatedAt = Date.now();
+    succeedSource('prs', cache.prsUpdatedAt);
     console.log(`[prs] fetched ${allPRs.length} open PRs`);
   } catch (err) {
+    failSource('prs', err);
     console.error('[prs] fetch error:', err.message);
   }
 }
@@ -238,15 +321,23 @@ function parseStandupSections(content) {
 
 function fetchStandup() {
   console.log('[standup] reading latest standup...');
+  beginSource('standup');
   try {
     if (!STANDUP_DIR || !fs.existsSync(STANDUP_DIR)) {
       cache.standup = null;
+      cache.standupUpdatedAt = Date.now();
+      succeedSource('standup', cache.standupUpdatedAt);
       return;
     }
     const files = fs.readdirSync(STANDUP_DIR)
       .filter(f => f.match(/^\d{4}-\d{2}-\d{2}\.md$/))
       .sort().reverse();
-    if (!files.length) { cache.standup = null; return; }
+    if (!files.length) {
+      cache.standup = null;
+      cache.standupUpdatedAt = Date.now();
+      succeedSource('standup', cache.standupUpdatedAt);
+      return;
+    }
 
     const latest = files[0];
     const date = latest.replace('.md', '');
@@ -263,8 +354,11 @@ function fetchStandup() {
       sections,
       raw: content,
     };
+    cache.standupUpdatedAt = Date.now();
+    succeedSource('standup', cache.standupUpdatedAt);
     console.log(`[standup] loaded ${date}, ${sections.length} repo sections`);
   } catch (err) {
+    failSource('standup', err);
     console.error('[standup] error:', err.message);
   }
 }
@@ -272,12 +366,15 @@ function fetchStandup() {
 // ── Notes ────────────────────────────────────────────────────────────────────
 function fetchNotes() {
   console.log('[notes] reading obsidian notes...');
+  beginSource('notes');
   try {
     const now = new Date();
     const result = { dailyNote: null, decisions: [], updatedAt: Date.now() };
 
     if (!DAILY_DIR && !DECISIONS_DIR) {
       cache.notes = result;
+      cache.notesUpdatedAt = result.updatedAt;
+      succeedSource('notes', cache.notesUpdatedAt);
       console.log('[notes] skipped, no obsidian daily/decisions paths configured');
       return;
     }
@@ -347,9 +444,12 @@ function fetchNotes() {
       }
     }
 
-      cache.notes = result;
+    cache.notes = result;
+    cache.notesUpdatedAt = result.updatedAt;
+    succeedSource('notes', cache.notesUpdatedAt);
     console.log(`[notes] daily note: ${result.dailyNote?.date || 'none'}, decisions: ${result.decisions.length}`);
   } catch (err) {
+    failSource('notes', err);
     console.error('[notes] error:', err.message);
   }
 }
@@ -357,6 +457,7 @@ function fetchNotes() {
 // ── Tasks ────────────────────────────────────────────────────────────────────
 function fetchTasks() {
   console.log('[tasks] reading obsidian tasks...');
+  beginSource('tasks');
   try {
     const result = [];
     const completed = [];
@@ -365,6 +466,7 @@ function fetchTasks() {
       cache.tasks = result;
       cache.completedTasks = completed;
       cache.tasksUpdatedAt = Date.now();
+      succeedSource('tasks', cache.tasksUpdatedAt);
       console.log('[tasks] skipped, no tasks config found');
       return;
     }
@@ -399,8 +501,10 @@ function fetchTasks() {
       return 0;
     });
     cache.tasksUpdatedAt = Date.now();
+    succeedSource('tasks', cache.tasksUpdatedAt);
     console.log(`[tasks] found ${result.length} open tasks, ${completed.length} completed tasks`);
   } catch (err) {
+    failSource('tasks', err);
     console.error('[tasks] error:', err.message);
   }
 }
@@ -408,11 +512,13 @@ function fetchTasks() {
 // ── GitHub ────────────────────────────────────────────────────────────────────
 function fetchGitHub() {
   console.log('[github] fetching issues...');
+  beginSource('github');
   try {
     if (!GITHUB_ORGS.length) {
       cache.issues = [];
       cache.repoStats = [];
       cache.issuesUpdatedAt = Date.now();
+      succeedSource('github', cache.issuesUpdatedAt);
       console.log('[github] skipped, no github.orgs configured');
       return;
     }
@@ -451,8 +557,10 @@ function fetchGitHub() {
     cache.issues = allIssues;
     cache.repoStats = repoStats;
     cache.issuesUpdatedAt = Date.now();
+    succeedSource('github', cache.issuesUpdatedAt);
     console.log(`[github] fetched ${allIssues.length} issues, ${repoStats.length} repos`);
   } catch (err) {
+    failSource('github', err);
     console.error('[github] fetch error:', err.message);
   }
 }
@@ -460,6 +568,7 @@ function fetchGitHub() {
 // ── Calendar ──────────────────────────────────────────────────────────────────
 async function fetchCalendars() {
   console.log('[calendar] fetching events...');
+  beginSource('calendar');
   try {
     const now = new Date();
     const windowEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days ahead
@@ -500,8 +609,10 @@ async function fetchCalendars() {
 
     cache.events = allEvents;
     cache.eventsUpdatedAt = Date.now();
+    succeedSource('calendar', cache.eventsUpdatedAt);
     console.log(`[calendar] fetched ${allEvents.length} events`);
   } catch (err) {
+    failSource('calendar', err);
     console.error('[calendar] fetch error:', err.message);
   }
 }
@@ -515,30 +626,39 @@ let umamiTokenExpiry = 0;
 
 async function getUmamiToken() {
   if (umamiToken && Date.now() < umamiTokenExpiry) return umamiToken;
+  const res = await fetch(`${UMAMI_URL}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: UMAMI_USERNAME, password: UMAMI_PASSWORD }),
+    signal: AbortSignal.timeout(10000),
+  });
+  const text = await res.text();
+  let data = {};
   try {
-    const res = await fetch(`${UMAMI_URL}/api/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: UMAMI_USERNAME, password: UMAMI_PASSWORD }),
-      signal: AbortSignal.timeout(10000),
-    });
-    const data = await res.json();
-    umamiToken = data.token;
-    umamiTokenExpiry = Date.now() + 23 * 60 * 60 * 1000; // 23h
-    return umamiToken;
-  } catch (e) {
-    console.error('[umami] auth error:', e.message);
-    return null;
+    data = text ? JSON.parse(text) : {};
+  } catch {
+    data = {};
   }
+  if (!res.ok || !data.token) {
+    throw new Error(data.error || data.message || `Umami auth failed (${res.status})`);
+  }
+  umamiToken = data.token;
+  umamiTokenExpiry = Date.now() + 23 * 60 * 60 * 1000; // 23h
+  return umamiToken;
 }
 
 async function fetchAnalytics() {
   console.log('[umami] fetchAnalytics called, URL:', UMAMI_URL ? 'set' : 'MISSING');
-  if (!UMAMI_URL || !UMAMI_USERNAME) { console.log('[umami] skipping - missing config'); return; }
+  beginSource('analytics');
+  if (!UMAMI_URL || !UMAMI_USERNAME) {
+    const err = new Error('Umami is not configured');
+    failSource('analytics', err);
+    console.log('[umami] skipping - missing config');
+    return;
+  }
   console.log('[umami] fetching analytics...');
   try {
     const token = await getUmamiToken();
-    if (!token) return;
 
     const endAt = Date.now();
     const startAt = endAt - 30 * 24 * 60 * 60 * 1000; // 30 days
@@ -597,8 +717,11 @@ async function fetchAnalytics() {
       updatedAt: new Date().toISOString(),
       range: '30d',
     };
+    cache.analyticsUpdatedAt = Date.now();
+    succeedSource('analytics', cache.analyticsUpdatedAt);
     console.log(`[umami] fetched ${siteStats.length} sites, ${totals.pageviews} total pageviews`);
   } catch (e) {
+    failSource('analytics', e);
     console.error('[umami] fetch error:', e.message);
   }
 }
@@ -624,28 +747,39 @@ fetchAnalytics();
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/api/issues', (req, res) => {
-  if (!cache.issues) return res.status(503).json({ ok: false, error: 'loading' });
+  const source = sourceMeta('github');
+  if (!cache.issues) {
+    return res.status(sourceResponseStatus(source)).json({ ok: false, error: source.error || source.status, source });
+  }
   const urgent = cache.issues.filter(i => i.priority === 'urgent');
   const active = cache.issues.filter(i => i.priority === 'active');
   const deferred = cache.issues.filter(i => i.priority === 'deferred');
-  res.json({ ok: true, urgent, active, deferred, total: cache.issues.length, updatedAt: cache.issuesUpdatedAt });
+  res.json({ ok: true, urgent, active, deferred, total: cache.issues.length, updatedAt: cache.issuesUpdatedAt, source });
 });
 
 app.get('/api/repos', (req, res) => {
-  if (!cache.repoStats) return res.status(503).json({ ok: false, error: 'loading' });
-  res.json({ ok: true, repos: cache.repoStats, updatedAt: cache.issuesUpdatedAt });
+  const source = sourceMeta('github');
+  if (!cache.repoStats) {
+    return res.status(sourceResponseStatus(source)).json({ ok: false, error: source.error || source.status, source });
+  }
+  res.json({ ok: true, repos: cache.repoStats, updatedAt: cache.issuesUpdatedAt, source });
 });
 
 app.get('/api/calendar', (req, res) => {
-  if (!cache.events) return res.status(503).json({ ok: false, error: 'loading' });
-  res.json({ ok: true, events: cache.events, updatedAt: cache.eventsUpdatedAt });
+  const source = sourceMeta('calendar');
+  if (!cache.events) {
+    return res.status(sourceResponseStatus(source)).json({ ok: false, error: source.error || source.status, source });
+  }
+  res.json({ ok: true, events: cache.events, updatedAt: cache.eventsUpdatedAt, source });
 });
 
 // Infra — PM2 process list
 app.get('/api/infra', (req, res) => {
+  beginSource('infra');
   try {
     const raw = execSync('pm2 jlist', { encoding: 'utf8' });
     const processes = JSON.parse(raw);
+    const updatedAt = Date.now();
     const data = processes.map(p => ({
       id: p.pm_id,
       name: p.name,
@@ -656,34 +790,50 @@ app.get('/api/infra', (req, res) => {
       cpu: p.monit?.cpu ?? 0,
       memory: p.monit?.memory ?? 0,
     }));
-    res.json({ ok: true, processes: data, updatedAt: Date.now() });
+    succeedSource('infra', updatedAt);
+    res.json({ ok: true, processes: data, updatedAt, source: sourceMeta('infra') });
   } catch (err) {
-    res.status(500).json({ ok: false, error: err.message });
+    failSource('infra', err);
+    const source = sourceMeta('infra');
+    res.status(sourceResponseStatus(source)).json({ ok: false, error: err.message, processes: [], updatedAt: source.updatedAt, source });
   }
 });
 
 app.get('/api/tasks', (req, res) => {
-  if (!cache.tasks) return res.status(503).json({ ok: false, error: 'loading' });
-  res.json({ ok: true, tasks: cache.tasks, completedTasks: cache.completedTasks || [], updatedAt: cache.tasksUpdatedAt });
+  const source = sourceMeta('tasks');
+  if (!cache.tasks) {
+    return res.status(sourceResponseStatus(source)).json({ ok: false, error: source.error || source.status, source });
+  }
+  res.json({ ok: true, tasks: cache.tasks, completedTasks: cache.completedTasks || [], updatedAt: cache.tasksUpdatedAt, source });
 });
 
 app.get('/api/prs', (req, res) => {
-  if (!cache.prs) return res.status(503).json({ ok: false, error: 'loading' });
-  res.json({ ok: true, prs: cache.prs, updatedAt: cache.prsUpdatedAt });
+  const source = sourceMeta('prs');
+  if (!cache.prs) {
+    return res.status(sourceResponseStatus(source)).json({ ok: false, error: source.error || source.status, source });
+  }
+  res.json({ ok: true, prs: cache.prs, updatedAt: cache.prsUpdatedAt, source });
 });
 
 app.get('/api/standup', (req, res) => {
-  res.json({ ok: true, standup: cache.standup || null });
+  const source = sourceMeta('standup');
+  res.json({ ok: true, standup: cache.standup || null, updatedAt: cache.standupUpdatedAt, source });
 });
 
 app.get('/api/analytics', (req, res) => {
-  if (!cache.analytics) return res.status(503).json({ ok: false, error: 'loading' });
-  res.json(cache.analytics);
+  const source = sourceMeta('analytics');
+  if (!cache.analytics) {
+    return res.status(sourceResponseStatus(source)).json({ ok: false, error: source.error || source.status, source });
+  }
+  res.json({ ok: true, ...cache.analytics, source });
 });
 
 app.get('/api/notes', (req, res) => {
-  if (!cache.notes) return res.status(503).json({ ok: false, error: 'loading' });
-  res.json({ ok: true, ...cache.notes });
+  const source = sourceMeta('notes');
+  if (!cache.notes) {
+    return res.status(sourceResponseStatus(source)).json({ ok: false, error: source.error || source.status, source });
+  }
+  res.json({ ok: true, ...cache.notes, source });
 });
 
 // Quick issue close
