@@ -23,7 +23,7 @@ export const routes: Routes = [
     title: 'Urgent Issues',
     data: {
       priority: 'urgent',
-      eyebrow: 'Layer 1',
+      eyebrow: 'Issues',
       title: 'Urgent Issues',
       subtitle: 'Critical and bug-heavy work that needs the fastest attention.',
     },
@@ -34,7 +34,7 @@ export const routes: Routes = [
     title: 'Active Issues',
     data: {
       priority: 'active',
-      eyebrow: 'Layer 1',
+      eyebrow: 'Issues',
       title: 'Active Issues',
       subtitle: 'In-progress work and the main queue of issues that are currently active.',
     },
@@ -45,7 +45,7 @@ export const routes: Routes = [
     title: 'Backlog Issues',
     data: {
       priority: 'backlog',
-      eyebrow: 'Layer 1',
+      eyebrow: 'Issues',
       title: 'Backlog Issues',
       subtitle: 'Deferred work and the longer queue waiting behind the current focus.',
     },

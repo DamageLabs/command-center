@@ -5,16 +5,14 @@ import { DashboardDataService } from '../../core/data/dashboard-data.service';
 import { PinService } from '../../core/state/pin.service';
 import { IssueItem } from '../../models/api';
 import { ViewShellComponent } from '../../layout/view-shell.component';
-import { PillComponent } from '../../shared/ui/pill.component';
 import { StatePanelComponent } from '../../shared/ui/state-panel.component';
 
 @Component({
   selector: 'app-issue-list-page',
-  imports: [ViewShellComponent, PillComponent, StatePanelComponent],
+  imports: [ViewShellComponent, StatePanelComponent],
   template: `
     <app-view-shell [eyebrow]="eyebrow()" [title]="title()" [subtitle]="subtitle()" [meta]="meta()">
       <div view-actions class="flex flex-wrap items-center gap-3">
-        <cc-pill tone="info">Angular issue view</cc-pill>
         <button
           type="button"
           (click)="issues.refresh()"

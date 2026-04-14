@@ -2,16 +2,14 @@ import { Component, computed, inject } from '@angular/core';
 
 import { DashboardDataService } from '../../core/data/dashboard-data.service';
 import { ViewShellComponent } from '../../layout/view-shell.component';
-import { PillComponent } from '../../shared/ui/pill.component';
 import { StatePanelComponent } from '../../shared/ui/state-panel.component';
 
 @Component({
   selector: 'app-analytics-page',
-  imports: [ViewShellComponent, PillComponent, StatePanelComponent],
+  imports: [ViewShellComponent, StatePanelComponent],
   template: `
-    <app-view-shell eyebrow="Pass 2" title="Analytics" subtitle="Angular analytics view with shared resource loading, summary metrics, and site table presentation." [meta]="meta()">
+    <app-view-shell eyebrow="Analytics" title="Analytics" subtitle="Traffic summary and site-level metrics." [meta]="meta()">
       <div view-actions class="flex flex-wrap items-center gap-3">
-        <cc-pill tone="warning">Angular secondary view</cc-pill>
         <button type="button" (click)="analytics.refresh()" class="inline-flex items-center rounded-full border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] px-4 py-2 text-sm font-medium text-[var(--cc-text-muted)] transition hover:border-amber-300/40 hover:text-[var(--cc-text)]">Refresh</button>
       </div>
 
