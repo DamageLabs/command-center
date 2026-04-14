@@ -1,88 +1,115 @@
-import { DatePipe, NgClass } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 
-import { CommandCenterApiService } from '../../services/api/command-center-api.service';
+import { ViewShellComponent } from '../../layout/view-shell.component';
 import { IssuesSummary } from '../../models/api';
+import { CommandCenterApiService } from '../../services/api/command-center-api.service';
+import { CardComponent } from '../../shared/ui/card.component';
+import { PillComponent } from '../../shared/ui/pill.component';
+import { StatePanelComponent } from '../../shared/ui/state-panel.component';
+import { StatCardComponent } from '../../shared/ui/stat-card.component';
+import { StatusBadgeComponent } from '../../shared/ui/status-badge.component';
 
 @Component({
   selector: 'app-home-page',
-  imports: [DatePipe, NgClass],
+  imports: [
+    DatePipe,
+    ViewShellComponent,
+    CardComponent,
+    PillComponent,
+    StatePanelComponent,
+    StatCardComponent,
+    StatusBadgeComponent,
+  ],
   template: `
-    <section class="grid gap-6 xl:grid-cols-[1.35fr_0.9fr]">
-      <article class="rounded-3xl border border-white/10 bg-slate-900/85 p-8 shadow-2xl shadow-slate-950/30">
-        <p class="text-xs font-semibold uppercase tracking-[0.3em] text-amber-300/90">Issue #68 scaffold</p>
-        <h1 class="mt-4 text-4xl font-semibold tracking-tight text-white">Angular + Tailwind foundation for command.center</h1>
-        <p class="mt-4 max-w-3xl text-sm leading-7 text-slate-300">
-          This is the safe rewrite shell. The existing Express backend still owns the real data and local deployment,
-          while Angular now has a dedicated frontend workspace, route shell, Tailwind styling, and an API proxy path.
-        </p>
+    <app-view-shell
+      eyebrow="Issue #69"
+      title="Shared shell and primitives are now the rewrite baseline"
+      subtitle="This page is intentionally small but real. It proves the reusable shell, cards, badges, state panels, and theme tokens before the larger view migrations start."
+      meta="Next up: #70 data layer, then #71 first real feature migration"
+    >
+      <div view-actions>
+        <cc-pill tone="accent">Angular shell</cc-pill>
+        <cc-pill tone="info">Tailwind primitives</cc-pill>
+      </div>
 
-        <div class="mt-8 grid gap-4 md:grid-cols-3">
-          <div class="rounded-2xl border border-white/8 bg-slate-950/70 p-5">
-            <p class="text-xs font-semibold uppercase tracking-[0.25em] text-sky-300/90">Workspace</p>
-            <p class="mt-3 text-lg font-semibold text-white">frontend/</p>
-            <p class="mt-2 text-sm leading-6 text-slate-400">Standalone Angular app with a future-friendly folder structure for features, shared UI, services, and models.</p>
-          </div>
-          <div class="rounded-2xl border border-white/8 bg-slate-950/70 p-5">
-            <p class="text-xs font-semibold uppercase tracking-[0.25em] text-emerald-300/90">Dev flow</p>
-            <p class="mt-3 text-lg font-semibold text-white">4200 → 4500</p>
-            <p class="mt-2 text-sm leading-6 text-slate-400">Angular serves on port 4200 and proxies <code class="rounded bg-white/5 px-1.5 py-0.5 text-slate-200">/api</code> to the existing Express backend on 4500.</p>
-          </div>
-          <div class="rounded-2xl border border-white/8 bg-slate-950/70 p-5">
-            <p class="text-xs font-semibold uppercase tracking-[0.25em] text-fuchsia-300/90">Cutover</p>
-            <p class="mt-3 text-lg font-semibold text-white">Later issue</p>
-            <p class="mt-2 text-sm leading-6 text-slate-400">The legacy static frontend stays in place for now. Final dist serving and production cutover are intentionally deferred to issue #73.</p>
-          </div>
-        </div>
-      </article>
+      <section class="grid gap-4 xl:grid-cols-3">
+        <cc-stat-card label="Workspace" value="frontend/" hint="Standalone Angular workspace with shared layout and UI components." tone="accent"></cc-stat-card>
+        <cc-stat-card label="Dev flow" value="4200 → 4500" hint="Angular serves locally and proxies API requests to the existing Express backend." tone="success"></cc-stat-card>
+        <cc-stat-card label="Cutover" value="#73 later" hint="The legacy frontend remains in place until the Angular migration is complete." tone="warning"></cc-stat-card>
+      </section>
 
-      <article class="rounded-3xl border border-white/10 bg-slate-950/85 p-6">
-        <div class="flex items-start justify-between gap-4">
-          <div>
-            <p class="text-xs font-semibold uppercase tracking-[0.3em] text-sky-300/90">Live backend check</p>
-            <h2 class="mt-3 text-xl font-semibold text-white">Express API connectivity</h2>
+      <section class="grid gap-6 xl:grid-cols-[1.4fr_0.95fr]">
+        <cc-card
+          eyebrow="Shared UI foundation"
+          title="What #69 is buying us"
+          description="The scaffold is no longer just a one-off page. We now have a reusable frame for headers, navigation, cards, stats, badges, pills, and state handling."
+        >
+          <div class="grid gap-3 md:grid-cols-2">
+            <div class="rounded-2xl border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] p-4">
+              <p class="text-sm font-semibold text-[var(--cc-text)]">Componentized layout</p>
+              <p class="mt-2 text-sm leading-6 text-[var(--cc-text-muted)]">Header, nav, and route-level page framing now live in shared layout components instead of page-specific markup.</p>
+            </div>
+            <div class="rounded-2xl border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] p-4">
+              <p class="text-sm font-semibold text-[var(--cc-text)]">Consistent states</p>
+              <p class="mt-2 text-sm leading-6 text-[var(--cc-text-muted)]">Loading, empty, and unavailable experiences can now look coherent across views instead of being rebuilt per page.</p>
+            </div>
+            <div class="rounded-2xl border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] p-4">
+              <p class="text-sm font-semibold text-[var(--cc-text)]">Theme support</p>
+              <p class="mt-2 text-sm leading-6 text-[var(--cc-text-muted)]">Dark and light mode now come from a shared theme service and token layer instead of view-specific styling.</p>
+            </div>
+            <div class="rounded-2xl border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] p-4">
+              <p class="text-sm font-semibold text-[var(--cc-text)]">Safer migrations</p>
+              <p class="mt-2 text-sm leading-6 text-[var(--cc-text-muted)]">#71 and #72 can focus on feature composition instead of re-solving spacing, cards, badges, and view chrome.</p>
+            </div>
           </div>
-          <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em]"
-            [ngClass]="badgeClasses()">
-            {{ badgeLabel() }}
-          </span>
-        </div>
+        </cc-card>
 
-        @if (loading()) {
-          <div class="mt-6 rounded-2xl border border-white/8 bg-slate-900/70 p-5 text-sm text-slate-300">
-            Checking <code class="rounded bg-white/5 px-1.5 py-0.5 text-slate-100">/api/issues</code> through the Angular dev server proxy…
+        <cc-card eyebrow="Live backend check" title="Express API connectivity" tone="muted">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <p class="text-sm text-[var(--cc-text-muted)]">The Angular scaffold is still talking to the current backend through the dev proxy.</p>
+            </div>
+            <cc-status-badge [tone]="badgeTone()">{{ badgeLabel() }}</cc-status-badge>
           </div>
-        } @else if (error()) {
-          <div class="mt-6 rounded-2xl border border-rose-400/20 bg-rose-400/10 p-5 text-sm leading-6 text-rose-100">
-            <p class="font-medium">The Angular app could not reach the existing backend.</p>
-            <p class="mt-2 text-rose-100/80">{{ error() }}</p>
-          </div>
-        } @else if (summary()) {
-          <div class="mt-6 grid gap-4 sm:grid-cols-2">
-            <div class="rounded-2xl border border-white/8 bg-slate-900/70 p-5">
-              <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Open issues</p>
-              <p class="mt-3 text-4xl font-semibold tracking-tight text-white">{{ summary()!.total }}</p>
-              <div class="mt-3 grid grid-cols-3 gap-2 text-xs text-slate-400">
-                <div><span class="block text-rose-300">Urgent</span>{{ summary()!.urgent }}</div>
-                <div><span class="block text-amber-300">Active</span>{{ summary()!.active }}</div>
-                <div><span class="block text-slate-300">Backlog</span>{{ summary()!.deferred }}</div>
+
+          @if (loading()) {
+            <cc-state-panel
+              kind="loading"
+              title="Checking API reachability"
+              message="Requesting /api/issues through the Angular dev proxy so the shell proves it can sit on top of the existing Express app."
+            ></cc-state-panel>
+          } @else if (error()) {
+            <cc-state-panel
+              kind="unavailable"
+              title="Backend unavailable"
+              [message]="error()!"
+            ></cc-state-panel>
+          } @else if (summary()) {
+            <div class="space-y-4">
+              <div class="grid gap-4 sm:grid-cols-3">
+                <cc-stat-card label="Open issues" [value]="summary()!.total" hint="Across the tracked GitHub set."></cc-stat-card>
+                <cc-stat-card label="Urgent" [value]="summary()!.urgent" hint="High-priority items surfaced by the existing API."></cc-stat-card>
+                <cc-stat-card label="Active" [value]="summary()!.active" hint="Items currently in active focus."></cc-stat-card>
+              </div>
+
+              <div class="rounded-2xl border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] p-4 text-sm leading-6 text-[var(--cc-text-muted)]">
+                <p><span class="text-[var(--cc-text-soft)]">Source:</span> {{ summary()!.source.label }}</p>
+                <p class="mt-2"><span class="text-[var(--cc-text-soft)]">Source state:</span> {{ summary()!.source.status }}</p>
+                <p class="mt-2">
+                  <span class="text-[var(--cc-text-soft)]">Last update:</span>
+                  @if (summary()!.updatedAt) {
+                    {{ summary()!.updatedAt! | date:'medium' }}
+                  } @else {
+                    Never
+                  }
+                </p>
               </div>
             </div>
-            <div class="rounded-2xl border border-white/8 bg-slate-900/70 p-5 text-sm leading-6 text-slate-300">
-              <p><span class="text-slate-500">Source:</span> {{ summary()!.source.label }}</p>
-              <p class="mt-2"><span class="text-slate-500">Source state:</span> {{ summary()!.source.status }}</p>
-              <p class="mt-2"><span class="text-slate-500">Last update:</span>
-                @if (summary()!.updatedAt) {
-                  {{ summary()!.updatedAt! | date:'medium' }}
-                } @else {
-                  Never
-                }
-              </p>
-            </div>
-          </div>
-        }
-      </article>
-    </section>
+          }
+        </cc-card>
+      </section>
+    </app-view-shell>
   `,
 })
 export class HomePage {
@@ -98,10 +125,16 @@ export class HomePage {
     return this.summary()?.source.status === 'fresh' ? 'Connected' : this.summary()?.source.status ?? 'Ready';
   });
 
-  protected readonly badgeClasses = computed(() => {
-    if (this.loading()) return 'border border-slate-500/30 bg-slate-500/10 text-slate-200';
-    if (this.error()) return 'border border-rose-400/30 bg-rose-400/10 text-rose-200';
-    return 'border border-emerald-400/30 bg-emerald-400/10 text-emerald-200';
+  protected readonly badgeTone = computed<'neutral' | 'success' | 'warning' | 'danger' | 'info'>(() => {
+    if (this.loading()) return 'neutral';
+    if (this.error()) return 'danger';
+
+    const status = this.summary()?.source.status;
+    if (status === 'fresh') return 'success';
+    if (status === 'stale') return 'warning';
+    if (status === 'failed') return 'danger';
+    if (status === 'refreshing') return 'info';
+    return 'neutral';
   });
 
   constructor() {
