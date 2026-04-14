@@ -13,8 +13,8 @@ import { StatePanelComponent } from '../../shared/ui/state-panel.component';
   template: `
     <app-view-shell eyebrow="Repositories" title="Repositories" subtitle="Repository health, open issue counts, and quick handoff into issue views." [meta]="meta()">
       <div view-actions class="flex flex-wrap items-center gap-3">
-        <button type="button" (click)="repos.refresh()" class="inline-flex items-center rounded-full border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] px-4 py-2 text-sm font-medium text-[var(--cc-text-muted)] transition hover:border-amber-300/40 hover:text-[var(--cc-text)]">Refresh</button>
-        <input [value]="searchText()" (input)="searchText.set($any($event.target).value)" class="min-w-64 rounded-full border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] px-4 py-2 text-sm text-[var(--cc-text)] outline-none transition focus:border-amber-300/40" placeholder="Search repos…" />
+        <button type="button" (click)="repos.refresh()" class="cc-action-button">Refresh</button>
+        <input [value]="searchText()" (input)="searchText.set($any($event.target).value)" class="cc-input min-w-64 px-4 py-2 text-sm" placeholder="Search repos…" />
       </div>
 
       @if (repos.isLoading()) {
@@ -28,7 +28,7 @@ import { StatePanelComponent } from '../../shared/ui/state-panel.component';
           @if (pinnedItems().length) {
             <div class="lg:col-span-2 2xl:col-span-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-amber-300"><span>📌</span><span>Pinned</span></div>
             @for (repo of pinnedItems(); track repo.repoFull) {
-              <article class="rounded-2xl border border-[var(--cc-border)] bg-[var(--cc-surface)] p-5 shadow-sm">
+              <article class="cc-list-card p-5">
                 <div class="flex items-start justify-between gap-4">
                   <div>
                     <div class="text-base font-semibold text-[var(--cc-text)]">{{ repo.repo }}</div>
@@ -41,16 +41,16 @@ import { StatePanelComponent } from '../../shared/ui/state-panel.component';
                       }
                     </div>
                   </div>
-                  <button type="button" (click)="togglePinned(repo)" class="rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-xs font-semibold text-amber-200">Unpin</button>
+                  <button type="button" (click)="togglePinned(repo)" class="cc-small-button cc-small-button-accent">Unpin</button>
                 </div>
                 <div class="mt-4 grid grid-cols-3 gap-3 text-sm">
-                  <div class="rounded-2xl bg-[var(--cc-surface-muted)] p-3"><div class="text-[var(--cc-text-soft)]">Open</div><div class="mt-1 font-semibold text-[var(--cc-text)]">{{ repo.openIssues }}</div></div>
-                  <div class="rounded-2xl bg-[var(--cc-surface-muted)] p-3"><div class="text-[var(--cc-text-soft)]">Bugs</div><div class="mt-1 font-semibold text-rose-300">{{ repo.bugs }}</div></div>
-                  <div class="rounded-2xl bg-[var(--cc-surface-muted)] p-3"><div class="text-[var(--cc-text-soft)]">Features</div><div class="mt-1 font-semibold text-sky-300">{{ repo.enhancements }}</div></div>
+                  <div class="rounded-2xl bg-white/5 p-3"><div class="text-[var(--cc-text-soft)]">Open</div><div class="mt-1 font-semibold text-[var(--cc-text)]">{{ repo.openIssues }}</div></div>
+                  <div class="rounded-2xl bg-white/5 p-3"><div class="text-[var(--cc-text-soft)]">Bugs</div><div class="mt-1 font-semibold text-rose-300">{{ repo.bugs }}</div></div>
+                  <div class="rounded-2xl bg-white/5 p-3"><div class="text-[var(--cc-text-soft)]">Features</div><div class="mt-1 font-semibold text-sky-300">{{ repo.enhancements }}</div></div>
                 </div>
                 <div class="mt-4 flex flex-wrap gap-3">
-                  <button type="button" (click)="openIssueFilter(repo)" class="rounded-full border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--cc-text-muted)]">View in issues</button>
-                  <a [href]="'https://github.com/' + repo.repoFull + '/issues'" target="_blank" class="inline-flex rounded-full border border-amber-400/30 bg-amber-400/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-amber-200">GitHub ↗</a>
+                  <button type="button" (click)="openIssueFilter(repo)" class="cc-small-button">View in issues</button>
+                  <a [href]="'https://github.com/' + repo.repoFull + '/issues'" target="_blank" class="cc-small-button cc-small-button-accent">GitHub ↗</a>
                 </div>
               </article>
             }
@@ -60,7 +60,7 @@ import { StatePanelComponent } from '../../shared/ui/state-panel.component';
           }
 
           @for (repo of unpinnedItems(); track repo.repoFull) {
-            <article class="rounded-2xl border border-[var(--cc-border)] bg-[var(--cc-surface)] p-5 shadow-sm">
+            <article class="cc-list-card p-5">
               <div class="flex items-start justify-between gap-4">
                 <div>
                   <div class="text-base font-semibold text-[var(--cc-text)]">{{ repo.repo }}</div>
@@ -76,16 +76,16 @@ import { StatePanelComponent } from '../../shared/ui/state-panel.component';
                     }
                   </div>
                 </div>
-                <button type="button" (click)="togglePinned(repo)" class="rounded-full border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] px-3 py-2 text-xs font-semibold text-[var(--cc-text-muted)]">Pin</button>
+                <button type="button" (click)="togglePinned(repo)" class="cc-small-button">Pin</button>
               </div>
               <div class="mt-4 grid grid-cols-3 gap-3 text-sm">
-                <div class="rounded-2xl bg-[var(--cc-surface-muted)] p-3"><div class="text-[var(--cc-text-soft)]">Open</div><div class="mt-1 font-semibold text-[var(--cc-text)]">{{ repo.openIssues }}</div></div>
-                <div class="rounded-2xl bg-[var(--cc-surface-muted)] p-3"><div class="text-[var(--cc-text-soft)]">Bugs</div><div class="mt-1 font-semibold text-rose-300">{{ repo.bugs }}</div></div>
-                <div class="rounded-2xl bg-[var(--cc-surface-muted)] p-3"><div class="text-[var(--cc-text-soft)]">Features</div><div class="mt-1 font-semibold text-sky-300">{{ repo.enhancements }}</div></div>
+                <div class="rounded-2xl bg-white/5 p-3"><div class="text-[var(--cc-text-soft)]">Open</div><div class="mt-1 font-semibold text-[var(--cc-text)]">{{ repo.openIssues }}</div></div>
+                <div class="rounded-2xl bg-white/5 p-3"><div class="text-[var(--cc-text-soft)]">Bugs</div><div class="mt-1 font-semibold text-rose-300">{{ repo.bugs }}</div></div>
+                <div class="rounded-2xl bg-white/5 p-3"><div class="text-[var(--cc-text-soft)]">Features</div><div class="mt-1 font-semibold text-sky-300">{{ repo.enhancements }}</div></div>
               </div>
               <div class="mt-4 flex flex-wrap gap-3">
-                <button type="button" (click)="openIssueFilter(repo)" class="rounded-full border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--cc-text-muted)]">View in issues</button>
-                <a [href]="'https://github.com/' + repo.repoFull + '/issues'" target="_blank" class="inline-flex rounded-full border border-amber-400/30 bg-amber-400/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-amber-200">GitHub ↗</a>
+                <button type="button" (click)="openIssueFilter(repo)" class="cc-small-button">View in issues</button>
+                <a [href]="'https://github.com/' + repo.repoFull + '/issues'" target="_blank" class="cc-small-button cc-small-button-accent">GitHub ↗</a>
               </div>
             </article>
           }

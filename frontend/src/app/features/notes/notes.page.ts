@@ -11,7 +11,7 @@ import { StatePanelComponent } from '../../shared/ui/state-panel.component';
   template: `
     <app-view-shell eyebrow="Notes" title="Notes" subtitle="Daily note, recent decisions, and latest standup context." [meta]="meta()">
       <div view-actions class="flex flex-wrap items-center gap-3">
-        <button type="button" (click)="refresh()" class="inline-flex items-center rounded-full border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] px-4 py-2 text-sm font-medium text-[var(--cc-text-muted)] transition hover:border-amber-300/40 hover:text-[var(--cc-text)]">Refresh</button>
+        <button type="button" (click)="refresh()" class="cc-action-button">Refresh</button>
       </div>
 
       <section class="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
