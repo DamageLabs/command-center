@@ -110,6 +110,7 @@ export class IssueListPage {
 
   protected readonly issues = this.data.issues();
   protected readonly searchText = signal('');
+  protected readonly repoFilter = signal<string | null>(this.route.snapshot.queryParamMap.get('repo'));
 
   protected readonly priority = this.route.snapshot.data['priority'] as 'urgent' | 'active' | 'backlog';
   protected readonly title = computed(() => this.route.snapshot.data['title'] as string);
@@ -118,7 +119,8 @@ export class IssueListPage {
   protected readonly meta = computed(() => {
     const source = this.issues.source();
     const count = this.filteredItems().length;
-    const summary = `${count} issue${count === 1 ? '' : 's'}`;
+    const repo = this.repoFilter();
+    const summary = `${count} issue${count === 1 ? '' : 's'}${repo ? ` · ${repo}` : ''}`;
     return source?.status ? `${summary} · ${source.status}` : summary;
   });
 
@@ -132,15 +134,23 @@ export class IssueListPage {
 
   protected readonly filteredItems = computed(() => {
     const q = this.searchText().trim().toLowerCase();
-    if (!q) return this.allItems();
+    const repo = this.repoFilter()?.toLowerCase() || null;
     return this.allItems().filter((issue) => {
       const labels = issue.labels.map((label) => label.name).join(' ').toLowerCase();
-      return issue.title.toLowerCase().includes(q) || issue.repo.toLowerCase().includes(q) || labels.includes(q);
+      const matchesRepo = !repo || issue.repo.toLowerCase() === repo;
+      const matchesText = !q || issue.title.toLowerCase().includes(q) || issue.repo.toLowerCase().includes(q) || labels.includes(q);
+      return matchesRepo && matchesText;
     });
   });
 
   protected readonly pinnedItems = computed(() => this.filteredItems().filter((issue) => this.pins.isPinned('issue', this.issueKey(issue))));
   protected readonly unpinnedItems = computed(() => this.filteredItems().filter((issue) => !this.pins.isPinned('issue', this.issueKey(issue))));
+
+  constructor() {
+    this.route.queryParamMap.subscribe((params) => {
+      this.repoFilter.set(params.get('repo'));
+    });
+  }
 
   protected togglePinned(issue: IssueItem): void {
     this.pins.toggle('issue', this.issueKey(issue));

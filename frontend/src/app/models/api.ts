@@ -175,9 +175,27 @@ export interface StandupResponse extends ApiEnvelope {
   updatedAt: number | null;
 }
 
+export interface AnalyticsTotals {
+  pageviews: number;
+  visitors: number;
+  visits: number;
+  bounces: number;
+  totaltime: number;
+}
+
+export interface AnalyticsSite {
+  name: string;
+  domain: string;
+  pageviews: number;
+  visitors: number;
+  visits: number;
+  bounces: number;
+  totaltime: number;
+}
+
 export interface AnalyticsResponse extends ApiEnvelope {
-  totals: unknown;
-  sites: unknown[];
+  totals: AnalyticsTotals;
+  sites: AnalyticsSite[];
   range: string;
   updatedAt: string | null;
 }
