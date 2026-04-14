@@ -10,7 +10,8 @@
     "dev": "concurrently -k -n api,web -c yellow,cyan \"npm run dev:api\" \"npm run dev:web\"",
     "build:web": "npm --prefix frontend run build",
     "check": "npm run build:web && node --check server.js",
-    "test": "npm run check"
+    "test:server": "node --test test/*.test.js",
+    "test": "npm run test:server && npm run check"
   },
   "keywords": [],
   "author": "",
