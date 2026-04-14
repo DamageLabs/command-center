@@ -40,9 +40,9 @@ import { StatePanelComponent } from '../../shared/ui/state-panel.component';
               </div>
 
               <div class="mt-4 grid grid-cols-3 gap-3 text-sm">
-                <div class="rounded-2xl bg-white/5 p-3"><div class="text-[var(--cc-text-soft)]">Uptime</div><div class="mt-1 font-semibold text-[var(--cc-text)]">{{ formatUptime(process.uptime) }}</div></div>
-                <div class="rounded-2xl bg-white/5 p-3"><div class="text-[var(--cc-text-soft)]">Memory</div><div class="mt-1 font-semibold text-[var(--cc-text)]">{{ formatMemory(process.memory) }}</div></div>
-                <div class="rounded-2xl bg-white/5 p-3"><div class="text-[var(--cc-text-soft)]">Restarts</div><div class="mt-1 font-semibold text-[var(--cc-text)]">{{ process.restarts }}</div></div>
+                <div class="cc-stat-tile"><div class="text-[var(--cc-text-soft)]">Uptime</div><div class="mt-1 font-semibold text-[var(--cc-text)]">{{ formatUptime(process.uptime) }}</div></div>
+                <div class="cc-stat-tile"><div class="text-[var(--cc-text-soft)]">Memory</div><div class="mt-1 font-semibold text-[var(--cc-text)]">{{ formatMemory(process.memory) }}</div></div>
+                <div class="cc-stat-tile"><div class="text-[var(--cc-text-soft)]">Restarts</div><div class="mt-1 font-semibold text-[var(--cc-text)]">{{ process.restarts }}</div></div>
               </div>
             </article>
           }

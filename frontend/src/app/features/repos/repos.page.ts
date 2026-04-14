@@ -44,9 +44,9 @@ import { StatePanelComponent } from '../../shared/ui/state-panel.component';
                   <button type="button" (click)="togglePinned(repo)" class="cc-small-button cc-small-button-accent">Unpin</button>
                 </div>
                 <div class="mt-4 grid grid-cols-3 gap-3 text-sm">
-                  <div class="rounded-2xl bg-white/5 p-3"><div class="text-[var(--cc-text-soft)]">Open</div><div class="mt-1 font-semibold text-[var(--cc-text)]">{{ repo.openIssues }}</div></div>
-                  <div class="rounded-2xl bg-white/5 p-3"><div class="text-[var(--cc-text-soft)]">Bugs</div><div class="mt-1 font-semibold text-rose-300">{{ repo.bugs }}</div></div>
-                  <div class="rounded-2xl bg-white/5 p-3"><div class="text-[var(--cc-text-soft)]">Features</div><div class="mt-1 font-semibold text-sky-300">{{ repo.enhancements }}</div></div>
+                  <div class="cc-stat-tile"><div class="text-[var(--cc-text-soft)]">Open</div><div class="mt-1 font-semibold text-[var(--cc-text)]">{{ repo.openIssues }}</div></div>
+                  <div class="cc-stat-tile"><div class="text-[var(--cc-text-soft)]">Bugs</div><div class="mt-1 font-semibold text-rose-300">{{ repo.bugs }}</div></div>
+                  <div class="cc-stat-tile"><div class="text-[var(--cc-text-soft)]">Features</div><div class="mt-1 font-semibold text-sky-300">{{ repo.enhancements }}</div></div>
                 </div>
                 <div class="mt-4 flex flex-wrap gap-3">
                   <button type="button" (click)="openIssueFilter(repo)" class="cc-small-button">View in issues</button>
@@ -79,9 +79,9 @@ import { StatePanelComponent } from '../../shared/ui/state-panel.component';
                 <button type="button" (click)="togglePinned(repo)" class="cc-small-button">Pin</button>
               </div>
               <div class="mt-4 grid grid-cols-3 gap-3 text-sm">
-                <div class="rounded-2xl bg-white/5 p-3"><div class="text-[var(--cc-text-soft)]">Open</div><div class="mt-1 font-semibold text-[var(--cc-text)]">{{ repo.openIssues }}</div></div>
-                <div class="rounded-2xl bg-white/5 p-3"><div class="text-[var(--cc-text-soft)]">Bugs</div><div class="mt-1 font-semibold text-rose-300">{{ repo.bugs }}</div></div>
-                <div class="rounded-2xl bg-white/5 p-3"><div class="text-[var(--cc-text-soft)]">Features</div><div class="mt-1 font-semibold text-sky-300">{{ repo.enhancements }}</div></div>
+                <div class="cc-stat-tile"><div class="text-[var(--cc-text-soft)]">Open</div><div class="mt-1 font-semibold text-[var(--cc-text)]">{{ repo.openIssues }}</div></div>
+                <div class="cc-stat-tile"><div class="text-[var(--cc-text-soft)]">Bugs</div><div class="mt-1 font-semibold text-rose-300">{{ repo.bugs }}</div></div>
+                <div class="cc-stat-tile"><div class="text-[var(--cc-text-soft)]">Features</div><div class="mt-1 font-semibold text-sky-300">{{ repo.enhancements }}</div></div>
               </div>
               <div class="mt-4 flex flex-wrap gap-3">
                 <button type="button" (click)="openIssueFilter(repo)" class="cc-small-button">View in issues</button>

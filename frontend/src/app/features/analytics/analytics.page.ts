@@ -27,7 +27,7 @@ import { StatePanelComponent } from '../../shared/ui/state-panel.component';
           <div class="cc-list-card p-5"><div class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--cc-text-soft)]">Avg Bounce</div><div class="mt-3 text-3xl font-semibold text-fuchsia-300">{{ averageBounce() }}%</div></div>
         </section>
 
-        <section class="overflow-hidden rounded-[28px] border border-white/10 bg-slate-950/65 shadow-[0_30px_90px_-48px_rgba(15,23,42,1)] backdrop-blur-xl">
+        <section class="cc-table-shell">
           <div class="overflow-x-auto">
             <table class="min-w-full border-collapse text-sm">
               <thead>
