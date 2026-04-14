@@ -182,3 +182,75 @@ code {
   border-color: rgba(99, 102, 241, 0.28);
   box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.08);
 }
+
+.cc-card-button {
+  border-radius: 1.5rem;
+  border: 1px solid var(--cc-border);
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: var(--cc-shadow-md);
+  backdrop-filter: blur(16px);
+  transition: all 180ms ease;
+}
+
+.cc-card-button:hover {
+  transform: translateY(-2px);
+  border-color: rgba(99, 102, 241, 0.24);
+}
+
+.cc-list-card {
+  border-radius: 1.5rem;
+  border: 1px solid var(--cc-border);
+  background: var(--cc-surface-soft);
+  box-shadow: var(--cc-shadow-md);
+  backdrop-filter: blur(16px);
+  transition: all 180ms ease;
+}
+
+.cc-list-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(99, 102, 241, 0.24);
+}
+
+.cc-small-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  border: 1px solid var(--cc-border);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.55rem 0.85rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--cc-text-muted);
+  transition: all 180ms ease;
+}
+
+.cc-small-button:hover {
+  border-color: rgba(99, 102, 241, 0.24);
+  color: var(--cc-text);
+}
+
+.cc-small-button-accent {
+  border-color: rgba(99, 102, 241, 0.24);
+  background: rgba(99, 102, 241, 0.14);
+  color: #dbeafe;
+}
+
+.cc-small-button-danger {
+  border-color: rgba(251, 113, 133, 0.28);
+  background: rgba(244, 63, 94, 0.12);
+  color: #ffe4e6;
+}
+
+.cc-label-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  border: 1px solid var(--cc-border);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.35rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--cc-text-muted);
+}

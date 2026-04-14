@@ -12,8 +12,8 @@ import { StatePanelComponent } from '../../shared/ui/state-panel.component';
   template: `
     <app-view-shell eyebrow="Review" title="Pull Requests" subtitle="Open pull requests with search, pinning, and review status." [meta]="meta()">
       <div view-actions class="flex flex-wrap items-center gap-3">
-        <button type="button" (click)="prs.refresh()" class="inline-flex items-center rounded-full border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] px-4 py-2 text-sm font-medium text-[var(--cc-text-muted)] transition hover:border-amber-300/40 hover:text-[var(--cc-text)]">Refresh</button>
-        <input [value]="searchText()" (input)="searchText.set($any($event.target).value)" class="min-w-64 rounded-full border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] px-4 py-2 text-sm text-[var(--cc-text)] outline-none transition focus:border-amber-300/40" placeholder="Search PRs…" />
+        <button type="button" (click)="prs.refresh()" class="cc-action-button">Refresh</button>
+        <input [value]="searchText()" (input)="searchText.set($any($event.target).value)" class="cc-input min-w-64 px-4 py-2 text-sm" placeholder="Search PRs…" />
       </div>
 
       @if (prs.isLoading()) {
@@ -27,10 +27,10 @@ import { StatePanelComponent } from '../../shared/ui/state-panel.component';
           @if (pinnedItems().length) {
             <div class="lg:col-span-2 2xl:col-span-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-amber-300"><span>📌</span><span>Pinned</span></div>
             @for (pr of pinnedItems(); track pr.repoFull + '#' + pr.number) {
-              <article class="rounded-2xl border border-[var(--cc-border)] bg-[var(--cc-surface)] p-5 shadow-sm">
+              <article class="cc-list-card p-5">
                 <div class="flex items-start justify-between gap-4">
                   <div class="min-w-0">
-                    <a [href]="pr.url" target="_blank" class="text-base font-semibold leading-6 text-[var(--cc-text)] transition hover:text-amber-300">{{ pr.title }}</a>
+                    <a [href]="pr.url" target="_blank" class="text-base font-semibold leading-6 text-[var(--cc-text)] transition hover:text-indigo-300">{{ pr.title }}</a>
                     <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-[var(--cc-text-soft)]">
                       <span class="font-semibold text-sky-300">{{ pr.repo }}</span>
                       <span>#{{ pr.number }}</span>
@@ -39,17 +39,17 @@ import { StatePanelComponent } from '../../shared/ui/state-panel.component';
                     </div>
                     <div class="mt-3 flex flex-wrap gap-2 text-xs">
                       @if (pr.isDraft) {
-                        <span class="rounded-full bg-[var(--cc-surface-muted)] px-3 py-1 font-medium text-[var(--cc-text-muted)]">Draft</span>
+                        <span class="cc-label-pill">Draft</span>
                       }
                       @if (pr.reviewDecision === 'APPROVED') {
-                        <span class="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 font-medium text-emerald-200">Approved</span>
+                        <span class="cc-label-pill border-emerald-400/25 bg-emerald-500/10 text-emerald-100">Approved</span>
                       }
                       @if (pr.reviewDecision === 'CHANGES_REQUESTED') {
-                        <span class="rounded-full border border-rose-400/30 bg-rose-400/10 px-3 py-1 font-medium text-rose-200">Changes requested</span>
+                        <span class="cc-label-pill border-rose-400/25 bg-rose-500/10 text-rose-100">Changes requested</span>
                       }
                     </div>
                   </div>
-                  <button type="button" (click)="togglePinned(pr)" class="rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-xs font-semibold text-amber-200">Unpin</button>
+                  <button type="button" (click)="togglePinned(pr)" class="cc-small-button cc-small-button-accent">Unpin</button>
                 </div>
               </article>
             }
@@ -59,10 +59,10 @@ import { StatePanelComponent } from '../../shared/ui/state-panel.component';
           }
 
           @for (pr of unpinnedItems(); track pr.repoFull + '#' + pr.number) {
-            <article class="rounded-2xl border border-[var(--cc-border)] bg-[var(--cc-surface)] p-5 shadow-sm">
+            <article class="cc-list-card p-5">
               <div class="flex items-start justify-between gap-4">
                 <div class="min-w-0">
-                  <a [href]="pr.url" target="_blank" class="text-base font-semibold leading-6 text-[var(--cc-text)] transition hover:text-amber-300">{{ pr.title }}</a>
+                  <a [href]="pr.url" target="_blank" class="text-base font-semibold leading-6 text-[var(--cc-text)] transition hover:text-indigo-300">{{ pr.title }}</a>
                   <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-[var(--cc-text-soft)]">
                     <span class="font-semibold text-sky-300">{{ pr.repo }}</span>
                     <span>#{{ pr.number }}</span>
@@ -71,17 +71,17 @@ import { StatePanelComponent } from '../../shared/ui/state-panel.component';
                   </div>
                   <div class="mt-3 flex flex-wrap gap-2 text-xs">
                     @if (pr.isDraft) {
-                      <span class="rounded-full bg-[var(--cc-surface-muted)] px-3 py-1 font-medium text-[var(--cc-text-muted)]">Draft</span>
+                      <span class="cc-label-pill">Draft</span>
                     }
                     @if (pr.reviewDecision === 'APPROVED') {
-                      <span class="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 font-medium text-emerald-200">Approved</span>
+                      <span class="cc-label-pill border-emerald-400/25 bg-emerald-500/10 text-emerald-100">Approved</span>
                     }
                     @if (pr.reviewDecision === 'CHANGES_REQUESTED') {
-                      <span class="rounded-full border border-rose-400/30 bg-rose-400/10 px-3 py-1 font-medium text-rose-200">Changes requested</span>
+                      <span class="cc-label-pill border-rose-400/25 bg-rose-500/10 text-rose-100">Changes requested</span>
                     }
                   </div>
                 </div>
-                <button type="button" (click)="togglePinned(pr)" class="rounded-full border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] px-3 py-2 text-xs font-semibold text-[var(--cc-text-muted)]">Pin</button>
+                <button type="button" (click)="togglePinned(pr)" class="cc-small-button">Pin</button>
               </div>
             </article>
           }
