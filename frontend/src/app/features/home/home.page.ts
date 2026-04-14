@@ -1,9 +1,8 @@
 import { DatePipe } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 
+import { DashboardDataService } from '../../core/data/dashboard-data.service';
 import { ViewShellComponent } from '../../layout/view-shell.component';
-import { IssuesSummary } from '../../models/api';
-import { CommandCenterApiService } from '../../services/api/command-center-api.service';
 import { CardComponent } from '../../shared/ui/card.component';
 import { PillComponent } from '../../shared/ui/pill.component';
 import { StatePanelComponent } from '../../shared/ui/state-panel.component';
@@ -23,83 +22,98 @@ import { StatusBadgeComponent } from '../../shared/ui/status-badge.component';
   ],
   template: `
     <app-view-shell
-      eyebrow="Issue #69"
-      title="Shared shell and primitives are now the rewrite baseline"
-      subtitle="This page is intentionally small but real. It proves the reusable shell, cards, badges, state panels, and theme tokens before the larger view migrations start."
-      meta="Next up: #70 data layer, then #71 first real feature migration"
+      eyebrow="Issue #70"
+      title="Angular now has a shared data layer"
+      subtitle="Polling, refresh behavior, freshness metadata, and degraded-state handling are now centralized so future Angular views can compose data instead of hand-rolling fetch logic."
+      meta="Next up: #71 first real feature migration onto the shell and data layer"
     >
       <div view-actions>
-        <cc-pill tone="accent">Angular shell</cc-pill>
-        <cc-pill tone="info">Tailwind primitives</cc-pill>
+        <cc-pill tone="accent">Shared resources</cc-pill>
+        <cc-pill tone="info">Polling + freshness</cc-pill>
+        <button
+          type="button"
+          (click)="refreshAll()"
+          [disabled]="refreshingAll()"
+          class="inline-flex items-center gap-2 rounded-full border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] px-4 py-2 text-sm font-medium text-[var(--cc-text-muted)] transition hover:border-amber-300/40 hover:text-[var(--cc-text)] disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {{ refreshingAll() ? 'Refreshing…' : 'Refresh sources' }}
+        </button>
       </div>
 
       <section class="grid gap-4 xl:grid-cols-3">
-        <cc-stat-card label="Workspace" value="frontend/" hint="Standalone Angular workspace with shared layout and UI components." tone="accent"></cc-stat-card>
-        <cc-stat-card label="Dev flow" value="4200 → 4500" hint="Angular serves locally and proxies API requests to the existing Express backend." tone="success"></cc-stat-card>
-        <cc-stat-card label="Cutover" value="#73 later" hint="The legacy frontend remains in place until the Angular migration is complete." tone="warning"></cc-stat-card>
+        <cc-stat-card label="API layer" value="9 endpoints" hint="Typed accessors exist for issues, repos, calendar, infra, tasks, PRs, standup, analytics, and notes." tone="accent"></cc-stat-card>
+        <cc-stat-card label="Refresh model" value="Centralized" hint="Polling and manual refresh live in one place instead of scattered across pages." tone="success"></cc-stat-card>
+        <cc-stat-card label="Next migration" value="#71" hint="Home, Issues, PRs, and Tasks can now consume shared resources instead of local HttpClient logic." tone="warning"></cc-stat-card>
       </section>
 
       <section class="grid gap-6 xl:grid-cols-[1.4fr_0.95fr]">
         <cc-card
-          eyebrow="Shared UI foundation"
-          title="What #69 is buying us"
-          description="The scaffold is no longer just a one-off page. We now have a reusable frame for headers, navigation, cards, stats, badges, pills, and state handling."
+          eyebrow="Data layer overview"
+          title="What #70 adds"
+          description="The frontend now has a shared data service that wraps the existing Express endpoints, normalizes source metadata, and defines one polling/refresh path for the rewrite."
         >
           <div class="grid gap-3 md:grid-cols-2">
             <div class="rounded-2xl border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] p-4">
-              <p class="text-sm font-semibold text-[var(--cc-text)]">Componentized layout</p>
-              <p class="mt-2 text-sm leading-6 text-[var(--cc-text-muted)]">Header, nav, and route-level page framing now live in shared layout components instead of page-specific markup.</p>
+              <p class="text-sm font-semibold text-[var(--cc-text)]">Typed API access</p>
+              <p class="mt-2 text-sm leading-6 text-[var(--cc-text-muted)]">All current backend endpoints now have Angular accessors instead of ad hoc page-level requests.</p>
             </div>
             <div class="rounded-2xl border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] p-4">
-              <p class="text-sm font-semibold text-[var(--cc-text)]">Consistent states</p>
-              <p class="mt-2 text-sm leading-6 text-[var(--cc-text-muted)]">Loading, empty, and unavailable experiences can now look coherent across views instead of being rebuilt per page.</p>
+              <p class="text-sm font-semibold text-[var(--cc-text)]">Polled resources</p>
+              <p class="mt-2 text-sm leading-6 text-[var(--cc-text-muted)]">Each source uses a shared resource model with loading, refreshing, empty, ready, and unavailable handling.</p>
             </div>
             <div class="rounded-2xl border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] p-4">
-              <p class="text-sm font-semibold text-[var(--cc-text)]">Theme support</p>
-              <p class="mt-2 text-sm leading-6 text-[var(--cc-text-muted)]">Dark and light mode now come from a shared theme service and token layer instead of view-specific styling.</p>
+              <p class="text-sm font-semibold text-[var(--cc-text)]">Freshness-aware UI</p>
+              <p class="mt-2 text-sm leading-6 text-[var(--cc-text-muted)]">Backend source metadata now drives consistent stale, refreshing, and failed-state badges in the Angular shell.</p>
             </div>
             <div class="rounded-2xl border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] p-4">
-              <p class="text-sm font-semibold text-[var(--cc-text)]">Safer migrations</p>
-              <p class="mt-2 text-sm leading-6 text-[var(--cc-text-muted)]">#71 and #72 can focus on feature composition instead of re-solving spacing, cards, badges, and view chrome.</p>
+              <p class="text-sm font-semibold text-[var(--cc-text)]">Central refresh</p>
+              <p class="mt-2 text-sm leading-6 text-[var(--cc-text-muted)]">Manual refresh now has one home, which will make upcoming feature views much cleaner.</p>
             </div>
           </div>
         </cc-card>
 
-        <cc-card eyebrow="Live backend check" title="Express API connectivity" tone="muted">
+        <cc-card eyebrow="Live resource proof" title="Issues resource from shared data layer" tone="muted">
           <div class="flex items-start justify-between gap-4">
             <div>
-              <p class="text-sm text-[var(--cc-text-muted)]">The Angular scaffold is still talking to the current backend through the dev proxy.</p>
+              <p class="text-sm text-[var(--cc-text-muted)]">This panel is now powered by the shared resource layer rather than page-local HttpClient subscriptions.</p>
             </div>
             <cc-status-badge [tone]="badgeTone()">{{ badgeLabel() }}</cc-status-badge>
           </div>
 
-          @if (loading()) {
+          @if (issues.isLoading()) {
             <cc-state-panel
               kind="loading"
-              title="Checking API reachability"
-              message="Requesting /api/issues through the Angular dev proxy so the shell proves it can sit on top of the existing Express app."
+              title="Loading issues resource"
+              message="The shared Angular data layer is fetching /api/issues and normalizing the source metadata for the UI."
             ></cc-state-panel>
-          } @else if (error()) {
+          } @else if (issues.isUnavailable()) {
             <cc-state-panel
               kind="unavailable"
-              title="Backend unavailable"
-              [message]="error()!"
+              title="Issues resource unavailable"
+              [message]="issues.error() || 'The backend could not return issue data.'"
             ></cc-state-panel>
-          } @else if (summary()) {
+          } @else if (issues.isEmpty()) {
+            <cc-state-panel
+              kind="empty"
+              title="No issues returned"
+              message="The shared issues resource is healthy, but the current payload is empty."
+            ></cc-state-panel>
+          } @else if (issues.data()) {
             <div class="space-y-4">
               <div class="grid gap-4 sm:grid-cols-3">
-                <cc-stat-card label="Open issues" [value]="summary()!.total" hint="Across the tracked GitHub set."></cc-stat-card>
-                <cc-stat-card label="Urgent" [value]="summary()!.urgent" hint="High-priority items surfaced by the existing API."></cc-stat-card>
-                <cc-stat-card label="Active" [value]="summary()!.active" hint="Items currently in active focus."></cc-stat-card>
+                <cc-stat-card label="Open issues" [value]="issues.data()!.total" hint="Across the tracked GitHub set."></cc-stat-card>
+                <cc-stat-card label="Urgent" [value]="issues.data()!.counts.urgent" hint="High-priority items surfaced by the backend."></cc-stat-card>
+                <cc-stat-card label="Active" [value]="issues.data()!.counts.active" hint="Currently active items from the shared issues resource."></cc-stat-card>
               </div>
 
               <div class="rounded-2xl border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] p-4 text-sm leading-6 text-[var(--cc-text-muted)]">
-                <p><span class="text-[var(--cc-text-soft)]">Source:</span> {{ summary()!.source.label }}</p>
-                <p class="mt-2"><span class="text-[var(--cc-text-soft)]">Source state:</span> {{ summary()!.source.status }}</p>
+                <p><span class="text-[var(--cc-text-soft)]">Source:</span> {{ issues.source()?.label }}</p>
+                <p class="mt-2"><span class="text-[var(--cc-text-soft)]">Source state:</span> {{ issues.source()?.status }}</p>
+                <p class="mt-2"><span class="text-[var(--cc-text-soft)]">Resource state:</span> {{ issues.state().stage }}</p>
                 <p class="mt-2">
                   <span class="text-[var(--cc-text-soft)]">Last update:</span>
-                  @if (summary()!.updatedAt) {
-                    {{ summary()!.updatedAt! | date:'medium' }}
+                  @if (issues.data()!.updatedAt) {
+                    {{ issues.data()!.updatedAt! | date:'medium' }}
                   } @else {
                     Never
                   }
@@ -113,23 +127,26 @@ import { StatusBadgeComponent } from '../../shared/ui/status-badge.component';
   `,
 })
 export class HomePage {
-  private readonly api = inject(CommandCenterApiService);
+  private readonly data = inject(DashboardDataService);
 
-  protected readonly loading = signal(true);
-  protected readonly error = signal<string | null>(null);
-  protected readonly summary = signal<IssuesSummary | null>(null);
+  protected readonly issues = this.data.issues();
+  protected readonly refreshingAll = this.data.refreshingAll;
 
   protected readonly badgeLabel = computed(() => {
-    if (this.loading()) return 'Loading';
-    if (this.error()) return 'Offline';
-    return this.summary()?.source.status === 'fresh' ? 'Connected' : this.summary()?.source.status ?? 'Ready';
+    if (this.issues.isLoading()) return 'Loading';
+    if (this.issues.isRefreshing()) return 'Refreshing';
+    if (this.issues.isUnavailable()) return 'Unavailable';
+
+    const status = this.issues.source()?.status;
+    return status === 'fresh' ? 'Connected' : status ?? 'Ready';
   });
 
   protected readonly badgeTone = computed<'neutral' | 'success' | 'warning' | 'danger' | 'info'>(() => {
-    if (this.loading()) return 'neutral';
-    if (this.error()) return 'danger';
+    if (this.issues.isLoading()) return 'neutral';
+    if (this.issues.isRefreshing()) return 'info';
+    if (this.issues.isUnavailable()) return 'danger';
 
-    const status = this.summary()?.source.status;
+    const status = this.issues.source()?.status;
     if (status === 'fresh') return 'success';
     if (status === 'stale') return 'warning';
     if (status === 'failed') return 'danger';
@@ -137,17 +154,7 @@ export class HomePage {
     return 'neutral';
   });
 
-  constructor() {
-    this.api.getIssuesSummary().subscribe({
-      next: (summary) => {
-        this.summary.set(summary);
-        this.loading.set(false);
-      },
-      error: (error: unknown) => {
-        const message = error instanceof Error ? error.message : 'Unknown API error';
-        this.error.set(message);
-        this.loading.set(false);
-      },
-    });
+  protected refreshAll(): void {
+    this.data.refreshAll();
   }
 }
