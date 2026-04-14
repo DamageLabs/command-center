@@ -17,10 +17,10 @@ describe('App', () => {
     expect(app).toBeTruthy();
   });
 
-  it('should render the Angular daily-views heading', async () => {
+  it('should render the full Angular dashboard heading', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain('Angular daily-use views are live');
+    expect(compiled.querySelector('h1')?.textContent).toContain('Angular now covers the full dashboard');
   });
 });
