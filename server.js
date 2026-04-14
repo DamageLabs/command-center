@@ -2,15 +2,19 @@
 
 require('dotenv').config();
 
-const express = require('express');
 const { execSync } = require('child_process');
 const path = require('path');
 const cron = require('node-cron');
 const ical = require('node-ical');
 const fs = require('fs');
+const { createApp } = require('./lib/create-app');
 const { loadConfig } = require('./lib/config');
-
-const app = express();
+const {
+  parseTaskRecord,
+  parseStandupSections,
+  extractDailyNotePreview,
+  extractDecisionSummary,
+} = require('./lib/parsers');
 const { config: runtimeConfig, configPath, warnings: configWarnings } = loadConfig();
 const PORT = runtimeConfig.server.port;
 const HOST = runtimeConfig.server.host;
@@ -174,28 +178,6 @@ function sourceResponseStatus(source) {
   return source.status === 'failed' ? 500 : 503;
 }
 
-function parseTaskRecord(raw, label, color, section, completed = false) {
-  const dueMatch = raw.match(/📅\s*(\d{4}-\d{2}-\d{2})/);
-  const completedAtMatch = raw.match(/✅\s*(\d{4}-\d{2}-\d{2})/);
-  const title = raw
-    .replace(/📅\s*\d{4}-\d{2}-\d{2}/g, '')
-    .replace(/✅\s*\d{4}-\d{2}-\d{2}/g, '')
-    .replace(/#\w+/g, '')
-    .replace(/🔁[^\n]*/g, '')
-    .trim();
-  if (!title) return null;
-  return {
-    title,
-    source: label,
-    color,
-    section,
-    due: dueMatch ? dueMatch[1] : null,
-    recurring: raw.includes('🔁'),
-    completed,
-    completedAt: completedAtMatch ? completedAtMatch[1] : null,
-  };
-}
-
 // ── Pull Requests ───────────────────────────────────────────────────────────────
 function fetchPRs() {
   console.log('[prs] fetching open PRs...');
@@ -235,97 +217,6 @@ function fetchPRs() {
 }
 
 // ── Standup ───────────────────────────────────────────────────────────────────
-function parseStandupSections(content) {
-  const yesterdayMatch = content.match(/## Yesterday\s*\n([\s\S]*?)(?=\n## [^\n]+|$)/);
-  const yesterday = (yesterdayMatch ? yesterdayMatch[1] : content).trim();
-  const lines = yesterday.split('\n');
-  const sections = [];
-
-  let current = null;
-  let currentCategory = null;
-
-  const finalizeCurrent = () => {
-    if (!current) return;
-
-    if (current.noActivity) {
-      sections.push({
-        repo: current.repo,
-        stats: '',
-        bullets: [current.noActivity],
-      });
-      current = null;
-      currentCategory = null;
-      return;
-    }
-
-    const nonEmptyCategories = current.categories.filter(cat => cat.items.length || cat.label);
-    const stats = nonEmptyCategories
-      .filter(cat => cat.items.length)
-      .map(cat => `${cat.items.length} ${cat.label}`)
-      .join(' · ');
-
-    const bullets = [];
-    for (const cat of nonEmptyCategories) {
-      if (!cat.items.length) {
-        bullets.push(cat.label);
-        continue;
-      }
-      for (const item of cat.items) {
-        bullets.push(`${cat.label}: ${item}`);
-        if (bullets.length >= 4) break;
-      }
-      if (bullets.length >= 4) break;
-    }
-
-    sections.push({
-      repo: current.repo,
-      stats,
-      bullets: bullets.length ? bullets : ['No parsed items'],
-    });
-
-    current = null;
-    currentCategory = null;
-  };
-
-  for (const rawLine of lines) {
-    const line = rawLine.replace(/\r$/, '');
-    const trimmed = line.trim();
-    if (!trimmed) continue;
-
-    if (line.startsWith('### ')) {
-      finalizeCurrent();
-      current = { repo: line.slice(4).trim(), noActivity: null, categories: [] };
-      currentCategory = null;
-      continue;
-    }
-
-    if (!current) continue;
-
-    if (/^- No (GitHub )?activity/i.test(trimmed)) {
-      current.noActivity = trimmed.replace(/^-\s*/, '').replace(/\.$/, '');
-      currentCategory = null;
-      continue;
-    }
-
-    if (/^\s+- /.test(line) && !/^- /.test(line) && currentCategory) {
-      currentCategory.items.push(
-        trimmed.replace(/^-\s*/, '').replace(/\*Closes[^*]*\*/g, '').replace(/`/g, '').trim()
-      );
-      continue;
-    }
-
-    if (/^- /.test(line)) {
-      const label = trimmed.replace(/^-\s*/, '').replace(/:$/, '').trim();
-      currentCategory = { label, items: [] };
-      current.categories.push(currentCategory);
-      continue;
-    }
-  }
-
-  finalizeCurrent();
-  return sections;
-}
-
 function fetchStandup() {
   console.log('[standup] reading latest standup...');
   beginSource('standup');
@@ -389,8 +280,6 @@ function fetchNotes() {
     // Find today's or most recent daily note
     const months = ['01-January','02-February','03-March','04-April','05-May','06-June',
       '07-July','08-August','09-September','10-October','11-November','12-December'];
-    const year = now.getFullYear();
-    const month = months[now.getMonth()];
     const pad = n => String(n).padStart(2,'0');
     // Try today, then walk back up to 7 days
     let noteContent = null, noteDate = null;
@@ -409,23 +298,7 @@ function fetchNotes() {
     }
 
     if (noteContent) {
-      // Strip frontmatter
-      const body = noteContent.replace(/^---[\s\S]*?---\n/, '');
-      // Strip Obsidian code blocks and button syntax
-      const clean = body
-        .replace(/```[\s\S]*?```/g, '')
-        .replace(/>[^\n]*/g, '') // blockquotes
-        .replace(/!\[\[[^\]]*\]\]/g, '') // embeds
-        .replace(/\[\[[^\]|]*(?:\|([^\]]+))?\]\]/g, (_, alt) => alt || '')
-        .replace(/#{1,6}\s/g, '')
-        .trim();
-      // First meaningful paragraph
-      const lines = clean.split('\n').map(l => l.trim()).filter(l => l.length > 20);
-      result.dailyNote = {
-        date: noteDate,
-        preview: lines.slice(0, 3).join(' ').substring(0, 300),
-        isToday: noteDate === `${year}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`,
-      };
+      result.dailyNote = extractDailyNotePreview(noteContent, noteDate, now);
     }
 
     // Recent decisions
@@ -435,19 +308,7 @@ function fetchNotes() {
         .sort().reverse().slice(0, 5);
       for (const file of files) {
         const content = fs.readFileSync(`${DECISIONS_DIR}/${file}`, 'utf8');
-        const titleMatch = content.match(/^#\s+(.+)/m);
-        const statusMatch = content.match(/\*\*Status:\*\*\s*(.+)/i);
-        const dateMatch = content.match(/\*\*Date:\*\*\s*(\S+)/i);
-        const contextLines = content.split('\n')
-          .filter(l => l.trim().length > 20 && !l.startsWith('#') && !l.startsWith('**'))
-          .slice(0, 2).join(' ').substring(0, 200);
-        result.decisions.push({
-          title: titleMatch ? titleMatch[1].replace('Decision: ','') : file.replace('.md',''),
-          status: statusMatch ? statusMatch[1].trim() : null,
-          date: dateMatch ? dateMatch[1].trim() : file.substring(0,10),
-          preview: contextLines,
-          file: file.replace('.md',''),
-        });
+        result.decisions.push(extractDecisionSummary(content, file));
       }
     }
 
@@ -733,149 +594,71 @@ async function fetchAnalytics() {
   }
 }
 
-// ── Schedules ─────────────────────────────────────────────────────────────────
-cron.schedule('*/5 * * * *', fetchGitHub);
-cron.schedule('*/10 * * * *', fetchCalendars);
-cron.schedule('*/2 * * * *', fetchTasks);
-cron.schedule('*/5 * * * *', fetchNotes);
-cron.schedule('*/10 * * * *', fetchStandup);
-cron.schedule('*/5 * * * *', fetchPRs);
-cron.schedule('*/15 * * * *', fetchAnalytics);
-
-fetchGitHub();
-fetchCalendars();
-fetchTasks();
-fetchNotes();
-fetchStandup();
-fetchPRs();
-fetchAnalytics();
-
-// ── Routes ────────────────────────────────────────────────────────────────────
-if (HAS_ANGULAR_DIST) {
-  app.use(express.static(ANGULAR_DIST_DIR));
+function loadInfraProcesses() {
+  const raw = execSync('pm2 jlist', { encoding: 'utf8' });
+  const processes = JSON.parse(raw);
+  return processes.map(process => ({
+    id: process.pm_id,
+    name: process.name,
+    status: process.pm2_env.status,
+    pid: process.pid,
+    uptime: process.pm2_env.status === 'online' ? Date.now() - process.pm2_env.pm_uptime : null,
+    restarts: process.pm2_env.restart_time,
+    cpu: process.monit?.cpu ?? 0,
+    memory: process.monit?.memory ?? 0,
+  }));
 }
 
-app.get('/api/issues', (req, res) => {
-  const source = sourceMeta('github');
-  if (!cache.issues) {
-    return res.status(sourceResponseStatus(source)).json({ ok: false, error: source.error || source.status, source });
-  }
-  const urgent = cache.issues.filter(i => i.priority === 'urgent');
-  const active = cache.issues.filter(i => i.priority === 'active');
-  const deferred = cache.issues.filter(i => i.priority === 'deferred');
-  res.json({ ok: true, urgent, active, deferred, total: cache.issues.length, updatedAt: cache.issuesUpdatedAt, source });
+const app = createApp({
+  cache,
+  sourceMeta,
+  sourceResponseStatus,
+  beginSource,
+  succeedSource,
+  failSource,
+  fetchGitHub,
+  fetchCalendars,
+  fetchTasks,
+  fetchNotes,
+  fetchStandup,
+  fetchPRs,
+  fetchAnalytics,
+  closeIssue: ({ owner, repo, number }) => execSync(`gh issue close ${number} --repo ${owner}/${repo}`, { encoding: 'utf8' }),
+  loadInfraProcesses,
+  frontend: {
+    hasAngularDist: HAS_ANGULAR_DIST,
+    distDir: ANGULAR_DIST_DIR,
+    indexFile: ANGULAR_INDEX_FILE,
+  },
 });
 
-app.get('/api/repos', (req, res) => {
-  const source = sourceMeta('github');
-  if (!cache.repoStats) {
-    return res.status(sourceResponseStatus(source)).json({ ok: false, error: source.error || source.status, source });
-  }
-  res.json({ ok: true, repos: cache.repoStats, updatedAt: cache.issuesUpdatedAt, source });
-});
+// ── Schedules ─────────────────────────────────────────────────────────────────
+if (require.main === module) {
+  cron.schedule('*/5 * * * *', fetchGitHub);
+  cron.schedule('*/10 * * * *', fetchCalendars);
+  cron.schedule('*/2 * * * *', fetchTasks);
+  cron.schedule('*/5 * * * *', fetchNotes);
+  cron.schedule('*/10 * * * *', fetchStandup);
+  cron.schedule('*/5 * * * *', fetchPRs);
+  cron.schedule('*/15 * * * *', fetchAnalytics);
 
-app.get('/api/calendar', (req, res) => {
-  const source = sourceMeta('calendar');
-  if (!cache.events) {
-    return res.status(sourceResponseStatus(source)).json({ ok: false, error: source.error || source.status, source });
-  }
-  res.json({ ok: true, events: cache.events, updatedAt: cache.eventsUpdatedAt, source });
-});
-
-// Infra — PM2 process list
-app.get('/api/infra', (req, res) => {
-  beginSource('infra');
-  try {
-    const raw = execSync('pm2 jlist', { encoding: 'utf8' });
-    const processes = JSON.parse(raw);
-    const updatedAt = Date.now();
-    const data = processes.map(p => ({
-      id: p.pm_id,
-      name: p.name,
-      status: p.pm2_env.status,
-      pid: p.pid,
-      uptime: p.pm2_env.status === 'online' ? Date.now() - p.pm2_env.pm_uptime : null,
-      restarts: p.pm2_env.restart_time,
-      cpu: p.monit?.cpu ?? 0,
-      memory: p.monit?.memory ?? 0,
-    }));
-    succeedSource('infra', updatedAt);
-    res.json({ ok: true, processes: data, updatedAt, source: sourceMeta('infra') });
-  } catch (err) {
-    failSource('infra', err);
-    const source = sourceMeta('infra');
-    res.status(sourceResponseStatus(source)).json({ ok: false, error: err.message, processes: [], updatedAt: source.updatedAt, source });
-  }
-});
-
-app.get('/api/tasks', (req, res) => {
-  const source = sourceMeta('tasks');
-  if (!cache.tasks) {
-    return res.status(sourceResponseStatus(source)).json({ ok: false, error: source.error || source.status, source });
-  }
-  res.json({ ok: true, tasks: cache.tasks, completedTasks: cache.completedTasks || [], updatedAt: cache.tasksUpdatedAt, source });
-});
-
-app.get('/api/prs', (req, res) => {
-  const source = sourceMeta('prs');
-  if (!cache.prs) {
-    return res.status(sourceResponseStatus(source)).json({ ok: false, error: source.error || source.status, source });
-  }
-  res.json({ ok: true, prs: cache.prs, updatedAt: cache.prsUpdatedAt, source });
-});
-
-app.get('/api/standup', (req, res) => {
-  const source = sourceMeta('standup');
-  res.json({ ok: true, standup: cache.standup || null, updatedAt: cache.standupUpdatedAt, source });
-});
-
-app.get('/api/analytics', (req, res) => {
-  const source = sourceMeta('analytics');
-  if (!cache.analytics) {
-    return res.status(sourceResponseStatus(source)).json({ ok: false, error: source.error || source.status, source });
-  }
-  res.json({ ok: true, ...cache.analytics, source });
-});
-
-app.get('/api/notes', (req, res) => {
-  const source = sourceMeta('notes');
-  if (!cache.notes) {
-    return res.status(sourceResponseStatus(source)).json({ ok: false, error: source.error || source.status, source });
-  }
-  res.json({ ok: true, ...cache.notes, source });
-});
-
-// Quick issue close
-app.post('/api/issues/:owner/:repo/:number/close', (req, res) => {
-  try {
-    const { owner, repo, number } = req.params;
-    execSync(`gh issue close ${number} --repo ${owner}/${repo}`, { encoding: 'utf8' });
-    // Trigger background refresh
-    fetchGitHub();
-    res.json({ ok: true });
-  } catch (err) {
-    res.status(500).json({ ok: false, error: err.message });
-  }
-});
-
-app.post('/api/refresh', async (req, res) => {
   fetchGitHub();
-  await fetchCalendars();
+  fetchCalendars();
   fetchTasks();
   fetchNotes();
   fetchStandup();
   fetchPRs();
-  res.json({ ok: true });
-});
+  fetchAnalytics();
 
-app.get(/^(?!\/api(?:\/|$)).*/, (req, res) => {
-  if (!HAS_ANGULAR_DIST) {
-    return res.status(503).send('Angular build output not found. Run "npm run build:web" or start the dev server with "npm run dev".');
-  }
+  app.listen(PORT, HOST, () => {
+    console.log(`command-center running at http://${HOST}:${PORT}`);
+  });
+}
 
-  return res.sendFile(ANGULAR_INDEX_FILE);
-});
-
-app.listen(PORT, HOST, () => {
-  console.log(`command-center running at http://${HOST}:${PORT}`);
-});
+module.exports = {
+  app,
+  cache,
+  sourceMeta,
+  sourceResponseStatus,
+  loadInfraProcesses,
+};
