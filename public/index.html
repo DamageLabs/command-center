@@ -153,7 +153,20 @@
     }
     .view-subtitle {
       font-size: 0.8rem; color: var(--text-muted);
+      display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap;
     }
+    .source-pill {
+      display: inline-flex; align-items: center; gap: 0.3rem;
+      padding: 0.12rem 0.5rem; border-radius: 999px;
+      border: 1px solid transparent;
+      font-size: 0.68rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .source-pill.fresh { background: rgba(34,197,94,0.12); color: var(--green-400); border-color: rgba(34,197,94,0.18); }
+    .source-pill.refreshing { background: rgba(96,165,250,0.12); color: var(--blue-400); border-color: rgba(96,165,250,0.18); }
+    .source-pill.loading { background: rgba(148,163,184,0.12); color: var(--text-muted); border-color: rgba(148,163,184,0.18); }
+    .source-pill.stale { background: rgba(245,158,11,0.12); color: var(--amber-400); border-color: rgba(245,158,11,0.18); }
+    .source-pill.failed { background: rgba(248,113,113,0.12); color: var(--red-400); border-color: rgba(248,113,113,0.18); }
     .view-body {
       flex: 1; overflow-y: auto; padding: 1.25rem 2rem;
     }
@@ -625,6 +638,64 @@
     .home-pinned-item:hover .home-pinned-unpin { opacity: 1; }
     .home-pinned-unpin:hover { background: rgba(239,68,68,0.2); color: var(--red-400); }
     .home-pinned-empty { color: var(--text-muted); font-size: 0.85rem; padding: 0.5rem 0; }
+    .home-toolbar {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;
+    }
+    .home-toolbar-title {
+      font-size: 0.82rem; font-weight: 700; letter-spacing: 0.06em;
+      text-transform: uppercase; color: var(--text-secondary);
+    }
+    .home-toolbar-sub { font-size: 0.82rem; color: var(--text-muted); margin-top: 0.2rem; }
+    .home-toolbar-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .home-toolbar-btn, .home-module-btn, .home-hidden-chip {
+      background: var(--bg-card); border: 1px solid var(--border); color: var(--text-secondary);
+      border-radius: 999px; padding: 0.38rem 0.75rem; font-size: 0.76rem;
+      cursor: pointer; transition: border-color 0.15s, color 0.15s, background 0.15s;
+    }
+    .home-toolbar-btn:hover, .home-module-btn:hover, .home-hidden-chip:hover {
+      border-color: rgba(245,158,11,0.3); color: var(--text-primary);
+    }
+    .home-toolbar-btn:disabled, .home-module-btn:disabled {
+      opacity: 0.45; cursor: not-allowed;
+    }
+    .home-toolbar-btn.active, .home-module-btn.active {
+      border-color: rgba(245,158,11,0.42); color: var(--accent); background: rgba(245,158,11,0.08);
+    }
+    .home-layout {
+      display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1.5rem; align-items: start;
+    }
+    .home-module { min-width: 0; }
+    .home-module-span-3 { grid-column: 1 / -1; }
+    .home-module-header {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 0.75rem; margin-bottom: 0.75rem;
+    }
+    .home-module-header .home-section-title { margin-bottom: 0; }
+    .home-module-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+    .home-module-actions .home-module-btn { padding: 0.3rem 0.55rem; }
+    .home-module.is-collapsed .home-module-body { display: none; }
+    .home-module.is-hidden { display: none; }
+    .home-layout.customize .home-module-actions { opacity: 1; }
+    .home-layout.compact .home-event-item,
+    .home-layout.compact .home-issue-item,
+    .home-layout.compact .home-task-item,
+    .home-layout.compact .home-pinned-item,
+    .home-layout.compact .reminder-card,
+    .home-layout.compact .card,
+    .home-layout.compact .state-card {
+      padding-top: 0.65rem;
+      padding-bottom: 0.65rem;
+    }
+    .home-layout.compact .home-item-title,
+    .home-layout.compact .home-pinned-title { font-size: 0.8rem; }
+    .home-layout.compact .home-item-meta,
+    .home-layout.compact .home-pinned-meta,
+    .home-layout.compact .state-detail { font-size: 0.75rem; }
+    .home-hidden-list {
+      display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem;
+    }
 
     /* ── Reminders ── */
     .reminder-card {
@@ -875,6 +946,26 @@
       text-align: center; padding: 3rem 1rem;
       color: var(--text-muted); font-size: 0.875rem;
     }
+    .state-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 1rem 1.1rem;
+      display: flex; flex-direction: column; gap: 0.45rem;
+    }
+    .state-card.compact { padding: 0.9rem 1rem; min-height: 0; }
+    .state-card.empty { border-style: dashed; }
+    .state-card.error { border-color: rgba(248,113,113,0.22); background: rgba(248,113,113,0.05); }
+    .state-eyebrow {
+      font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--text-muted);
+    }
+    .state-card.error .state-eyebrow { color: var(--red-300); }
+    .state-title {
+      font-size: 0.95rem; font-weight: 650; color: var(--text-primary);
+    }
+    .state-detail {
+      font-size: 0.82rem; line-height: 1.55; color: var(--text-secondary);
+      white-space: pre-wrap;
+    }
     .skeleton {
       background: var(--bg-card); border-radius: 10px;
       height: 76px; animation: shimmer 1.4s infinite;
@@ -1076,33 +1167,68 @@
         <div class="reminder-list" id="reminder-list"></div>
       </div>
 
-      <!-- Pinned items -->
-      <div id="home-pinned-section" style="display:none;margin-bottom:1.5rem">
-        <div class="home-section-title" style="margin-bottom:0.75rem">📌 Pinned</div>
-        <div id="home-pinned-items"></div>
-      </div>
-
-      <!-- Next event + recent issues -->
-      <div class="home-grid">
-        <div class="home-section">
-          <div class="home-section-title">Upcoming</div>
-          <div id="home-events"><div class="skeleton" style="height:72px"></div></div>
+      <div class="home-toolbar">
+        <div>
+          <div class="home-toolbar-title">Home layout</div>
+          <div class="home-toolbar-sub" id="home-layout-summary">Prioritize the sections you check most often.</div>
         </div>
-        <div class="home-section">
-          <div class="home-section-title" id="home-issues-title">Recent Issues</div>
-          <div id="home-issues"><div class="skeleton" style="height:72px"></div><div class="skeleton" style="height:72px;margin-top:0.5rem"></div></div>
-        </div>
-        <div class="home-section">
-          <div class="home-section-title">Open Tasks</div>
-          <div id="home-tasks"><div class="skeleton" style="height:72px"></div><div class="skeleton" style="height:72px;margin-top:0.5rem"></div></div>
+        <div class="home-toolbar-actions">
+          <button class="home-toolbar-btn" id="home-compact-btn" onclick="toggleHomeCompact()">Compact mode</button>
+          <button class="home-toolbar-btn" id="home-customize-btn" onclick="toggleHomeCustomize()">Customize</button>
+          <button class="home-toolbar-btn" onclick="resetHomeLayout()">Reset layout</button>
         </div>
       </div>
+      <div class="home-hidden-list" id="home-hidden-list" style="display:none"></div>
 
-      <!-- Daily note card (Option B) -->
-      <div id="home-daily-note"></div>
+      <div class="home-layout" id="home-layout">
+        <section class="home-module home-module-span-3" data-home-section="pinned">
+          <div class="home-module-header">
+            <div class="home-section-title">📌 Pinned</div>
+            <div class="home-module-actions"></div>
+          </div>
+          <div class="home-module-body" id="home-pinned-items"></div>
+        </section>
 
-      <!-- Standup card -->
-      <div id="home-standup" style="margin-top:1.5rem"><div class="skeleton" style="height:200px"></div></div>
+        <section class="home-module" data-home-section="upcoming">
+          <div class="home-module-header">
+            <div class="home-section-title">Upcoming</div>
+            <div class="home-module-actions"></div>
+          </div>
+          <div class="home-module-body" id="home-events"><div class="skeleton" style="height:72px"></div></div>
+        </section>
+
+        <section class="home-module" data-home-section="issues">
+          <div class="home-module-header">
+            <div class="home-section-title" id="home-issues-title">Recent Issues</div>
+            <div class="home-module-actions"></div>
+          </div>
+          <div class="home-module-body" id="home-issues"><div class="skeleton" style="height:72px"></div><div class="skeleton" style="height:72px;margin-top:0.5rem"></div></div>
+        </section>
+
+        <section class="home-module" data-home-section="tasks">
+          <div class="home-module-header">
+            <div class="home-section-title">Open Tasks</div>
+            <div class="home-module-actions"></div>
+          </div>
+          <div class="home-module-body" id="home-tasks"><div class="skeleton" style="height:72px"></div><div class="skeleton" style="height:72px;margin-top:0.5rem"></div></div>
+        </section>
+
+        <section class="home-module home-module-span-3" data-home-section="daily-note">
+          <div class="home-module-header">
+            <div class="home-section-title">Daily Note</div>
+            <div class="home-module-actions"></div>
+          </div>
+          <div class="home-module-body" id="home-daily-note"></div>
+        </section>
+
+        <section class="home-module home-module-span-3" data-home-section="standup">
+          <div class="home-module-header">
+            <div class="home-section-title">Latest Standup</div>
+            <div class="home-module-actions"></div>
+          </div>
+          <div class="home-module-body" id="home-standup"><div class="skeleton" style="height:200px"></div></div>
+        </section>
+      </div>
 
     </div>
   </div>
@@ -1327,6 +1453,186 @@
     applyTheme(saved || preferred);
   })();
 
+  const HOME_LAYOUT_KEY = 'cc-home-layout';
+  const HOME_SECTION_LABELS = {
+    pinned: 'Pinned',
+    upcoming: 'Upcoming',
+    issues: 'Recent Issues',
+    tasks: 'Open Tasks',
+    'daily-note': 'Daily Note',
+    standup: 'Latest Standup',
+  };
+  const DEFAULT_HOME_LAYOUT = {
+    order: ['pinned', 'upcoming', 'issues', 'tasks', 'daily-note', 'standup'],
+    hidden: [],
+    collapsed: [],
+    compact: false,
+  };
+  let homeCustomizeMode = false;
+
+  function availableHomeSections() {
+    return Array.from(document.querySelectorAll('#home-layout [data-home-section]')).map(el => el.dataset.homeSection);
+  }
+
+  function loadHomeLayout() {
+    try {
+      return { ...DEFAULT_HOME_LAYOUT, ...(JSON.parse(localStorage.getItem(HOME_LAYOUT_KEY) || '{}')) };
+    } catch {
+      return { ...DEFAULT_HOME_LAYOUT };
+    }
+  }
+
+  function sanitizeHomeLayout(layout) {
+    const allowed = availableHomeSections();
+    const incomingOrder = Array.isArray(layout.order) ? layout.order : [];
+    const order = [...new Set(incomingOrder.filter(id => allowed.includes(id)).concat(allowed.filter(id => !incomingOrder.includes(id))))];
+    const hidden = [...new Set((Array.isArray(layout.hidden) ? layout.hidden : []).filter(id => allowed.includes(id)))];
+    const collapsed = [...new Set((Array.isArray(layout.collapsed) ? layout.collapsed : []).filter(id => allowed.includes(id)))];
+    return { order, hidden, collapsed, compact: !!layout.compact };
+  }
+
+  let homeLayout = sanitizeHomeLayout(loadHomeLayout());
+
+  function persistHomeLayout() {
+    localStorage.setItem(HOME_LAYOUT_KEY, JSON.stringify(homeLayout));
+  }
+
+  function updateHomeLayoutSummary() {
+    const summary = document.getElementById('home-layout-summary');
+    if (!summary) return;
+    const bits = [];
+    bits.push(homeLayout.compact ? 'Compact mode is on.' : 'Standard density.');
+    if (homeLayout.hidden.length) bits.push(`${homeLayout.hidden.length} hidden section${homeLayout.hidden.length === 1 ? '' : 's'}.`);
+    if (homeCustomizeMode) bits.push('Customize mode is on.');
+    summary.textContent = bits.join(' ');
+  }
+
+  function renderHomeModuleActions(module, index, total) {
+    const actions = module.querySelector('.home-module-actions');
+    if (!actions) return;
+    const sectionId = module.dataset.homeSection;
+    const collapsed = homeLayout.collapsed.includes(sectionId);
+    const controls = [
+      `<button class="home-module-btn${collapsed ? ' active' : ''}" onclick="toggleHomeSectionCollapsed('${sectionId}')" title="${collapsed ? 'Expand' : 'Collapse'} section">${collapsed ? 'Expand' : 'Collapse'}</button>`
+    ];
+    if (homeCustomizeMode) {
+      controls.push(`<button class="home-module-btn" onclick="pinHomeSectionToTop('${sectionId}')" title="Pin section to the top">Top</button>`);
+      controls.push(`<button class="home-module-btn" onclick="moveHomeSection('${sectionId}', -1)" ${index === 0 ? 'disabled' : ''} title="Move section earlier">↑</button>`);
+      controls.push(`<button class="home-module-btn" onclick="moveHomeSection('${sectionId}', 1)" ${index === total - 1 ? 'disabled' : ''} title="Move section later">↓</button>`);
+      controls.push(`<button class="home-module-btn" onclick="toggleHomeSectionHidden('${sectionId}')" title="Hide section">Hide</button>`);
+    }
+    actions.innerHTML = controls.join('');
+  }
+
+  function renderHiddenHomeSections() {
+    const container = document.getElementById('home-hidden-list');
+    if (!container) return;
+    if (!homeLayout.hidden.length) {
+      container.style.display = 'none';
+      container.innerHTML = '';
+      return;
+    }
+    container.style.display = 'flex';
+    container.innerHTML = homeLayout.hidden.map(id => `
+      <button class="home-hidden-chip" onclick="restoreHomeSection('${id}')">Show ${HOME_SECTION_LABELS[id] || id}</button>
+    `).join('');
+  }
+
+  function applyHomeLayout() {
+    const container = document.getElementById('home-layout');
+    if (!container) return;
+    homeLayout = sanitizeHomeLayout(homeLayout);
+    persistHomeLayout();
+
+    const modules = new Map(Array.from(container.querySelectorAll('[data-home-section]')).map(module => [module.dataset.homeSection, module]));
+    homeLayout.order.forEach(id => {
+      const module = modules.get(id);
+      if (module) container.appendChild(module);
+    });
+
+    container.classList.toggle('compact', homeLayout.compact);
+    container.classList.toggle('customize', homeCustomizeMode);
+    document.getElementById('home-compact-btn')?.classList.toggle('active', homeLayout.compact);
+    document.getElementById('home-customize-btn')?.classList.toggle('active', homeCustomizeMode);
+
+    homeLayout.order.forEach((id, index) => {
+      const module = modules.get(id);
+      if (!module) return;
+      const autoHidden = module.dataset.autoHidden === 'true';
+      const hidden = homeLayout.hidden.includes(id) || (autoHidden && !homeCustomizeMode);
+      module.classList.toggle('is-hidden', hidden);
+      module.classList.toggle('is-collapsed', homeLayout.collapsed.includes(id));
+      renderHomeModuleActions(module, index, homeLayout.order.length);
+    });
+
+    renderHiddenHomeSections();
+    updateHomeLayoutSummary();
+  }
+
+  function updateHomeLayoutState(mutator) {
+    const next = JSON.parse(JSON.stringify(homeLayout));
+    mutator(next);
+    homeLayout = sanitizeHomeLayout(next);
+    applyHomeLayout();
+  }
+
+  function toggleHomeCompact() {
+    updateHomeLayoutState(layout => { layout.compact = !layout.compact; });
+  }
+
+  function toggleHomeCustomize() {
+    homeCustomizeMode = !homeCustomizeMode;
+    applyHomeLayout();
+  }
+
+  function resetHomeLayout() {
+    homeLayout = sanitizeHomeLayout({ ...DEFAULT_HOME_LAYOUT });
+    homeCustomizeMode = false;
+    applyHomeLayout();
+  }
+
+  function toggleHomeSectionCollapsed(sectionId) {
+    updateHomeLayoutState(layout => {
+      layout.collapsed = layout.collapsed.includes(sectionId)
+        ? layout.collapsed.filter(id => id !== sectionId)
+        : [...layout.collapsed, sectionId];
+    });
+  }
+
+  function toggleHomeSectionHidden(sectionId) {
+    updateHomeLayoutState(layout => {
+      layout.hidden = layout.hidden.includes(sectionId)
+        ? layout.hidden.filter(id => id !== sectionId)
+        : [...layout.hidden, sectionId];
+    });
+  }
+
+  function restoreHomeSection(sectionId) {
+    updateHomeLayoutState(layout => {
+      layout.hidden = layout.hidden.filter(id => id !== sectionId);
+    });
+  }
+
+  function moveHomeSection(sectionId, delta) {
+    updateHomeLayoutState(layout => {
+      const idx = layout.order.indexOf(sectionId);
+      if (idx === -1) return;
+      const nextIdx = Math.max(0, Math.min(layout.order.length - 1, idx + delta));
+      if (idx === nextIdx) return;
+      const [item] = layout.order.splice(idx, 1);
+      layout.order.splice(nextIdx, 0, item);
+    });
+  }
+
+  function pinHomeSectionToTop(sectionId) {
+    updateHomeLayoutState(layout => {
+      layout.order = [sectionId, ...layout.order.filter(id => id !== sectionId)];
+      layout.hidden = layout.hidden.filter(id => id !== sectionId);
+    });
+  }
+
+  applyHomeLayout();
+
   // ── Filter state ──────────────────────────────────────────────────────────
   let activeFilter = { repo: null, text: '' };
 
@@ -1400,9 +1706,9 @@
   let currentView = 'home';
   function renderHomePinned() {
     const pins = getPinned();
-    const section = document.getElementById('home-pinned-section');
+    const module = document.querySelector('#home-layout [data-home-section="pinned"]');
     const container = document.getElementById('home-pinned-items');
-    if (!section || !container) return;
+    if (!module || !container) return;
 
     const items = [];
 
@@ -1465,8 +1771,12 @@
       });
     });
 
-    section.style.display = items.length ? '' : 'none';
-    if (!items.length) return;
+    module.dataset.autoHidden = items.length ? 'false' : 'true';
+    if (!items.length) {
+      container.innerHTML = renderEmptyState('Nothing pinned yet', 'Pin an issue, PR, task, event, or repo to keep it at the top of Home.', true);
+      applyHomeLayout();
+      return;
+    }
 
     container.innerHTML = items.map((item, idx) => {
       const clickAttr = item.external
@@ -1485,6 +1795,7 @@
 
     // stash unpin callbacks indexed by position
     window._homePinnedCallbacks = items.map(i => i.unpin);
+    applyHomeLayout();
   }
 
   window._homePinnedUnpin = function(idx) {
@@ -1522,11 +1833,84 @@
 
   // ── Helpers ────────────────────────────────────────────────────────────────
   function timeAgo(iso) {
+    if (!iso) return 'unknown';
     const s = Math.floor((Date.now() - new Date(iso)) / 1000);
+    if (!Number.isFinite(s)) return 'unknown';
     if (s < 60) return `${s}s ago`;
     if (s < 3600) return `${Math.floor(s/60)}m ago`;
     if (s < 86400) return `${Math.floor(s/3600)}h ago`;
     return `${Math.floor(s/86400)}d ago`;
+  }
+
+  function truncateText(value, max = 96) {
+    const text = String(value || '').trim();
+    if (!text || text.length <= max) return text;
+    return `${text.slice(0, max - 1)}…`;
+  }
+
+  function sourceStatusLabel(status) {
+    if (status === 'refreshing') return 'Refreshing';
+    if (status === 'stale') return 'Stale';
+    if (status === 'failed') return 'Failed';
+    if (status === 'loading') return 'Loading';
+    return 'Fresh';
+  }
+
+  function sourceStatusTone(status) {
+    if (status === 'refreshing') return 'refreshing';
+    if (status === 'stale') return 'stale';
+    if (status === 'failed') return 'failed';
+    if (status === 'loading') return 'loading';
+    return 'fresh';
+  }
+
+  function formatSourceSubtitle(summary, source) {
+    if (!source) return escHtml(summary);
+
+    let detail = summary || source.label;
+    if (source.status === 'loading') {
+      detail = `Loading ${source.label.toLowerCase()}…`;
+    } else if (source.status === 'refreshing') {
+      detail = `${summary} · Refreshing now`;
+    } else if (source.status === 'stale') {
+      detail = `${summary} · Last good update ${timeAgo(source.updatedAt)}`;
+    } else if (source.status === 'failed') {
+      detail = truncateText(source.error || `${source.label} is unavailable`);
+    } else if (source.updatedAt) {
+      detail = `${summary} · Updated ${timeAgo(source.updatedAt)}`;
+    }
+
+    return `<span class="source-pill ${sourceStatusTone(source.status)}">${escHtml(sourceStatusLabel(source.status))}</span><span>${escHtml(detail)}</span>`;
+  }
+
+  function setViewSubtitle(id, summary, source) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = formatSourceSubtitle(summary, source);
+    el.dataset.state = source?.status || 'unknown';
+  }
+
+  function normalizeErrorText(value) {
+    return truncateText(String(value || '').replace(/\s+/g, ' ').trim(), 160);
+  }
+
+  function renderStateCard({ tone = 'empty', eyebrow = 'Status', title, detail = '', compact = false } = {}) {
+    return `
+      <div class="state-card ${tone}${compact ? ' compact' : ''}">
+        <div class="state-eyebrow">${escHtml(eyebrow)}</div>
+        <div class="state-title">${escHtml(title)}</div>
+        ${detail ? `<div class="state-detail">${escHtml(detail)}</div>` : ''}
+      </div>
+    `;
+  }
+
+  function renderEmptyState(title, detail, compact = false) {
+    return renderStateCard({ tone: 'empty', eyebrow: 'Empty', title, detail, compact });
+  }
+
+  function renderUnavailableState(title, detail, error = '', compact = false) {
+    const message = error ? `${detail} ${normalizeErrorText(error)}`.trim() : detail;
+    return renderStateCard({ tone: 'error', eyebrow: 'Unavailable', title, detail: message, compact });
   }
 
   function labelClass(name) {
@@ -1792,7 +2176,17 @@
   async function fetchIssues() {
     const res = await fetch('/api/issues');
     const data = await res.json();
-    if (!data.ok) throw new Error(data.error);
+    if (!data.ok) {
+      setViewSubtitle('sub-urgent', 'Issues unavailable', data.source);
+      setViewSubtitle('sub-active', 'Issues unavailable', data.source);
+      setViewSubtitle('sub-backlog', 'Issues unavailable', data.source);
+      const message = data.error || data.source?.error || 'Issue data could not be loaded.';
+      document.getElementById('col-urgent').innerHTML = renderUnavailableState('Issues unavailable', 'Urgent issues could not be loaded.', message, true);
+      document.getElementById('col-active').innerHTML = renderUnavailableState('Issues unavailable', 'Active issues could not be loaded.', message, true);
+      document.getElementById('col-backlog').innerHTML = renderUnavailableState('Issues unavailable', 'Backlog issues could not be loaded.', message, true);
+      document.getElementById('home-issues').innerHTML = renderUnavailableState('Issues unavailable', 'The Home view could not load recent issues.', message, true);
+      throw new Error(message);
+    }
 
     document.getElementById('badge-urgent').textContent = data.urgent.length;
     document.getElementById('badge-active').textContent = data.active.length;
@@ -1801,9 +2195,9 @@
     checkNotifs('active', data.active.length);
     checkNotifs('backlog', data.deferred.length);
 
-    document.getElementById('sub-urgent').textContent = `${data.urgent.length} issues · Updated ${timeAgo(data.updatedAt)}`;
-    document.getElementById('sub-active').textContent = `${data.active.length} issues · Updated ${timeAgo(data.updatedAt)}`;
-    document.getElementById('sub-backlog').textContent = `${data.deferred.length} issues · Updated ${timeAgo(data.updatedAt)}`;
+    setViewSubtitle('sub-urgent', `${data.urgent.length} issues`, data.source);
+    setViewSubtitle('sub-active', `${data.active.length} issues`, data.source);
+    setViewSubtitle('sub-backlog', `${data.deferred.length} issues`, data.source);
 
     window._lastIssuesData = data;
     renderIssueColumns(data);
@@ -1814,7 +2208,7 @@
     const renderCol = (id, arr) => {
       const el = document.getElementById(id);
       el.className = 'issues-grid';
-      if (!arr.length) { el.innerHTML = '<div class="empty">Nothing here 🎉</div>'; return; }
+      if (!arr.length) { el.innerHTML = renderEmptyState('Nothing here', 'No items currently match this view.', true); return; }
       const pinned = arr.filter(i => isPinned('issue', `${i.repoFull}#${i.number}`));
       const unpinned = arr.filter(i => !isPinned('issue', `${i.repoFull}#${i.number}`));
       let html = '';
@@ -1901,7 +2295,7 @@
             <div class="home-item-meta"><span class="home-item-accent">${dateStr} · ${timeStr}</span><span>${e.calendar}</span></div>
           </div>`;
         }).join('')
-      : '<div class="empty" style="padding:1rem">No upcoming events</div>';
+      : renderEmptyState('No upcoming events', 'Nothing is scheduled in the current window.', true);
 
     // Recent issues (pinned first)
     const issuesTitle = document.getElementById('home-issues-title');
@@ -1915,7 +2309,7 @@
             <div class="home-item-meta"><span class="home-item-accent">${i.repo}</span><span>#${i.number}</span><span>${timeAgo(i.createdAt)}</span></div>
           </a>`;
         }).join('')
-      : '<div class="empty" style="padding:1rem">No urgent issues 🎉</div>';
+      : renderEmptyState('No urgent issues', 'The urgent queue is clear right now.', true);
 
     // Open tasks
     document.getElementById('home-tasks').innerHTML = openTasks.length
@@ -1924,7 +2318,7 @@
             <div class="home-item-title">${escHtml(t.title)}</div>
             <div class="home-item-meta"><span class="home-item-accent">${t.source}</span>${t.section ? `<span>${escHtml(t.section)}</span>` : ''}${t.due ? `<span style="color:var(--red-400)">📅 ${t.due}</span>` : ''}</div>
           </div>`).join('')
-      : '<div class="empty" style="padding:1rem">All done! 🎉</div>';
+      : renderEmptyState('All done', 'There are no open tasks to show here.', true);
   }
 
   const SERVICE_DOMAINS = {
@@ -1978,7 +2372,7 @@
   function renderPRColumns(prs) {
     const el = document.getElementById('col-prs');
     el.className = 'pr-grid';
-    if (!prs.length) { el.innerHTML = '<div class="empty">No open PRs 🎉</div>'; return; }
+    if (!prs.length) { el.innerHTML = renderEmptyState('No open PRs', 'There are no pull requests waiting right now.', true); return; }
     const pinned = prs.filter(p => isPinned('pr', `${p.repoFull}#${p.number}`));
     const unpinned = prs.filter(p => !isPinned('pr', `${p.repoFull}#${p.number}`));
     let html = '';
@@ -1994,13 +2388,17 @@
   async function fetchPRs() {
     const res = await fetch('/api/prs');
     const data = await res.json();
-    if (!data.ok) throw new Error(data.error);
+    if (!data.ok) {
+      setViewSubtitle('sub-prs', 'PRs unavailable', data.source);
+      const message = data.error || data.source?.error || 'Pull requests could not be loaded.';
+      document.getElementById('col-prs').innerHTML = renderUnavailableState('PRs unavailable', 'Pull requests could not be loaded for this view.', message, true);
+      throw new Error(message);
+    }
     const prs = data.prs;
     window._lastPRsData = prs;
     document.getElementById('badge-prs').textContent = prs.length;
     checkNotifs('prs', prs.length);
-    document.getElementById('sub-prs').textContent =
-      `${prs.length} open · ${prs.filter(p=>p.isDraft).length} drafts · Updated ${timeAgo(data.updatedAt)}`;
+    setViewSubtitle('sub-prs', `${prs.length} open · ${prs.filter(p=>p.isDraft).length} drafts`, data.source);
     renderPRColumns(prs);
     renderHomePinned();
   }
@@ -2008,7 +2406,29 @@
   async function fetchStandup() {
     const res = await fetch('/api/standup');
     const data = await res.json();
-    if (!data.ok || !data.standup) return;
+    if (!data.ok) {
+      const message = data.error || 'Standup data could not be loaded.';
+      const homeEl = document.getElementById('home-standup');
+      if (homeEl) {
+        homeEl.innerHTML = renderUnavailableState('Standup unavailable', 'The latest standup could not be loaded for the Home view.', message);
+      }
+      const notesStandup = document.getElementById('notes-standup');
+      if (notesStandup) {
+        notesStandup.innerHTML = renderUnavailableState('Standup unavailable', 'The latest standup could not be loaded for the Notes view.', message);
+      }
+      return;
+    }
+    if (!data.standup) {
+      const homeEl = document.getElementById('home-standup');
+      if (homeEl) {
+        homeEl.innerHTML = renderEmptyState('No standup yet', 'A recent standup has not been loaded yet.');
+      }
+      const notesStandup = document.getElementById('notes-standup');
+      if (notesStandup) {
+        notesStandup.innerHTML = renderEmptyState('No standup yet', 'A recent standup has not been loaded yet.');
+      }
+      return;
+    }
     const s = data.standup;
 
     // Home standup card
@@ -2044,12 +2464,17 @@
   async function fetchNotes() {
     const res = await fetch('/api/notes');
     const data = await res.json();
-    if (!data.ok) throw new Error(data.error);
+    if (!data.ok) {
+      setViewSubtitle('sub-notes', 'Notes unavailable', data.source);
+      const message = data.error || data.source?.error || 'Notes could not be loaded.';
+      document.getElementById('col-notes').innerHTML = renderUnavailableState('Notes unavailable', 'Recent notes could not be loaded from the configured paths.', message);
+      document.getElementById('home-daily-note').innerHTML = renderUnavailableState('Daily note unavailable', 'The Home view could not load the latest daily note.', message);
+      throw new Error(message);
+    }
 
     const total = (data.dailyNote ? 1 : 0) + data.decisions.length;
     document.getElementById('badge-notes').textContent = total;
-    document.getElementById('sub-notes').textContent =
-      `${data.dailyNote ? data.dailyNote.date : 'No recent daily note'} · ${data.decisions.length} decisions · Updated ${timeAgo(data.updatedAt)}`;
+    setViewSubtitle('sub-notes', `${data.dailyNote ? data.dailyNote.date : 'No recent daily note'} · ${data.decisions.length} decisions`, data.source);
 
     // Option A: Notes tab
     const el = document.getElementById('col-notes');
@@ -2072,7 +2497,7 @@
         </div>
       `;
     } else {
-      html += `<div class="empty">No recent daily notes found</div>`;
+      html += renderEmptyState('No recent daily note', 'No recent daily note was found in the configured Obsidian paths.');
     }
 
     // Decisions section
@@ -2109,7 +2534,7 @@
           </div>
         `;
       } else {
-        homeNote.innerHTML = '';
+        homeNote.innerHTML = renderEmptyState('No recent daily note', 'No recent daily note was found in the configured Obsidian paths.');
       }
     }
   }
@@ -2119,13 +2544,16 @@
     try {
       const res = await fetch('/api/infra');
       const data = await res.json();
-      if (!data.ok) throw new Error(data.error);
+      if (!data.ok) {
+        setViewSubtitle('sub-infra', 'Infra unavailable', data.source || { status: 'failed', label: 'Infra', error: data.error });
+        throw new Error(data.error);
+      }
       const procs = data.processes;
       const online = procs.filter(p => p.status === 'online').length;
       const down = procs.filter(p => p.status !== 'online').length;
       const restarts = procs.reduce((s,p) => s + (p.restarts||0), 0);
       document.getElementById('badge-infra').textContent = online + '/' + procs.length;
-      document.getElementById('sub-infra').textContent = `${online} online · ${down} down · ${restarts} restarts · Updated ${timeAgo(data.updatedAt)}`;
+      setViewSubtitle('sub-infra', `${online} online · ${down} down · ${restarts} restarts`, data.source);
       el.className = '';
       el.style.cssText = 'display:flex;flex-direction:column;gap:0';
       el.innerHTML = `
@@ -2163,17 +2591,14 @@
     } catch (e) {
       const message = (e && e.message) ? e.message : 'Infra unavailable';
       document.getElementById('badge-infra').textContent = '—';
-      document.getElementById('sub-infra').textContent = 'Infra unavailable';
+      setViewSubtitle('sub-infra', 'Infra unavailable', { status: 'failed', label: 'Infra', error: message });
       el.className = '';
       el.style.cssText = 'display:flex;flex-direction:column;gap:1rem';
-      el.innerHTML = `
-        <div class="card" style="padding:1.25rem;display:flex;flex-direction:column;gap:0.6rem;">
-          <div style="font-size:0.82rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);">Infra unavailable</div>
-          <div style="font-size:1rem;font-weight:600;color:var(--text-primary);">Process monitoring could not be loaded.</div>
-          <div style="font-size:0.85rem;color:var(--text-secondary);line-height:1.5;">The rest of command-center is still working, but the Infra source failed. This commonly happens when PM2 is not installed or not available in the runtime environment.</div>
-          <pre style="margin:0;padding:0.85rem 1rem;border:1px solid var(--border);border-radius:12px;background:var(--bg-elev);color:var(--text-muted);font-size:0.78rem;white-space:pre-wrap;word-break:break-word;">${escHtml(message)}</pre>
-        </div>
-      `;
+      el.innerHTML = renderUnavailableState(
+        'Process monitoring could not be loaded',
+        'The rest of command-center is still working, but the Infra source failed. This commonly happens when PM2 is not installed or not available in the runtime environment.',
+        message
+      );
       _homeData.infra = { ok: false, processes: [], updatedAt: null, error: message };
     }
     tryRenderHome();
@@ -2215,7 +2640,7 @@
   function renderTaskColumns(tasks) {
     const el = document.getElementById('col-tasks');
     el.className = 'tasks-grid';
-    if (!tasks.length) { el.innerHTML = '<div class="empty">All done! 🎉</div>'; return; }
+    if (!tasks.length) { el.innerHTML = renderEmptyState('All done', 'There are no open tasks right now.'); return; }
     const pinned = tasks.filter(t => isPinned('task', taskKey(t)));
     const unpinned = tasks.filter(t => !isPinned('task', taskKey(t)));
     let html = '';
@@ -2233,13 +2658,21 @@
     doneEl.className = 'tasks-grid';
     doneEl.innerHTML = completedTasks.length
       ? completedTasks.map(renderCompletedTaskCard).join('')
-      : '<div class="empty">No completed tasks found yet</div>';
+      : renderEmptyState('No completed tasks yet', 'Completed tasks will appear here once they are finished.');
   }
 
   async function fetchTasks() {
     const res = await fetch('/api/tasks');
     const data = await res.json();
-    if (!data.ok) throw new Error(data.error);
+    if (!data.ok) {
+      setViewSubtitle('sub-tasks', 'Tasks unavailable', data.source);
+      setViewSubtitle('sub-done', 'Completed tasks unavailable', data.source);
+      const message = data.error || data.source?.error || 'Tasks could not be loaded.';
+      document.getElementById('col-tasks').innerHTML = renderUnavailableState('Tasks unavailable', 'Open tasks could not be loaded from Obsidian.', message);
+      document.getElementById('col-tasks-done').innerHTML = renderUnavailableState('Completed tasks unavailable', 'Completed tasks could not be loaded from Obsidian.', message);
+      document.getElementById('home-tasks').innerHTML = renderUnavailableState('Tasks unavailable', 'The Home view could not load open tasks.', message, true);
+      throw new Error(message);
+    }
     const tasks = data.tasks;
     const completedTasks = data.completedTasks || [];
     window._lastTasksData = tasks;
@@ -2247,8 +2680,8 @@
     document.getElementById('badge-done').textContent = completedTasks.length;
     checkNotifs('tasks', tasks.length);
     checkNotifs('done', completedTasks.length);
-    document.getElementById('sub-tasks').textContent = `${tasks.length} open tasks · Updated ${timeAgo(data.updatedAt)}`;
-    document.getElementById('sub-done').textContent = `${completedTasks.length} completed tasks · Updated ${timeAgo(data.updatedAt)}`;
+    setViewSubtitle('sub-tasks', `${tasks.length} open tasks`, data.source);
+    setViewSubtitle('sub-done', `${completedTasks.length} completed tasks`, data.source);
     renderTaskColumns(tasks);
     renderCompletedTaskColumns(completedTasks);
     reapplyCurrentFilter();
@@ -2292,7 +2725,7 @@
     const now = new Date();
     const col = document.getElementById('col-calendar');
     col.className = 'cal-grid';
-    if (!events.length) { col.innerHTML = '<div class="empty">No upcoming events 🎉</div>'; return; }
+    if (!events.length) { col.innerHTML = renderEmptyState('No upcoming events', 'Nothing is scheduled in the next window.'); return; }
     const pinned = events.filter(e => isPinned('event', eventKey(e)));
     const unpinned = events.filter(e => !isPinned('event', eventKey(e)));
     let html = '';
@@ -2308,11 +2741,17 @@
   async function fetchCalendar() {
     const res = await fetch('/api/calendar');
     const data = await res.json();
-    if (!data.ok) throw new Error(data.error);
+    if (!data.ok) {
+      setViewSubtitle('sub-calendar', 'Calendar unavailable', data.source);
+      const message = data.error || data.source?.error || 'Calendar events could not be loaded.';
+      document.getElementById('col-calendar').innerHTML = renderUnavailableState('Calendar unavailable', 'Upcoming events could not be loaded for this view.', message);
+      document.getElementById('home-events').innerHTML = renderUnavailableState('Calendar unavailable', 'The Home view could not load upcoming events.', message, true);
+      throw new Error(message);
+    }
     const events = data.events;
     window._lastEventsData = events;
     document.getElementById('badge-cal').textContent = events.length;
-    document.getElementById('sub-calendar').textContent = `${events.length} upcoming events · Updated ${timeAgo(data.updatedAt)}`;
+    setViewSubtitle('sub-calendar', `${events.length} upcoming events`, data.source);
     renderCalendarColumns(events);
     _homeData.events = events; tryRenderHome();
   }
@@ -2320,6 +2759,10 @@
   function renderRepoColumns(repos) {
     const el = document.getElementById('col-repos');
     el.className = 'repos-grid';
+    if (!repos.length) {
+      el.innerHTML = renderEmptyState('No repos configured', 'Add tracked repos in command-center config to populate this view.');
+      return;
+    }
     const pinned = repos.filter(r => isPinned('repo', r.repoFull));
     const unpinned = repos.filter(r => !isPinned('repo', r.repoFull));
     let html = '';
@@ -2336,11 +2779,16 @@
   async function fetchRepos() {
     const res = await fetch('/api/repos');
     const data = await res.json();
-    if (!data.ok) throw new Error(data.error);
+    if (!data.ok) {
+      setViewSubtitle('sub-repos', 'Repos unavailable', data.source);
+      const message = data.error || data.source?.error || 'Repository health could not be loaded.';
+      document.getElementById('col-repos').innerHTML = renderUnavailableState('Repos unavailable', 'Repository health could not be loaded for this view.', message);
+      throw new Error(message);
+    }
     const repos = data.repos.sort((a,b) => b.openIssues - a.openIssues);
     window._lastReposData = repos;
     document.getElementById('badge-repos').textContent = repos.length;
-    document.getElementById('sub-repos').textContent = `${repos.length} repos · ${repos.reduce((s,r) => s + r.openIssues, 0)} open · Updated ${timeAgo(data.updatedAt)}`;
+    setViewSubtitle('sub-repos', `${repos.length} repos · ${repos.reduce((s,r) => s + r.openIssues, 0)} open`, data.source);
     renderRepoColumns(repos);
     renderHomePinned();
   }
@@ -2350,8 +2798,9 @@
     const body = document.getElementById('analytics-body');
     try {
       const res = await fetch('/api/analytics');
-      if (!res.ok) throw new Error('loading');
       const data = await res.json();
+      setViewSubtitle('sub-analytics', `Last 30 days — ${(data.sites || []).length} properties`, data.source);
+      if (!res.ok) throw new Error(data.error || data.source?.error || 'loading');
       if (!data.totals) throw new Error('no data');
 
       const { totals, sites, updatedAt, range } = data;
@@ -2361,8 +2810,7 @@
         ? `${Math.floor(avgDuration/60)}m ${avgDuration%60}s`
         : `${avgDuration}s`;
 
-      document.getElementById('sub-analytics').textContent =
-        `Last 30 days — ${sites.length} properties · Updated ${timeAgo(updatedAt)}`;
+      setViewSubtitle('sub-analytics', `Last 30 days — ${sites.length} properties`, data.source);
 
       body.innerHTML = `
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem;">
@@ -2439,7 +2887,7 @@
           &middot; Refreshes every 15 min
         </div>`;
     } catch(e) {
-      body.innerHTML = `<div style="color:var(--text-muted);padding:2rem;text-align:center;">Analytics unavailable — ${e.message}</div>`;
+      body.innerHTML = renderUnavailableState('Analytics unavailable', 'Analytics data could not be loaded for this view.', e.message);
     }
   }
 
