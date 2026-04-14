@@ -1,9 +1,13 @@
 import { Routes } from '@angular/router';
 
+import { AnalyticsPage } from './features/analytics/analytics.page';
+import { CalendarPage } from './features/calendar/calendar.page';
 import { HomePage } from './features/home/home.page';
+import { InfraPage } from './features/infra/infra.page';
 import { IssueListPage } from './features/issues/issue-list.page';
+import { NotesPage } from './features/notes/notes.page';
 import { PrsPage } from './features/prs/prs.page';
-import { PlaceholderPageComponent } from './features/shared/placeholder-page.component';
+import { ReposPage } from './features/repos/repos.page';
 import { DonePage } from './features/tasks/done.page';
 import { TasksPage } from './features/tasks/tasks.page';
 
@@ -62,40 +66,29 @@ export const routes: Routes = [
     title: 'Completed Tasks',
   },
   {
+    path: 'notes',
+    component: NotesPage,
+    title: 'Notes',
+  },
+  {
     path: 'calendar',
-    component: PlaceholderPageComponent,
-    title: 'Calendar Migration Target',
-    data: {
-      title: 'Calendar migration target',
-      description: 'The dedicated Calendar page is still part of issue #72, but the Home dashboard already consumes calendar data through the shared resource layer.',
-    },
+    component: CalendarPage,
+    title: 'Calendar',
   },
   {
     path: 'repos',
-    component: PlaceholderPageComponent,
-    title: 'Repos Migration Target',
-    data: {
-      title: 'Repository migration target',
-      description: 'The dedicated Repositories page remains in issue #72. Home can still surface repo summaries and pinned repo items in the meantime.',
-    },
+    component: ReposPage,
+    title: 'Repositories',
   },
   {
     path: 'infra',
-    component: PlaceholderPageComponent,
-    title: 'Infra Migration Target',
-    data: {
-      title: 'Infrastructure migration target',
-      description: 'The dedicated Infrastructure page remains in issue #72, but Home can already show a lightweight infra summary from the shared resource layer.',
-    },
+    component: InfraPage,
+    title: 'Infrastructure',
   },
   {
-    path: 'notes',
-    component: PlaceholderPageComponent,
-    title: 'Notes Migration Target',
-    data: {
-      title: 'Notes migration target',
-      description: 'The dedicated Notes view remains part of issue #72, while Home already uses the shared notes and standup resources.',
-    },
+    path: 'analytics',
+    component: AnalyticsPage,
+    title: 'Analytics',
   },
   {
     path: '**',

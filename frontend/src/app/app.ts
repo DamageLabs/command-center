@@ -18,6 +18,10 @@ export class App {
     { path: '/prs', label: 'PRs' },
     { path: '/tasks', label: 'Tasks' },
     { path: '/done', label: 'Done' },
-    { path: '/notes', label: 'Next up' },
+    { path: '/notes', label: 'Notes' },
+    { path: '/calendar', label: 'Calendar' },
+    { path: '/repos', label: 'Repos' },
+    { path: '/infra', label: 'Infra' },
+    { path: '/analytics', label: 'Analytics' },
   ];
 }
