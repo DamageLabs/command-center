@@ -151,8 +151,18 @@ Issue bucketing is still controlled in `server.js` via `issuePriority(labels)`.
 ### 4. Run
 
 ```bash
-# Development (direct)
+# Development (legacy UI served directly by Express)
 npm start
+
+# Development (Angular scaffold + Express API together)
+npm run dev
+
+# Or run them separately
+npm run dev:api   # Express API + current local runtime on :4500
+npm run dev:web   # Angular scaffold on :4200, proxying /api to :4500
+
+# Build the Angular frontend scaffold
+npm run build:web
 
 # Production (PM2)
 pm2 start ecosystem.config.cjs
@@ -161,6 +171,15 @@ pm2 startup  # auto-start on reboot
 ```
 
 Runs on **http://localhost:4500**.
+
+#### Angular scaffold notes
+
+Issue `#68` adds a dedicated Angular workspace under `frontend/`.
+
+- Angular dev server runs on **http://localhost:4200**
+- `frontend/proxy.conf.json` proxies `/api/*` to the existing Express backend on **:4500**
+- the legacy static UI in `public/` remains the active shipped frontend for now
+- production cutover to serve the Angular build is deferred to issue `#73`
 
 ### 5. Local HTTPS with Caddy (optional but recommended)
 
