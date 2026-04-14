@@ -77,10 +77,10 @@ type IssueSection = {
                           @if (issue.assignees.length) {
                             @for (assignee of issue.assignees.slice(0, 3); track assignee.login || assignee.name || $index) {
                               <span class="cc-owner-chip">
-                                @if (assignee.login) {
-                                  <img [src]="avatarUrl(assignee.login)" [alt]="assignee.login" class="cc-owner-avatar" />
+                                @if (canUseGitHubAvatar(assignee.login)) {
+                                  <img [src]="avatarUrl(assignee.login)" [alt]="assignee.login || 'assignee'" class="cc-owner-avatar" />
                                 } @else {
-                                  <span class="cc-owner-avatar cc-owner-avatar-fallback">?</span>
+                                  <span class="cc-owner-avatar cc-owner-avatar-fallback">{{ avatarFallback(assignee.login || assignee.name) }}</span>
                                 }
                                 <span>{{ assignee.login || assignee.name || 'Assigned' }}</span>
                               </span>
@@ -140,10 +140,10 @@ type IssueSection = {
                           @if (issue.assignees.length) {
                             @for (assignee of issue.assignees.slice(0, 3); track assignee.login || assignee.name || $index) {
                               <span class="cc-owner-chip">
-                                @if (assignee.login) {
-                                  <img [src]="avatarUrl(assignee.login)" [alt]="assignee.login" class="cc-owner-avatar" />
+                                @if (canUseGitHubAvatar(assignee.login)) {
+                                  <img [src]="avatarUrl(assignee.login)" [alt]="assignee.login || 'assignee'" class="cc-owner-avatar" />
                                 } @else {
-                                  <span class="cc-owner-avatar cc-owner-avatar-fallback">?</span>
+                                  <span class="cc-owner-avatar cc-owner-avatar-fallback">{{ avatarFallback(assignee.login || assignee.name) }}</span>
                                 }
                                 <span>{{ assignee.login || assignee.name || 'Assigned' }}</span>
                               </span>
@@ -244,8 +244,17 @@ export class IssueListPage {
     this.data.closeIssue(issue.repoFull, issue.number);
   }
 
+  protected canUseGitHubAvatar(login?: string | null): boolean {
+    return !!login && /^[a-z\d-]+$/i.test(login);
+  }
+
   protected avatarUrl(login?: string | null): string {
-    return `https://github.com/${encodeURIComponent(login || 'ghost')}.png?size=64`;
+    return `https://github.com/${login}.png?size=64`;
+  }
+
+  protected avatarFallback(value?: string | null): string {
+    const clean = (value || '?').replace(/^app\//, '').replace(/\[bot\]$/i, '').trim();
+    return (clean[0] || '?').toUpperCase();
   }
 
   protected ownerStateLabel(issue: IssueItem): string {

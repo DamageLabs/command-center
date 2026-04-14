@@ -57,10 +57,10 @@ type PrSection = {
                         </div>
                         <div class="mt-4 flex flex-wrap gap-2">
                           <span class="cc-owner-chip">
-                            @if (pr.author?.login) {
+                            @if (canUseGitHubAvatar(pr.author?.login)) {
                               <img [src]="avatarUrl(pr.author?.login)" [alt]="pr.author?.login || 'author'" class="cc-owner-avatar" />
                             } @else {
-                              <span class="cc-owner-avatar cc-owner-avatar-fallback">?</span>
+                              <span class="cc-owner-avatar cc-owner-avatar-fallback">{{ avatarFallback(pr.author?.login) }}</span>
                             }
                             <span>{{ pr.author?.login || 'Unknown author' }}</span>
                           </span>
@@ -101,10 +101,10 @@ type PrSection = {
                         </div>
                         <div class="mt-4 flex flex-wrap gap-2">
                           <span class="cc-owner-chip">
-                            @if (pr.author?.login) {
+                            @if (canUseGitHubAvatar(pr.author?.login)) {
                               <img [src]="avatarUrl(pr.author?.login)" [alt]="pr.author?.login || 'author'" class="cc-owner-avatar" />
                             } @else {
-                              <span class="cc-owner-avatar cc-owner-avatar-fallback">?</span>
+                              <span class="cc-owner-avatar cc-owner-avatar-fallback">{{ avatarFallback(pr.author?.login) }}</span>
                             }
                             <span>{{ pr.author?.login || 'Unknown author' }}</span>
                           </span>
@@ -162,8 +162,17 @@ export class PrsPage {
     this.pins.toggle('pr', this.prKey(pr));
   }
 
+  protected canUseGitHubAvatar(login?: string | null): boolean {
+    return !!login && /^[a-z\d-]+$/i.test(login);
+  }
+
   protected avatarUrl(login?: string | null): string {
-    return `https://github.com/${encodeURIComponent(login || 'ghost')}.png?size=64`;
+    return `https://github.com/${login}.png?size=64`;
+  }
+
+  protected avatarFallback(value?: string | null): string {
+    const clean = (value || '?').replace(/^app\//, '').replace(/\[bot\]$/i, '').trim();
+    return (clean[0] || '?').toUpperCase();
   }
 
   protected isActionNeeded(pr: PullRequestItem): boolean {
