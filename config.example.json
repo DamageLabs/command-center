@@ -1,0 +1,47 @@
+{
+  "server": {
+    "host": "127.0.0.1",
+    "port": 4500
+  },
+  "github": {
+    "trackedRepos": [
+      "YourOrg/repo-one",
+      "YourOrg/repo-two",
+      "yourusername/personal-repo"
+    ],
+    "orgs": [
+      {
+        "owner": "YourOrg",
+        "repoLimit": 200
+      },
+      {
+        "owner": "yourusername",
+        "repoLimit": 100,
+        "includeRepos": [
+          "personal-repo"
+        ]
+      }
+    ]
+  },
+  "obsidian": {
+    "vaultDir": "/path/to/your/obsidian/vault",
+    "dailyDir": "/path/to/your/obsidian/vault/03 - Periodic/01 - Daily",
+    "decisionsDir": "/path/to/your/obsidian/vault/08 - Projects/DamageLabs/Decisions",
+    "tasksDir": "/path/to/your/tasks/folder",
+    "taskFiles": [
+      {
+        "file": "Tasks.md",
+        "label": "General",
+        "color": "amber"
+      },
+      {
+        "file": "Work Tasks.md",
+        "label": "Work",
+        "color": "blue"
+      }
+    ]
+  },
+  "standup": {
+    "dir": "${HOME}/Code/brain/standups/daily"
+  }
+}

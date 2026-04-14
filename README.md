@@ -71,62 +71,67 @@ npm install
 
 ### 3. Configure
 
-Copy the example env file and fill in your values:
+Copy the example env file and config file:
 
 ```bash
 cp .env.example .env
+cp config.example.json config.local.json
 ```
 
-Edit `.env`:
+Edit `.env` for calendar URLs:
 
 ```env
-# Google Calendar iCal URLs (optional — leave empty to skip)
+# Optional custom config path
+# COMMAND_CENTER_CONFIG=./config.local.json
+
+# Calendar URLs (optional)
+CALENDAR_URLS=
 CAL_1=https://calendar.google.com/calendar/ical/you@gmail.com/private-xxxxx/basic.ics
 CAL_2=https://calendar.google.com/calendar/ical/group.calendar.google.com/private-xxxxx/basic.ics
 ```
 
+Edit `config.local.json` for your machine:
+
+```json
+{
+  "server": {
+    "host": "127.0.0.1",
+    "port": 4500
+  },
+  "github": {
+    "trackedRepos": [
+      "YourOrg/repo-one",
+      "YourOrg/repo-two",
+      "yourusername/personal-repo"
+    ],
+    "orgs": [
+      {
+        "owner": "YourOrg",
+        "repoLimit": 200
+      }
+    ]
+  },
+  "obsidian": {
+    "vaultDir": "/path/to/your/obsidian/vault",
+    "dailyDir": "/path/to/your/obsidian/vault/03 - Periodic/01 - Daily",
+    "decisionsDir": "/path/to/your/obsidian/vault/08 - Projects/DamageLabs/Decisions",
+    "tasksDir": "/path/to/your/tasks/folder",
+    "taskFiles": [
+      { "file": "Tasks.md", "label": "General", "color": "amber" },
+      { "file": "Work Tasks.md", "label": "Work", "color": "blue" }
+    ]
+  },
+  "standup": {
+    "dir": "${HOME}/Code/brain/standups/daily"
+  }
+}
+```
+
+`config.local.json` is ignored by git and is the recommended place for personal paths and repo lists.
+
 **Get your iCal URLs:** Google Calendar → Settings → [Calendar name] → _Secret address in iCal format_
 
-### 4. Edit `server.js` for your setup
-
-Open `server.js` and update these constants near the top:
-
-#### GitHub repos to track (issues + PRs)
-
-```js
-const ACTIVE_REPOS = [
-  'YourOrg/repo-one',
-  'YourOrg/repo-two',
-  'yourusername/personal-repo',
-];
-```
-
-These repos get full issue detail in Urgent/Active/Backlog. All repos from your org(s) appear in the Repos tab.
-
-To change which orgs are listed in Repos, update the fetch calls in `fetchGitHub()`:
-
-```js
-const allRepos = gh('repo list YourOrg --json name,isArchived,pushedAt --limit 200')
-  .map(r => ({ name: `YourOrg/${r.name}`, archived: r.isArchived }));
-```
-
-#### Obsidian vault (optional)
-
-```js
-const VAULT_DIR = '/path/to/your/obsidian/vault';
-const DAILY_DIR = `${VAULT_DIR}/your-daily-notes-folder`;
-const DECISIONS_DIR = `${VAULT_DIR}/your-decisions-folder`;
-```
-
-#### Obsidian tasks (optional)
-
-```js
-const TASKS_DIR = '/path/to/your/tasks/folder';
-const TASK_FILES = [
-  { file: 'Tasks.md', label: 'General', color: 'amber' },
-  { file: 'Work Tasks.md', label: 'Work', color: 'blue' },
-];
-```
+#### Obsidian task format
 
 Task files should use standard Obsidian checkbox format:
 
@@ -135,27 +140,15 @@ Task files should use standard Obsidian checkbox format:
 - [x] Completed task ✅ 2026-04-01
 ```
 
-#### Daily standups (optional)
+#### Daily standups
 
-```js
-const STANDUP_DIR = '/path/to/your/standups/daily';
-```
-
-Expects files named `YYYY-MM-DD.md` with `### Repo/Name` sections.
+Standup files should be named `YYYY-MM-DD.md` and use `### Repo/Name` sections.
 
 #### Issue priority labels
 
-```js
-// Customize which labels map to which priority bucket
-function issuePriority(labels) {
-  const names = labels.map(l => l.name.toLowerCase());
-  if (names.some(n => n.includes('bug') || n.includes('urgent'))) return 'urgent';
-  if (names.some(n => n.includes('enhancement') || n.includes('feature'))) return 'active';
-  return 'deferred';
-}
-```
+Issue bucketing is still controlled in `server.js` via `issuePriority(labels)`.
 
-### 5. Run
+### 4. Run
 
 ```bash
 # Development (direct)
@@ -169,7 +162,7 @@ pm2 startup  # auto-start on reboot
 
 Runs on **http://localhost:4500**.
 
-### 6. Local HTTPS with Caddy (optional but recommended)
+### 5. Local HTTPS with Caddy (optional but recommended)
 
 Install [Caddy](https://caddyserver.com) and [dnsmasq](https://thekelleys.org.uk/dnsmasq/doc.html), then:
 

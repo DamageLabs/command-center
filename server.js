@@ -8,40 +8,29 @@ const path = require('path');
 const cron = require('node-cron');
 const ical = require('node-ical');
 const fs = require('fs');
+const { loadConfig } = require('./lib/config');
 
 const app = express();
-const PORT = 4500;
+const { config: runtimeConfig, configPath, warnings: configWarnings } = loadConfig();
+const PORT = runtimeConfig.server.port;
+const HOST = runtimeConfig.server.host;
 
 // ── Config ────────────────────────────────────────────────────────────────────
-const ACTIVE_REPOS = [
-  'DamageLabs/uas-log',
-  'DamageLabs/armory-core',
-  'DamageLabs/damagelabs.io',
-  'DamageLabs/paper_trail_manager',
-  'DamageLabs/clahub',
-  'DamageLabs/whiskey-canon',
-  'DamageLabs/sports-card-tracker',
-  'DamageLabs/brain',
-  'DamageLabs/command-center',
-  'fusion94/fusion94.org',
-  'fusion94/clawd',
-];
+const ACTIVE_REPOS = runtimeConfig.github.trackedRepos;
+const GITHUB_ORGS = runtimeConfig.github.orgs;
 
-const TASKS_DIR = '/Users/guntharp/Documents/guntharp-personal/02 - Action/01 - Tasks';
-const VAULT_DIR = '/Users/guntharp/Documents/guntharp-personal';
-const DAILY_DIR = `${VAULT_DIR}/03 - Periodic/01 - Daily`;
-const DECISIONS_DIR = `${VAULT_DIR}/08 - Projects/DamageLabs/Decisions`;
-const STANDUP_DIR = `${process.env.HOME}/Code/brain/standups/daily`;
-const TASK_FILES = [
-  { file: '02 - General Tasks.md', label: 'General', color: 'amber' },
-  { file: '03 - CA Tasks.md',      label: 'California', color: 'blue' },
-  { file: '04 - TX Tasks.md',      label: 'Texas', color: 'green' },
-];
+const DAILY_DIR = runtimeConfig.obsidian.dailyDir;
+const DECISIONS_DIR = runtimeConfig.obsidian.decisionsDir;
+const TASKS_DIR = runtimeConfig.obsidian.tasksDir;
+const TASK_FILES = runtimeConfig.obsidian.taskFiles;
+const STANDUP_DIR = runtimeConfig.standup.dir;
 
-const CALENDAR_URLS = [
-  process.env.CAL_1,
-  process.env.CAL_2,
-].filter(Boolean);
+const CALENDAR_URLS = runtimeConfig.calendar.icalUrls;
+
+console.log(`[config] loaded ${path.relative(__dirname, configPath) || configPath}`);
+for (const warning of configWarnings) {
+  console.warn(`[config] ${warning}`);
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function issuePriority(labels) {
@@ -53,6 +42,33 @@ function issuePriority(labels) {
 
 function gh(cmd) {
   return JSON.parse(execSync(`gh ${cmd}`, { encoding: 'utf8', maxBuffer: 4 * 1024 * 1024 }));
+}
+
+function configuredRepos() {
+  const deduped = new Map();
+
+  for (const org of GITHUB_ORGS) {
+    try {
+      let repos = gh(`repo list ${org.owner} --json name,isArchived,pushedAt --limit ${org.repoLimit}`);
+      if (org.includeRepos.length) {
+        repos = repos.filter(repo => org.includeRepos.includes(repo.name));
+      }
+      if (org.excludeRepos.length) {
+        repos = repos.filter(repo => !org.excludeRepos.includes(repo.name));
+      }
+
+      for (const repo of repos) {
+        deduped.set(`${org.owner}/${repo.name}`, {
+          name: `${org.owner}/${repo.name}`,
+          archived: repo.isArchived,
+        });
+      }
+    } catch (error) {
+      console.warn(`[github] skipping org ${org.owner}: ${error.message}`);
+    }
+  }
+
+  return [...deduped.values()];
 }
 
 // ── Cache ─────────────────────────────────────────────────────────────────────
@@ -98,6 +114,13 @@ function parseTaskRecord(raw, label, color, section, completed = false) {
 function fetchPRs() {
   console.log('[prs] fetching open PRs...');
   try {
+    if (!ACTIVE_REPOS.length) {
+      cache.prs = [];
+      cache.prsUpdatedAt = Date.now();
+      console.log('[prs] skipped, no github.trackedRepos configured');
+      return;
+    }
+
     const allPRs = [];
     for (const repo of ACTIVE_REPOS) {
       try {
@@ -216,7 +239,7 @@ function parseStandupSections(content) {
 function fetchStandup() {
   console.log('[standup] reading latest standup...');
   try {
-    if (!fs.existsSync(STANDUP_DIR)) {
+    if (!STANDUP_DIR || !fs.existsSync(STANDUP_DIR)) {
       cache.standup = null;
       return;
     }
@@ -253,26 +276,31 @@ function fetchNotes() {
     const now = new Date();
     const result = { dailyNote: null, decisions: [], updatedAt: Date.now() };
 
+    if (!DAILY_DIR && !DECISIONS_DIR) {
+      cache.notes = result;
+      console.log('[notes] skipped, no obsidian daily/decisions paths configured');
+      return;
+    }
+
     // Find today's or most recent daily note
     const months = ['01-January','02-February','03-March','04-April','05-May','06-June',
       '07-July','08-August','09-September','10-October','11-November','12-December'];
     const year = now.getFullYear();
     const month = months[now.getMonth()];
     const pad = n => String(n).padStart(2,'0');
-    const todayFile = `${year}-${pad(now.getMonth()+1)}-${pad(now.getDate())}.md`;
-    const monthDir = `${DAILY_DIR}/${year}/${month}`;
-
     // Try today, then walk back up to 7 days
     let noteContent = null, noteDate = null;
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(now - i * 86400000);
-      const m = months[d.getMonth()];
-      const fname = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}.md`;
-      const fpath = `${DAILY_DIR}/${d.getFullYear()}/${m}/${fname}`;
-      if (fs.existsSync(fpath)) {
-        noteContent = fs.readFileSync(fpath, 'utf8');
-        noteDate = fname.replace('.md','');
-        break;
+    if (DAILY_DIR) {
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(now - i * 86400000);
+        const m = months[d.getMonth()];
+        const fname = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}.md`;
+        const fpath = `${DAILY_DIR}/${d.getFullYear()}/${m}/${fname}`;
+        if (fs.existsSync(fpath)) {
+          noteContent = fs.readFileSync(fpath, 'utf8');
+          noteDate = fname.replace('.md','');
+          break;
+        }
       }
     }
 
@@ -297,7 +325,7 @@ function fetchNotes() {
     }
 
     // Recent decisions
-    if (fs.existsSync(DECISIONS_DIR)) {
+    if (DECISIONS_DIR && fs.existsSync(DECISIONS_DIR)) {
       const files = fs.readdirSync(DECISIONS_DIR)
         .filter(f => f.endsWith('.md'))
         .sort().reverse().slice(0, 5);
@@ -332,6 +360,15 @@ function fetchTasks() {
   try {
     const result = [];
     const completed = [];
+
+    if (!TASKS_DIR || !TASK_FILES.length) {
+      cache.tasks = result;
+      cache.completedTasks = completed;
+      cache.tasksUpdatedAt = Date.now();
+      console.log('[tasks] skipped, no tasks config found');
+      return;
+    }
+
     for (const { file, label, color } of TASK_FILES) {
       const fullPath = `${TASKS_DIR}/${file}`;
       if (!fs.existsSync(fullPath)) continue;
@@ -372,18 +409,18 @@ function fetchTasks() {
 function fetchGitHub() {
   console.log('[github] fetching issues...');
   try {
-    // Fetch all DamageLabs + fusion94 repos dynamically
-    const damagelabsRepos = gh('repo list DamageLabs --json name,isArchived,pushedAt --limit 200')
-      .map(r => ({ name: `DamageLabs/${r.name}`, archived: r.isArchived }));
-    const fusion94Repos = gh('repo list fusion94 --json name,isArchived,pushedAt --limit 100')
-      .filter(r => ['fusion94.org','clawd','dotfiles','homeassistant'].includes(r.name))
-      .map(r => ({ name: `fusion94/${r.name}`, archived: r.isArchived }));
-    const allRepos = [...damagelabsRepos, ...fusion94Repos];
+    if (!GITHUB_ORGS.length) {
+      cache.issues = [];
+      cache.repoStats = [];
+      cache.issuesUpdatedAt = Date.now();
+      console.log('[github] skipped, no github.orgs configured');
+      return;
+    }
+
+    const allRepos = configuredRepos();
 
     const allIssues = [];
     const repoStats = [];
-
-    // Fetch issues only for ACTIVE_REPOS (prioritized); collect stats for all
     for (const { name: repo, archived } of allRepos) {
       try {
         const issues = gh(`issue list --repo ${repo} --state open --json number,title,labels,assignees,createdAt,url,milestone --limit 100`);
@@ -672,6 +709,6 @@ app.post('/api/refresh', async (req, res) => {
   res.json({ ok: true });
 });
 
-app.listen(PORT, '127.0.0.1', () => {
-  console.log(`command-center running at http://127.0.0.1:${PORT}`);
+app.listen(PORT, HOST, () => {
+  console.log(`command-center running at http://${HOST}:${PORT}`);
 });
