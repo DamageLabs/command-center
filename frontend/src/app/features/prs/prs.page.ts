@@ -6,11 +6,18 @@ import { PullRequestItem } from '../../models/api';
 import { ViewShellComponent } from '../../layout/view-shell.component';
 import { StatePanelComponent } from '../../shared/ui/state-panel.component';
 
+type PrSection = {
+  key: string;
+  title: string;
+  subtitle: string;
+  items: PullRequestItem[];
+};
+
 @Component({
   selector: 'app-prs-page',
   imports: [ViewShellComponent, StatePanelComponent],
   template: `
-    <app-view-shell eyebrow="Review" title="Pull Requests" subtitle="Open pull requests with search, pinning, and review status." [meta]="meta()">
+    <app-view-shell eyebrow="Review" title="Pull Requests" subtitle="Open pull requests with stronger action cues, ownership, and scanability." [meta]="meta()">
       <div view-actions class="flex flex-wrap items-center gap-3">
         <button type="button" (click)="prs.refresh()" class="cc-action-button">Refresh</button>
         <input [value]="searchText()" (input)="searchText.set($any($event.target).value)" class="cc-input min-w-64 px-4 py-2 text-sm" placeholder="Search PRs…" />
@@ -23,67 +30,93 @@ import { StatePanelComponent } from '../../shared/ui/state-panel.component';
       } @else if (!filteredItems().length) {
         <cc-state-panel kind="empty" [title]="allItems().length ? 'No PRs match this filter' : 'No open PRs'" [message]="allItems().length ? 'Try a different search.' : 'There are no open pull requests right now.'"></cc-state-panel>
       } @else {
-        <section class="grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
+        <section class="space-y-6">
           @if (pinnedItems().length) {
-            <div class="lg:col-span-2 2xl:col-span-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-amber-300"><span>📌</span><span>Pinned</span></div>
-            @for (pr of pinnedItems(); track pr.repoFull + '#' + pr.number) {
-              <article class="cc-list-card p-5">
-                <div class="flex items-start justify-between gap-4">
-                  <div class="min-w-0">
-                    <a [href]="pr.url" target="_blank" class="text-base font-semibold leading-6 text-[var(--cc-text)] transition hover:text-indigo-300">{{ pr.title }}</a>
-                    <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-[var(--cc-text-soft)]">
-                      <span class="font-semibold text-sky-300">{{ pr.repo }}</span>
-                      <span>#{{ pr.number }}</span>
-                      <span>{{ pr.headRefName }}</span>
-                      <span>{{ timeAgo(pr.createdAt) }}</span>
+            <div>
+              <div class="cc-section-heading text-amber-300">
+                <span>📌</span>
+                <span>Pinned</span>
+              </div>
+              <div class="mt-4 grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
+                @for (pr of pinnedItems(); track pr.repoFull + '#' + pr.number) {
+                  <article class="cc-list-card border-l-4 p-5" [style.borderLeftColor]="prAccent(pr)">
+                    <div class="flex items-start justify-between gap-4">
+                      <div class="min-w-0 flex-1">
+                        <div class="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--cc-text-soft)]">
+                          <span class="cc-label-pill">{{ pr.repo }}</span>
+                          <span [class]="reviewBadgeClass(pr)">{{ reviewLabel(pr) }}</span>
+                          @if (pr.isDraft) {
+                            <span class="cc-label-pill">Draft</span>
+                          }
+                        </div>
+                        <a [href]="pr.url" target="_blank" class="mt-3 block text-base font-semibold leading-6 text-[var(--cc-text)] transition hover:text-indigo-300">{{ pr.title }}</a>
+                        <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-[var(--cc-text-soft)]">
+                          <span>#{{ pr.number }}</span>
+                          <span>{{ pr.headRefName }}</span>
+                          <span>{{ timeAgo(pr.createdAt) }}</span>
+                        </div>
+                        <div class="mt-4 flex flex-wrap gap-2">
+                          <span class="cc-owner-chip">
+                            @if (pr.author?.login) {
+                              <img [src]="avatarUrl(pr.author?.login)" [alt]="pr.author?.login || 'author'" class="cc-owner-avatar" />
+                            } @else {
+                              <span class="cc-owner-avatar cc-owner-avatar-fallback">?</span>
+                            }
+                            <span>{{ pr.author?.login || 'Unknown author' }}</span>
+                          </span>
+                          <span [class]="attentionBadgeClass(pr)">{{ attentionLabel(pr) }}</span>
+                        </div>
+                      </div>
+                      <button type="button" (click)="togglePinned(pr)" class="cc-small-button cc-small-button-accent">Unpin</button>
                     </div>
-                    <div class="mt-3 flex flex-wrap gap-2 text-xs">
-                      @if (pr.isDraft) {
-                        <span class="cc-label-pill">Draft</span>
-                      }
-                      @if (pr.reviewDecision === 'APPROVED') {
-                        <span class="cc-label-pill border-emerald-400/25 bg-emerald-500/10 text-emerald-100">Approved</span>
-                      }
-                      @if (pr.reviewDecision === 'CHANGES_REQUESTED') {
-                        <span class="cc-label-pill border-rose-400/25 bg-rose-500/10 text-rose-100">Changes requested</span>
-                      }
-                    </div>
-                  </div>
-                  <button type="button" (click)="togglePinned(pr)" class="cc-small-button cc-small-button-accent">Unpin</button>
-                </div>
-              </article>
-            }
-            @if (unpinnedItems().length) {
-              <div class="lg:col-span-2 2xl:col-span-3 border-t border-[var(--cc-border)]"></div>
-            }
+                  </article>
+                }
+              </div>
+            </div>
           }
 
-          @for (pr of unpinnedItems(); track pr.repoFull + '#' + pr.number) {
-            <article class="cc-list-card p-5">
-              <div class="flex items-start justify-between gap-4">
-                <div class="min-w-0">
-                  <a [href]="pr.url" target="_blank" class="text-base font-semibold leading-6 text-[var(--cc-text)] transition hover:text-indigo-300">{{ pr.title }}</a>
-                  <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-[var(--cc-text-soft)]">
-                    <span class="font-semibold text-sky-300">{{ pr.repo }}</span>
-                    <span>#{{ pr.number }}</span>
-                    <span>{{ pr.headRefName }}</span>
-                    <span>{{ timeAgo(pr.createdAt) }}</span>
-                  </div>
-                  <div class="mt-3 flex flex-wrap gap-2 text-xs">
-                    @if (pr.isDraft) {
-                      <span class="cc-label-pill">Draft</span>
-                    }
-                    @if (pr.reviewDecision === 'APPROVED') {
-                      <span class="cc-label-pill border-emerald-400/25 bg-emerald-500/10 text-emerald-100">Approved</span>
-                    }
-                    @if (pr.reviewDecision === 'CHANGES_REQUESTED') {
-                      <span class="cc-label-pill border-rose-400/25 bg-rose-500/10 text-rose-100">Changes requested</span>
-                    }
-                  </div>
-                </div>
-                <button type="button" (click)="togglePinned(pr)" class="cc-small-button">Pin</button>
+          @for (section of sections(); track section.key) {
+            <div>
+              <div class="cc-section-heading" [class.text-amber-300]="section.key === 'needs-action'" [class.text-[var(--cc-text-soft)]]="section.key !== 'needs-action'">
+                <span>{{ section.title }}</span>
+                <span class="text-[var(--cc-text-soft)]">{{ section.subtitle }}</span>
               </div>
-            </article>
+              <div class="mt-4 grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
+                @for (pr of section.items; track pr.repoFull + '#' + pr.number) {
+                  <article class="cc-list-card border-l-4 p-5" [style.borderLeftColor]="prAccent(pr)">
+                    <div class="flex items-start justify-between gap-4">
+                      <div class="min-w-0 flex-1">
+                        <div class="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--cc-text-soft)]">
+                          <span class="cc-label-pill">{{ pr.repo }}</span>
+                          <span [class]="reviewBadgeClass(pr)">{{ reviewLabel(pr) }}</span>
+                          @if (pr.isDraft) {
+                            <span class="cc-label-pill">Draft</span>
+                          }
+                        </div>
+                        <a [href]="pr.url" target="_blank" class="mt-3 block text-base font-semibold leading-6 text-[var(--cc-text)] transition hover:text-indigo-300">{{ pr.title }}</a>
+                        <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-[var(--cc-text-soft)]">
+                          <span>#{{ pr.number }}</span>
+                          <span>{{ pr.headRefName }}</span>
+                          <span>{{ timeAgo(pr.createdAt) }}</span>
+                        </div>
+                        <div class="mt-4 flex flex-wrap gap-2">
+                          <span class="cc-owner-chip">
+                            @if (pr.author?.login) {
+                              <img [src]="avatarUrl(pr.author?.login)" [alt]="pr.author?.login || 'author'" class="cc-owner-avatar" />
+                            } @else {
+                              <span class="cc-owner-avatar cc-owner-avatar-fallback">?</span>
+                            }
+                            <span>{{ pr.author?.login || 'Unknown author' }}</span>
+                          </span>
+                          <span [class]="attentionBadgeClass(pr)">{{ attentionLabel(pr) }}</span>
+                        </div>
+                      </div>
+                      <button type="button" (click)="togglePinned(pr)" class="cc-small-button">Pin</button>
+                    </div>
+                  </article>
+                }
+              </div>
+            </div>
           }
         </section>
       }
@@ -103,21 +136,73 @@ export class PrsPage {
     if (!q) return this.allItems();
     return this.allItems().filter((pr) => {
       const author = pr.author?.login?.toLowerCase() || '';
-      return pr.title.toLowerCase().includes(q) || pr.repo.toLowerCase().includes(q) || pr.headRefName.toLowerCase().includes(q) || author.includes(q);
+      const review = this.reviewLabel(pr).toLowerCase();
+      return pr.title.toLowerCase().includes(q) || pr.repo.toLowerCase().includes(q) || pr.headRefName.toLowerCase().includes(q) || author.includes(q) || review.includes(q);
     });
   });
   protected readonly pinnedItems = computed(() => this.filteredItems().filter((pr) => this.pins.isPinned('pr', this.prKey(pr))));
   protected readonly unpinnedItems = computed(() => this.filteredItems().filter((pr) => !this.pins.isPinned('pr', this.prKey(pr))));
+  protected readonly sections = computed(() => {
+    const needsAction = this.unpinnedItems().filter((pr) => this.isActionNeeded(pr));
+    const watching = this.unpinnedItems().filter((pr) => !this.isActionNeeded(pr));
+    const sections: PrSection[] = [];
+    if (needsAction.length) sections.push({ key: 'needs-action', title: 'Needs action', subtitle: `${needsAction.length} PR${needsAction.length === 1 ? '' : 's'} that need review or follow-up`, items: needsAction });
+    if (watching.length) sections.push({ key: 'watching', title: 'Watching', subtitle: `${watching.length} PR${watching.length === 1 ? '' : 's'} that are approved or still drafting`, items: watching });
+    return sections;
+  });
   protected readonly meta = computed(() => {
     const source = this.prs.source();
     const count = this.filteredItems().length;
-    const drafts = this.allItems().filter((pr) => pr.isDraft).length;
-    const summary = `${count} open PR${count === 1 ? '' : 's'} · ${drafts} draft${drafts === 1 ? '' : 's'}`;
+    const needsAction = this.filteredItems().filter((pr) => this.isActionNeeded(pr)).length;
+    const summary = `${count} open PR${count === 1 ? '' : 's'} · ${needsAction} need action`;
     return source?.status ? `${summary} · ${source.status}` : summary;
   });
 
   protected togglePinned(pr: PullRequestItem): void {
     this.pins.toggle('pr', this.prKey(pr));
+  }
+
+  protected avatarUrl(login?: string | null): string {
+    return `https://github.com/${encodeURIComponent(login || 'ghost')}.png?size=64`;
+  }
+
+  protected isActionNeeded(pr: PullRequestItem): boolean {
+    return !pr.isDraft && pr.reviewDecision !== 'APPROVED';
+  }
+
+  protected reviewLabel(pr: PullRequestItem): string {
+    if (pr.reviewDecision === 'CHANGES_REQUESTED') return 'Changes requested';
+    if (pr.reviewDecision === 'APPROVED') return 'Approved';
+    if (pr.isDraft) return 'Draft';
+    return 'Needs review';
+  }
+
+  protected attentionLabel(pr: PullRequestItem): string {
+    if (pr.reviewDecision === 'CHANGES_REQUESTED') return 'Author follow-up';
+    if (pr.reviewDecision === 'APPROVED') return 'Ready to merge';
+    if (pr.isDraft) return 'FYI';
+    return 'Review needed';
+  }
+
+  protected reviewBadgeClass(pr: PullRequestItem): string {
+    if (pr.reviewDecision === 'CHANGES_REQUESTED') return 'cc-label-pill border-rose-400/25 bg-rose-500/10 text-rose-100';
+    if (pr.reviewDecision === 'APPROVED') return 'cc-label-pill border-emerald-400/25 bg-emerald-500/10 text-emerald-100';
+    if (pr.isDraft) return 'cc-label-pill border-white/10 bg-white/5 text-[var(--cc-text-muted)]';
+    return 'cc-label-pill border-sky-400/25 bg-sky-500/10 text-sky-100';
+  }
+
+  protected attentionBadgeClass(pr: PullRequestItem): string {
+    if (pr.reviewDecision === 'CHANGES_REQUESTED') return 'cc-label-pill border-rose-400/25 bg-rose-500/10 text-rose-100';
+    if (pr.reviewDecision === 'APPROVED') return 'cc-label-pill border-emerald-400/25 bg-emerald-500/10 text-emerald-100';
+    if (pr.isDraft) return 'cc-label-pill border-white/10 bg-white/5 text-[var(--cc-text-muted)]';
+    return 'cc-label-pill border-amber-400/25 bg-amber-500/10 text-amber-100';
+  }
+
+  protected prAccent(pr: PullRequestItem): string {
+    if (pr.reviewDecision === 'CHANGES_REQUESTED') return 'rgba(251, 113, 133, 0.8)';
+    if (pr.reviewDecision === 'APPROVED') return 'rgba(52, 211, 153, 0.8)';
+    if (pr.isDraft) return 'rgba(148, 163, 184, 0.5)';
+    return 'rgba(56, 189, 248, 0.8)';
   }
 
   protected timeAgo(iso: string): string {
