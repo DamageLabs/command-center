@@ -888,6 +888,26 @@
       text-align: center; padding: 3rem 1rem;
       color: var(--text-muted); font-size: 0.875rem;
     }
+    .state-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 1rem 1.1rem;
+      display: flex; flex-direction: column; gap: 0.45rem;
+    }
+    .state-card.compact { padding: 0.9rem 1rem; min-height: 0; }
+    .state-card.empty { border-style: dashed; }
+    .state-card.error { border-color: rgba(248,113,113,0.22); background: rgba(248,113,113,0.05); }
+    .state-eyebrow {
+      font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--text-muted);
+    }
+    .state-card.error .state-eyebrow { color: var(--red-300); }
+    .state-title {
+      font-size: 0.95rem; font-weight: 650; color: var(--text-primary);
+    }
+    .state-detail {
+      font-size: 0.82rem; line-height: 1.55; color: var(--text-secondary);
+      white-space: pre-wrap;
+    }
     .skeleton {
       background: var(--bg-card); border-radius: 10px;
       height: 76px; animation: shimmer 1.4s infinite;
@@ -1592,6 +1612,29 @@
     el.dataset.state = source?.status || 'unknown';
   }
 
+  function normalizeErrorText(value) {
+    return truncateText(String(value || '').replace(/\s+/g, ' ').trim(), 160);
+  }
+
+  function renderStateCard({ tone = 'empty', eyebrow = 'Status', title, detail = '', compact = false } = {}) {
+    return `
+      <div class="state-card ${tone}${compact ? ' compact' : ''}">
+        <div class="state-eyebrow">${escHtml(eyebrow)}</div>
+        <div class="state-title">${escHtml(title)}</div>
+        ${detail ? `<div class="state-detail">${escHtml(detail)}</div>` : ''}
+      </div>
+    `;
+  }
+
+  function renderEmptyState(title, detail, compact = false) {
+    return renderStateCard({ tone: 'empty', eyebrow: 'Empty', title, detail, compact });
+  }
+
+  function renderUnavailableState(title, detail, error = '', compact = false) {
+    const message = error ? `${detail} ${normalizeErrorText(error)}`.trim() : detail;
+    return renderStateCard({ tone: 'error', eyebrow: 'Unavailable', title, detail: message, compact });
+  }
+
   function labelClass(name) {
     const n = name.toLowerCase();
     if (n.includes('bug')) return 'bug';
@@ -1859,7 +1902,12 @@
       setViewSubtitle('sub-urgent', 'Issues unavailable', data.source);
       setViewSubtitle('sub-active', 'Issues unavailable', data.source);
       setViewSubtitle('sub-backlog', 'Issues unavailable', data.source);
-      throw new Error(data.error);
+      const message = data.error || data.source?.error || 'Issue data could not be loaded.';
+      document.getElementById('col-urgent').innerHTML = renderUnavailableState('Issues unavailable', 'Urgent issues could not be loaded.', message, true);
+      document.getElementById('col-active').innerHTML = renderUnavailableState('Issues unavailable', 'Active issues could not be loaded.', message, true);
+      document.getElementById('col-backlog').innerHTML = renderUnavailableState('Issues unavailable', 'Backlog issues could not be loaded.', message, true);
+      document.getElementById('home-issues').innerHTML = renderUnavailableState('Issues unavailable', 'The Home view could not load recent issues.', message, true);
+      throw new Error(message);
     }
 
     document.getElementById('badge-urgent').textContent = data.urgent.length;
@@ -1882,7 +1930,7 @@
     const renderCol = (id, arr) => {
       const el = document.getElementById(id);
       el.className = 'issues-grid';
-      if (!arr.length) { el.innerHTML = '<div class="empty">Nothing here 🎉</div>'; return; }
+      if (!arr.length) { el.innerHTML = renderEmptyState('Nothing here', 'No items currently match this view.', true); return; }
       const pinned = arr.filter(i => isPinned('issue', `${i.repoFull}#${i.number}`));
       const unpinned = arr.filter(i => !isPinned('issue', `${i.repoFull}#${i.number}`));
       let html = '';
@@ -1969,7 +2017,7 @@
             <div class="home-item-meta"><span class="home-item-accent">${dateStr} · ${timeStr}</span><span>${e.calendar}</span></div>
           </div>`;
         }).join('')
-      : '<div class="empty" style="padding:1rem">No upcoming events</div>';
+      : renderEmptyState('No upcoming events', 'Nothing is scheduled in the current window.', true);
 
     // Recent issues (pinned first)
     const issuesTitle = document.getElementById('home-issues-title');
@@ -1983,7 +2031,7 @@
             <div class="home-item-meta"><span class="home-item-accent">${i.repo}</span><span>#${i.number}</span><span>${timeAgo(i.createdAt)}</span></div>
           </a>`;
         }).join('')
-      : '<div class="empty" style="padding:1rem">No urgent issues 🎉</div>';
+      : renderEmptyState('No urgent issues', 'The urgent queue is clear right now.', true);
 
     // Open tasks
     document.getElementById('home-tasks').innerHTML = openTasks.length
@@ -1992,7 +2040,7 @@
             <div class="home-item-title">${escHtml(t.title)}</div>
             <div class="home-item-meta"><span class="home-item-accent">${t.source}</span>${t.section ? `<span>${escHtml(t.section)}</span>` : ''}${t.due ? `<span style="color:var(--red-400)">📅 ${t.due}</span>` : ''}</div>
           </div>`).join('')
-      : '<div class="empty" style="padding:1rem">All done! 🎉</div>';
+      : renderEmptyState('All done', 'There are no open tasks to show here.', true);
   }
 
   const SERVICE_DOMAINS = {
@@ -2046,7 +2094,7 @@
   function renderPRColumns(prs) {
     const el = document.getElementById('col-prs');
     el.className = 'pr-grid';
-    if (!prs.length) { el.innerHTML = '<div class="empty">No open PRs 🎉</div>'; return; }
+    if (!prs.length) { el.innerHTML = renderEmptyState('No open PRs', 'There are no pull requests waiting right now.', true); return; }
     const pinned = prs.filter(p => isPinned('pr', `${p.repoFull}#${p.number}`));
     const unpinned = prs.filter(p => !isPinned('pr', `${p.repoFull}#${p.number}`));
     let html = '';
@@ -2064,7 +2112,9 @@
     const data = await res.json();
     if (!data.ok) {
       setViewSubtitle('sub-prs', 'PRs unavailable', data.source);
-      throw new Error(data.error);
+      const message = data.error || data.source?.error || 'Pull requests could not be loaded.';
+      document.getElementById('col-prs').innerHTML = renderUnavailableState('PRs unavailable', 'Pull requests could not be loaded for this view.', message, true);
+      throw new Error(message);
     }
     const prs = data.prs;
     window._lastPRsData = prs;
@@ -2078,7 +2128,29 @@
   async function fetchStandup() {
     const res = await fetch('/api/standup');
     const data = await res.json();
-    if (!data.ok || !data.standup) return;
+    if (!data.ok) {
+      const message = data.error || 'Standup data could not be loaded.';
+      const homeEl = document.getElementById('home-standup');
+      if (homeEl) {
+        homeEl.innerHTML = renderUnavailableState('Standup unavailable', 'The latest standup could not be loaded for the Home view.', message);
+      }
+      const notesStandup = document.getElementById('notes-standup');
+      if (notesStandup) {
+        notesStandup.innerHTML = renderUnavailableState('Standup unavailable', 'The latest standup could not be loaded for the Notes view.', message);
+      }
+      return;
+    }
+    if (!data.standup) {
+      const homeEl = document.getElementById('home-standup');
+      if (homeEl) {
+        homeEl.innerHTML = renderEmptyState('No standup yet', 'A recent standup has not been loaded yet.');
+      }
+      const notesStandup = document.getElementById('notes-standup');
+      if (notesStandup) {
+        notesStandup.innerHTML = renderEmptyState('No standup yet', 'A recent standup has not been loaded yet.');
+      }
+      return;
+    }
     const s = data.standup;
 
     // Home standup card
@@ -2116,7 +2188,10 @@
     const data = await res.json();
     if (!data.ok) {
       setViewSubtitle('sub-notes', 'Notes unavailable', data.source);
-      throw new Error(data.error);
+      const message = data.error || data.source?.error || 'Notes could not be loaded.';
+      document.getElementById('col-notes').innerHTML = renderUnavailableState('Notes unavailable', 'Recent notes could not be loaded from the configured paths.', message);
+      document.getElementById('home-daily-note').innerHTML = renderUnavailableState('Daily note unavailable', 'The Home view could not load the latest daily note.', message);
+      throw new Error(message);
     }
 
     const total = (data.dailyNote ? 1 : 0) + data.decisions.length;
@@ -2144,7 +2219,7 @@
         </div>
       `;
     } else {
-      html += `<div class="empty">No recent daily notes found</div>`;
+      html += renderEmptyState('No recent daily note', 'No recent daily note was found in the configured Obsidian paths.');
     }
 
     // Decisions section
@@ -2181,7 +2256,7 @@
           </div>
         `;
       } else {
-        homeNote.innerHTML = '';
+        homeNote.innerHTML = renderEmptyState('No recent daily note', 'No recent daily note was found in the configured Obsidian paths.');
       }
     }
   }
@@ -2241,14 +2316,11 @@
       setViewSubtitle('sub-infra', 'Infra unavailable', { status: 'failed', label: 'Infra', error: message });
       el.className = '';
       el.style.cssText = 'display:flex;flex-direction:column;gap:1rem';
-      el.innerHTML = `
-        <div class="card" style="padding:1.25rem;display:flex;flex-direction:column;gap:0.6rem;">
-          <div style="font-size:0.82rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);">Infra unavailable</div>
-          <div style="font-size:1rem;font-weight:600;color:var(--text-primary);">Process monitoring could not be loaded.</div>
-          <div style="font-size:0.85rem;color:var(--text-secondary);line-height:1.5;">The rest of command-center is still working, but the Infra source failed. This commonly happens when PM2 is not installed or not available in the runtime environment.</div>
-          <pre style="margin:0;padding:0.85rem 1rem;border:1px solid var(--border);border-radius:12px;background:var(--bg-elev);color:var(--text-muted);font-size:0.78rem;white-space:pre-wrap;word-break:break-word;">${escHtml(message)}</pre>
-        </div>
-      `;
+      el.innerHTML = renderUnavailableState(
+        'Process monitoring could not be loaded',
+        'The rest of command-center is still working, but the Infra source failed. This commonly happens when PM2 is not installed or not available in the runtime environment.',
+        message
+      );
       _homeData.infra = { ok: false, processes: [], updatedAt: null, error: message };
     }
     tryRenderHome();
@@ -2290,7 +2362,7 @@
   function renderTaskColumns(tasks) {
     const el = document.getElementById('col-tasks');
     el.className = 'tasks-grid';
-    if (!tasks.length) { el.innerHTML = '<div class="empty">All done! 🎉</div>'; return; }
+    if (!tasks.length) { el.innerHTML = renderEmptyState('All done', 'There are no open tasks right now.'); return; }
     const pinned = tasks.filter(t => isPinned('task', taskKey(t)));
     const unpinned = tasks.filter(t => !isPinned('task', taskKey(t)));
     let html = '';
@@ -2308,7 +2380,7 @@
     doneEl.className = 'tasks-grid';
     doneEl.innerHTML = completedTasks.length
       ? completedTasks.map(renderCompletedTaskCard).join('')
-      : '<div class="empty">No completed tasks found yet</div>';
+      : renderEmptyState('No completed tasks yet', 'Completed tasks will appear here once they are finished.');
   }
 
   async function fetchTasks() {
@@ -2317,7 +2389,11 @@
     if (!data.ok) {
       setViewSubtitle('sub-tasks', 'Tasks unavailable', data.source);
       setViewSubtitle('sub-done', 'Completed tasks unavailable', data.source);
-      throw new Error(data.error);
+      const message = data.error || data.source?.error || 'Tasks could not be loaded.';
+      document.getElementById('col-tasks').innerHTML = renderUnavailableState('Tasks unavailable', 'Open tasks could not be loaded from Obsidian.', message);
+      document.getElementById('col-tasks-done').innerHTML = renderUnavailableState('Completed tasks unavailable', 'Completed tasks could not be loaded from Obsidian.', message);
+      document.getElementById('home-tasks').innerHTML = renderUnavailableState('Tasks unavailable', 'The Home view could not load open tasks.', message, true);
+      throw new Error(message);
     }
     const tasks = data.tasks;
     const completedTasks = data.completedTasks || [];
@@ -2371,7 +2447,7 @@
     const now = new Date();
     const col = document.getElementById('col-calendar');
     col.className = 'cal-grid';
-    if (!events.length) { col.innerHTML = '<div class="empty">No upcoming events 🎉</div>'; return; }
+    if (!events.length) { col.innerHTML = renderEmptyState('No upcoming events', 'Nothing is scheduled in the next window.'); return; }
     const pinned = events.filter(e => isPinned('event', eventKey(e)));
     const unpinned = events.filter(e => !isPinned('event', eventKey(e)));
     let html = '';
@@ -2389,7 +2465,10 @@
     const data = await res.json();
     if (!data.ok) {
       setViewSubtitle('sub-calendar', 'Calendar unavailable', data.source);
-      throw new Error(data.error);
+      const message = data.error || data.source?.error || 'Calendar events could not be loaded.';
+      document.getElementById('col-calendar').innerHTML = renderUnavailableState('Calendar unavailable', 'Upcoming events could not be loaded for this view.', message);
+      document.getElementById('home-events').innerHTML = renderUnavailableState('Calendar unavailable', 'The Home view could not load upcoming events.', message, true);
+      throw new Error(message);
     }
     const events = data.events;
     window._lastEventsData = events;
@@ -2402,6 +2481,10 @@
   function renderRepoColumns(repos) {
     const el = document.getElementById('col-repos');
     el.className = 'repos-grid';
+    if (!repos.length) {
+      el.innerHTML = renderEmptyState('No repos configured', 'Add tracked repos in command-center config to populate this view.');
+      return;
+    }
     const pinned = repos.filter(r => isPinned('repo', r.repoFull));
     const unpinned = repos.filter(r => !isPinned('repo', r.repoFull));
     let html = '';
@@ -2420,7 +2503,9 @@
     const data = await res.json();
     if (!data.ok) {
       setViewSubtitle('sub-repos', 'Repos unavailable', data.source);
-      throw new Error(data.error);
+      const message = data.error || data.source?.error || 'Repository health could not be loaded.';
+      document.getElementById('col-repos').innerHTML = renderUnavailableState('Repos unavailable', 'Repository health could not be loaded for this view.', message);
+      throw new Error(message);
     }
     const repos = data.repos.sort((a,b) => b.openIssues - a.openIssues);
     window._lastReposData = repos;
@@ -2524,7 +2609,7 @@
           &middot; Refreshes every 15 min
         </div>`;
     } catch(e) {
-      body.innerHTML = `<div style="color:var(--text-muted);padding:2rem;text-align:center;">Analytics unavailable — ${e.message}</div>`;
+      body.innerHTML = renderUnavailableState('Analytics unavailable', 'Analytics data could not be loaded for this view.', e.message);
     }
   }
 
