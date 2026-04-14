@@ -1,8 +1,7 @@
 node_modules/
-.env
-config.local.json
-
-node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
 .env
 config.local.json
 puppeteer-browsers/
