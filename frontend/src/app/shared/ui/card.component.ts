@@ -7,13 +7,13 @@ import { Component, computed, input } from '@angular/core';
       @if (eyebrow() || title() || description()) {
         <header>
           @if (eyebrow()) {
-            <p class="text-xs font-semibold uppercase tracking-[0.28em] text-[var(--cc-text-soft)]">{{ eyebrow() }}</p>
+            <p class="text-[11px] font-semibold uppercase tracking-[0.3em] text-[var(--cc-text-soft)]">{{ eyebrow() }}</p>
           }
           @if (title()) {
-            <h2 class="mt-3 text-2xl font-semibold tracking-tight text-[var(--cc-text)]">{{ title() }}</h2>
+            <h2 class="mt-3 text-[1.6rem] font-semibold tracking-tight text-[var(--cc-text)]">{{ title() }}</h2>
           }
           @if (description()) {
-            <p class="mt-3 text-sm leading-7 text-[var(--cc-text-muted)]">{{ description() }}</p>
+            <p class="mt-3 max-w-3xl text-sm leading-7 text-[var(--cc-text-muted)]">{{ description() }}</p>
           }
         </header>
       }
@@ -32,7 +32,7 @@ export class CardComponent {
   readonly compact = input(false);
 
   protected readonly classes = computed(() => {
-    const base = 'rounded-3xl border p-6 md:p-7';
+    const base = 'rounded-[28px] p-6 md:p-7';
     const tones = {
       default: 'cc-panel',
       muted: 'cc-panel-muted',

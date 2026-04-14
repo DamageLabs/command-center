@@ -16,14 +16,14 @@ import { StatePanelComponent } from '../../shared/ui/state-panel.component';
         <button
           type="button"
           (click)="issues.refresh()"
-          class="inline-flex items-center rounded-full border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] px-4 py-2 text-sm font-medium text-[var(--cc-text-muted)] transition hover:border-amber-300/40 hover:text-[var(--cc-text)]"
+          class="cc-action-button"
         >
           Refresh
         </button>
         <input
           [value]="searchText()"
           (input)="searchText.set($any($event.target).value)"
-          class="min-w-64 rounded-full border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] px-4 py-2 text-sm text-[var(--cc-text)] outline-none transition focus:border-amber-300/40"
+          class="cc-input min-w-64 px-4 py-2 text-sm"
           placeholder="Search issues…"
         />
       </div>
@@ -46,24 +46,24 @@ import { StatePanelComponent } from '../../shared/ui/state-panel.component';
               <span>Pinned</span>
             </div>
             @for (issue of pinnedItems(); track issue.repoFull + '#' + issue.number) {
-              <article class="rounded-2xl border border-[var(--cc-border)] bg-[var(--cc-surface)] p-5 shadow-sm">
+              <article class="cc-list-card p-5">
                 <div class="flex items-start justify-between gap-4">
                   <div class="min-w-0">
-                    <a [href]="issue.url" target="_blank" class="text-base font-semibold leading-6 text-[var(--cc-text)] transition hover:text-amber-300">{{ issue.title }}</a>
+                    <a [href]="issue.url" target="_blank" class="text-base font-semibold leading-6 text-[var(--cc-text)] transition hover:text-indigo-300">{{ issue.title }}</a>
                     <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-[var(--cc-text-soft)]">
-                      <span class="font-semibold text-amber-300">{{ issue.repo }}</span>
+                      <span class="font-semibold text-indigo-300">{{ issue.repo }}</span>
                       <span>#{{ issue.number }}</span>
                       <span>{{ timeAgo(issue.createdAt) }}</span>
                     </div>
                     <div class="mt-3 flex flex-wrap gap-2">
                       @for (label of issue.labels.slice(0, 3); track label.name) {
-                        <span class="rounded-full bg-[var(--cc-surface-muted)] px-3 py-1 text-xs font-medium text-[var(--cc-text-muted)]">{{ label.name }}</span>
+                        <span class="cc-label-pill">{{ label.name }}</span>
                       }
                     </div>
                   </div>
                   <div class="flex shrink-0 items-center gap-2">
-                    <button type="button" (click)="togglePinned(issue)" class="rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-xs font-semibold text-amber-200">Unpin</button>
-                    <button type="button" (click)="close(issue)" class="rounded-full border border-rose-400/30 bg-rose-400/10 px-3 py-2 text-xs font-semibold text-rose-200">Close</button>
+                    <button type="button" (click)="togglePinned(issue)" class="cc-small-button cc-small-button-accent">Unpin</button>
+                    <button type="button" (click)="close(issue)" class="cc-small-button cc-small-button-danger">Close</button>
                   </div>
                 </div>
               </article>
@@ -74,24 +74,24 @@ import { StatePanelComponent } from '../../shared/ui/state-panel.component';
           }
 
           @for (issue of unpinnedItems(); track issue.repoFull + '#' + issue.number) {
-            <article class="rounded-2xl border border-[var(--cc-border)] bg-[var(--cc-surface)] p-5 shadow-sm">
+            <article class="cc-list-card p-5">
               <div class="flex items-start justify-between gap-4">
                 <div class="min-w-0">
-                  <a [href]="issue.url" target="_blank" class="text-base font-semibold leading-6 text-[var(--cc-text)] transition hover:text-amber-300">{{ issue.title }}</a>
+                  <a [href]="issue.url" target="_blank" class="text-base font-semibold leading-6 text-[var(--cc-text)] transition hover:text-indigo-300">{{ issue.title }}</a>
                   <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-[var(--cc-text-soft)]">
-                    <span class="font-semibold text-amber-300">{{ issue.repo }}</span>
+                    <span class="font-semibold text-indigo-300">{{ issue.repo }}</span>
                     <span>#{{ issue.number }}</span>
                     <span>{{ timeAgo(issue.createdAt) }}</span>
                   </div>
                   <div class="mt-3 flex flex-wrap gap-2">
                     @for (label of issue.labels.slice(0, 3); track label.name) {
-                      <span class="rounded-full bg-[var(--cc-surface-muted)] px-3 py-1 text-xs font-medium text-[var(--cc-text-muted)]">{{ label.name }}</span>
+                      <span class="cc-label-pill">{{ label.name }}</span>
                     }
                   </div>
                 </div>
                 <div class="flex shrink-0 items-center gap-2">
-                  <button type="button" (click)="togglePinned(issue)" class="rounded-full border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] px-3 py-2 text-xs font-semibold text-[var(--cc-text-muted)]">Pin</button>
-                  <button type="button" (click)="close(issue)" class="rounded-full border border-rose-400/30 bg-rose-400/10 px-3 py-2 text-xs font-semibold text-rose-200">Close</button>
+                  <button type="button" (click)="togglePinned(issue)" class="cc-small-button">Pin</button>
+                  <button type="button" (click)="close(issue)" class="cc-small-button cc-small-button-danger">Close</button>
                 </div>
               </div>
             </article>

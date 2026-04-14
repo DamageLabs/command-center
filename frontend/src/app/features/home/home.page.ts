@@ -31,34 +31,34 @@ interface PinnedHomeItem {
       [meta]="homeMeta()"
     >
       <div view-actions class="flex flex-wrap items-center gap-3">
-        <button type="button" (click)="refreshAll()" [disabled]="refreshingAll()" class="inline-flex items-center rounded-full border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] px-4 py-2 text-sm font-medium text-[var(--cc-text-muted)] transition hover:border-amber-300/40 hover:text-[var(--cc-text)] disabled:cursor-not-allowed disabled:opacity-60">
+        <button type="button" (click)="refreshAll()" [disabled]="refreshingAll()" class="cc-action-button disabled:cursor-not-allowed disabled:opacity-60">
           {{ refreshingAll() ? 'Refreshing…' : 'Refresh sources' }}
         </button>
       </div>
 
       <cc-card eyebrow="Today" title="command.center" [description]="tagline()" tone="highlight" [compact]="true">
         <section class="grid gap-4 lg:grid-cols-5">
-          <button type="button" (click)="go('/issues/urgent')" class="rounded-2xl border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] p-5 text-left transition hover:border-rose-300/40">
+          <button type="button" (click)="go('/issues/urgent')" class="cc-card-button p-5 text-left">
             <div class="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--cc-text-soft)]">Urgent</div>
             <div class="mt-3 text-3xl font-semibold text-rose-300">{{ issues.data()?.counts?.urgent ?? 0 }}</div>
             <div class="mt-2 text-sm text-[var(--cc-text-muted)]">bugs and critical work</div>
           </button>
-          <button type="button" (click)="go('/issues/active')" class="rounded-2xl border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] p-5 text-left transition hover:border-amber-300/40">
+          <button type="button" (click)="go('/issues/active')" class="cc-card-button p-5 text-left">
             <div class="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--cc-text-soft)]">Active</div>
             <div class="mt-3 text-3xl font-semibold text-amber-300">{{ issues.data()?.counts?.active ?? 0 }}</div>
             <div class="mt-2 text-sm text-[var(--cc-text-muted)]">in-progress issues</div>
           </button>
-          <button type="button" (click)="go('/issues/backlog')" class="rounded-2xl border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] p-5 text-left transition hover:border-slate-300/40">
+          <button type="button" (click)="go('/issues/backlog')" class="cc-card-button p-5 text-left">
             <div class="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--cc-text-soft)]">Backlog</div>
             <div class="mt-3 text-3xl font-semibold text-slate-300">{{ issues.data()?.counts?.deferred ?? 0 }}</div>
             <div class="mt-2 text-sm text-[var(--cc-text-muted)]">{{ issues.data()?.total ?? 0 }} total open</div>
           </button>
-          <button type="button" (click)="go('/tasks')" class="rounded-2xl border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] p-5 text-left transition hover:border-fuchsia-300/40">
+          <button type="button" (click)="go('/tasks')" class="cc-card-button p-5 text-left">
             <div class="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--cc-text-soft)]">Tasks</div>
             <div class="mt-3 text-3xl font-semibold text-fuchsia-300">{{ tasks.data()?.open?.length ?? 0 }}</div>
             <div class="mt-2 text-sm text-[var(--cc-text-muted)]">open in Obsidian</div>
           </button>
-          <button type="button" (click)="go('/infra')" class="rounded-2xl border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] p-5 text-left transition hover:border-emerald-300/40">
+          <button type="button" (click)="go('/infra')" class="cc-card-button p-5 text-left">
             <div class="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--cc-text-soft)]">Infra</div>
             @if (infra.hasData()) {
               <div class="mt-3 text-3xl font-semibold text-emerald-300">{{ onlineServices() }}<span class="text-base font-medium text-[var(--cc-text-soft)]">/{{ infra.data()?.length ?? 0 }}</span></div>
@@ -76,15 +76,15 @@ interface PinnedHomeItem {
           <div>
             <p class="text-sm text-[var(--cc-text-muted)]">Quick capture for things you do not want falling through the cracks.</p>
           </div>
-          <button type="button" (click)="openReminderComposer()" class="rounded-full border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] px-4 py-2 text-sm font-medium text-[var(--cc-text-muted)] transition hover:border-amber-300/40 hover:text-[var(--cc-text)]">＋ Add</button>
+          <button type="button" (click)="openReminderComposer()" class="cc-action-button">＋ Add</button>
         </div>
 
         @if (composerOpen()) {
-          <div class="mt-4 grid gap-3 rounded-2xl border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] p-4 md:grid-cols-[1fr_180px_auto_auto]">
-            <input [value]="reminderText()" (input)="reminderText.set($any($event.target).value)" (keydown)="onReminderKeydown($event)" class="rounded-xl border border-[var(--cc-border)] bg-[var(--cc-surface)] px-4 py-3 text-sm text-[var(--cc-text)] outline-none transition focus:border-amber-300/40" placeholder="What do you need to remember?" />
-            <input [value]="reminderDue() || ''" (input)="reminderDue.set($any($event.target).value || null)" type="date" class="rounded-xl border border-[var(--cc-border)] bg-[var(--cc-surface)] px-4 py-3 text-sm text-[var(--cc-text)] outline-none transition focus:border-amber-300/40" />
-            <button type="button" (click)="saveReminder()" class="rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-3 text-sm font-medium text-emerald-200">{{ editingReminderId() ? 'Save' : 'Add' }}</button>
-            <button type="button" (click)="cancelReminderEdit()" class="rounded-xl border border-[var(--cc-border)] bg-[var(--cc-surface)] px-4 py-3 text-sm font-medium text-[var(--cc-text-muted)]">Cancel</button>
+          <div class="cc-list-card mt-4 grid gap-3 p-4 md:grid-cols-[1fr_180px_auto_auto]">
+            <input [value]="reminderText()" (input)="reminderText.set($any($event.target).value)" (keydown)="onReminderKeydown($event)" class="cc-input rounded-xl px-4 py-3 text-sm" placeholder="What do you need to remember?" />
+            <input [value]="reminderDue() || ''" (input)="reminderDue.set($any($event.target).value || null)" type="date" class="cc-input rounded-xl px-4 py-3 text-sm" />
+            <button type="button" (click)="saveReminder()" class="cc-small-button cc-small-button-accent rounded-xl px-4 py-3 text-sm">{{ editingReminderId() ? 'Save' : 'Add' }}</button>
+            <button type="button" (click)="cancelReminderEdit()" class="cc-small-button rounded-xl px-4 py-3 text-sm">Cancel</button>
           </div>
         }
 
@@ -93,7 +93,7 @@ interface PinnedHomeItem {
             <cc-state-panel kind="empty" title="No reminders yet" message="Add one above, or press N while on Home to capture a quick reminder."></cc-state-panel>
           } @else {
             @for (reminder of reminders.items(); track reminder.id) {
-              <div class="flex items-center gap-3 rounded-2xl border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] px-4 py-3">
+              <div class="cc-list-card flex items-center gap-3 px-4 py-3">
                 <button type="button" (click)="completeReminder(reminder.id)" class="h-5 w-5 rounded-full border border-[var(--cc-border)]"></button>
                 <div class="min-w-0 flex-1">
                   <div class="truncate text-sm font-medium text-[var(--cc-text)]">{{ reminder.text }}</div>
@@ -101,8 +101,8 @@ interface PinnedHomeItem {
                     <div class="mt-1 text-xs text-[var(--cc-text-soft)]">📅 {{ reminder.due }}</div>
                   }
                 </div>
-                <button type="button" (click)="editReminder(reminder)" class="rounded-full border border-[var(--cc-border)] bg-[var(--cc-surface)] px-3 py-2 text-xs font-semibold text-[var(--cc-text-muted)]">Edit</button>
-                <button type="button" (click)="dismissReminder(reminder.id)" class="rounded-full border border-rose-400/30 bg-rose-400/10 px-3 py-2 text-xs font-semibold text-rose-200">Dismiss</button>
+                <button type="button" (click)="editReminder(reminder)" class="cc-small-button">Edit</button>
+                <button type="button" (click)="dismissReminder(reminder.id)" class="cc-small-button cc-small-button-danger">Dismiss</button>
               </div>
             }
           }
@@ -116,16 +116,16 @@ interface PinnedHomeItem {
             <div class="mt-2 text-sm text-[var(--cc-text-muted)]">{{ layoutSummary() }}</div>
           </div>
           <div class="flex flex-wrap gap-3">
-            <button type="button" (click)="homeLayout.toggleCompact()" class="rounded-full border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] px-4 py-2 text-sm font-medium text-[var(--cc-text-muted)]">{{ homeLayout.layout().compact ? 'Compact on' : 'Compact mode' }}</button>
-            <button type="button" (click)="homeLayout.toggleCustomize()" class="rounded-full border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] px-4 py-2 text-sm font-medium text-[var(--cc-text-muted)]">{{ homeLayout.customizeMode() ? 'Done customizing' : 'Customize' }}</button>
-            <button type="button" (click)="homeLayout.reset()" class="rounded-full border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] px-4 py-2 text-sm font-medium text-[var(--cc-text-muted)]">Reset layout</button>
+            <button type="button" (click)="homeLayout.toggleCompact()" class="cc-action-button">{{ homeLayout.layout().compact ? 'Compact on' : 'Compact mode' }}</button>
+            <button type="button" (click)="homeLayout.toggleCustomize()" class="cc-action-button">{{ homeLayout.customizeMode() ? 'Done customizing' : 'Customize' }}</button>
+            <button type="button" (click)="homeLayout.reset()" class="cc-action-button">Reset layout</button>
           </div>
         </div>
 
         @if (hiddenSections().length) {
           <div class="mt-4 flex flex-wrap gap-2">
             @for (sectionId of hiddenSections(); track sectionId) {
-              <button type="button" (click)="homeLayout.restore(sectionId)" class="rounded-full border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--cc-text-soft)]">Show {{ sectionLabel(sectionId) }}</button>
+              <button type="button" (click)="homeLayout.restore(sectionId)" class="cc-small-button">Show {{ sectionLabel(sectionId) }}</button>
             }
           </div>
         }
@@ -140,12 +140,12 @@ interface PinnedHomeItem {
                   <div class="text-lg font-semibold tracking-tight text-[var(--cc-text)]">{{ sectionLabel(sectionId) }}</div>
                 </div>
                 <div class="flex flex-wrap justify-end gap-2">
-                  <button type="button" (click)="homeLayout.toggleCollapsed(sectionId)" class="rounded-full border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] px-3 py-2 text-xs font-semibold text-[var(--cc-text-muted)]">{{ isSectionCollapsed(sectionId) ? 'Expand' : 'Collapse' }}</button>
+                  <button type="button" (click)="homeLayout.toggleCollapsed(sectionId)" class="cc-small-button">{{ isSectionCollapsed(sectionId) ? 'Expand' : 'Collapse' }}</button>
                   @if (homeLayout.customizeMode()) {
-                    <button type="button" (click)="homeLayout.pinToTop(sectionId)" class="rounded-full border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] px-3 py-2 text-xs font-semibold text-[var(--cc-text-muted)]">Top</button>
-                    <button type="button" (click)="homeLayout.move(sectionId, -1)" [disabled]="index === 0" class="rounded-full border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] px-3 py-2 text-xs font-semibold text-[var(--cc-text-muted)] disabled:opacity-50">↑</button>
-                    <button type="button" (click)="homeLayout.move(sectionId, 1)" [disabled]="index === homeLayout.layout().order.length - 1" class="rounded-full border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] px-3 py-2 text-xs font-semibold text-[var(--cc-text-muted)] disabled:opacity-50">↓</button>
-                    <button type="button" (click)="homeLayout.toggleHidden(sectionId)" class="rounded-full border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] px-3 py-2 text-xs font-semibold text-[var(--cc-text-muted)]">Hide</button>
+                    <button type="button" (click)="homeLayout.pinToTop(sectionId)" class="cc-small-button">Top</button>
+                    <button type="button" (click)="homeLayout.move(sectionId, -1)" [disabled]="index === 0" class="cc-small-button disabled:opacity-50">↑</button>
+                    <button type="button" (click)="homeLayout.move(sectionId, 1)" [disabled]="index === homeLayout.layout().order.length - 1" class="cc-small-button disabled:opacity-50">↓</button>
+                    <button type="button" (click)="homeLayout.toggleHidden(sectionId)" class="cc-small-button">Hide</button>
                   }
                 </div>
               </div>
@@ -159,14 +159,14 @@ interface PinnedHomeItem {
                       } @else {
                         <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                           @for (item of pinnedHomeItems(); track item.type + ':' + item.title + ':' + item.meta) {
-                            <div class="rounded-2xl border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] p-4">
+                            <div class="cc-list-card p-4">
                               <div class="flex items-start justify-between gap-3">
                                 <div class="min-w-0 flex-1">
                                   <div class="text-xs font-semibold uppercase tracking-[0.2em] text-amber-300">{{ item.type }}</div>
                                   <div class="mt-2 truncate text-sm font-semibold text-[var(--cc-text)]">{{ item.title }}</div>
                                   <div class="mt-2 text-xs leading-5 text-[var(--cc-text-soft)]">{{ item.meta }}</div>
                                 </div>
-                                <button type="button" (click)="item.unpin()" class="rounded-full border border-rose-400/30 bg-rose-400/10 px-3 py-2 text-xs font-semibold text-rose-200">×</button>
+                                <button type="button" (click)="item.unpin()" class="cc-small-button cc-small-button-danger">×</button>
                               </div>
                               @if (item.externalUrl) {
                                 <a [href]="item.externalUrl" target="_blank" class="mt-4 inline-flex text-xs font-semibold uppercase tracking-[0.18em] text-amber-300">Open</a>
@@ -188,13 +188,13 @@ interface PinnedHomeItem {
                       } @else {
                         <div class="space-y-3">
                           @for (event of upcomingEvents(); track eventKey(event)) {
-                            <div class="rounded-2xl border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] p-4">
+                            <div class="cc-list-card p-4">
                               <div class="flex items-start justify-between gap-3">
                                 <div>
                                   <div class="text-sm font-semibold text-[var(--cc-text)]">{{ event.title }}</div>
                                   <div class="mt-2 text-xs leading-5 text-[var(--cc-text-soft)]">{{ eventDateLabel(event) }} · {{ eventTimeLabel(event) }} · {{ event.calendar }}</div>
                                 </div>
-                                <button type="button" (click)="togglePinnedEvent(event)" class="rounded-full border border-[var(--cc-border)] bg-[var(--cc-surface)] px-3 py-2 text-xs font-semibold text-[var(--cc-text-muted)]">{{ pins.isPinned('event', eventKey(event)) ? 'Unpin' : 'Pin' }}</button>
+                                <button type="button" (click)="togglePinnedEvent(event)" class="cc-small-button">{{ pins.isPinned('event', eventKey(event)) ? 'Unpin' : 'Pin' }}</button>
                               </div>
                             </div>
                           }
@@ -211,15 +211,15 @@ interface PinnedHomeItem {
                       } @else {
                         <div class="space-y-3">
                           @for (issue of homeIssues(); track issueKey(issue)) {
-                            <div class="rounded-2xl border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] p-4">
+                            <div class="cc-list-card p-4">
                               <div class="flex items-start justify-between gap-3">
                                 <div>
                                   <div class="text-sm font-semibold text-[var(--cc-text)]">{{ issue.title }}</div>
                                   <div class="mt-2 text-xs leading-5 text-[var(--cc-text-soft)]">{{ issue.repo }} · #{{ issue.number }} · {{ timeAgo(issue.createdAt) }}</div>
                                 </div>
                                 <div class="flex items-center gap-2">
-                                  <button type="button" (click)="togglePinnedIssue(issue)" class="rounded-full border border-[var(--cc-border)] bg-[var(--cc-surface)] px-3 py-2 text-xs font-semibold text-[var(--cc-text-muted)]">{{ pins.isPinned('issue', issueKey(issue)) ? 'Unpin' : 'Pin' }}</button>
-                                  <button type="button" (click)="go('/issues/' + issueRoute(issue.priority))" class="rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-xs font-semibold text-amber-200">View</button>
+                                  <button type="button" (click)="togglePinnedIssue(issue)" class="cc-small-button">{{ pins.isPinned('issue', issueKey(issue)) ? 'Unpin' : 'Pin' }}</button>
+                                  <button type="button" (click)="go('/issues/' + issueRoute(issue.priority))" class="cc-small-button cc-small-button-accent">View</button>
                                 </div>
                               </div>
                             </div>
@@ -237,7 +237,7 @@ interface PinnedHomeItem {
                       } @else {
                         <div class="space-y-3">
                           @for (task of homeTasks(); track taskKey(task)) {
-                            <div class="rounded-2xl border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] p-4">
+                            <div class="cc-list-card p-4">
                               <div class="flex items-start justify-between gap-3">
                                 <div>
                                   <div class="text-sm font-semibold text-[var(--cc-text)]">{{ task.title }}</div>
@@ -247,7 +247,7 @@ interface PinnedHomeItem {
                                     @if (task.due) { · 📅 {{ task.due }} }
                                   </div>
                                 </div>
-                                <button type="button" (click)="togglePinnedTask(task)" class="rounded-full border border-[var(--cc-border)] bg-[var(--cc-surface)] px-3 py-2 text-xs font-semibold text-[var(--cc-text-muted)]">{{ pins.isPinned('task', taskKey(task)) ? 'Unpin' : 'Pin' }}</button>
+                                <button type="button" (click)="togglePinnedTask(task)" class="cc-small-button">{{ pins.isPinned('task', taskKey(task)) ? 'Unpin' : 'Pin' }}</button>
                               </div>
                             </div>
                           }
@@ -262,7 +262,7 @@ interface PinnedHomeItem {
                       } @else if (!notes.data()?.dailyNote) {
                         <cc-state-panel kind="empty" title="No recent daily note" message="No recent daily note was found in the configured Obsidian paths."></cc-state-panel>
                       } @else {
-                        <div class="rounded-2xl border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] p-5">
+                        <div class="cc-list-card p-5">
                           <div class="flex items-center justify-between gap-4">
                             <div class="text-sm font-semibold text-[var(--cc-text)]">{{ notes.data()!.dailyNote!.date }}</div>
                             <cc-pill tone="info">{{ notes.data()!.dailyNote!.isToday ? 'Today' : 'Most recent' }}</cc-pill>
@@ -285,7 +285,7 @@ interface PinnedHomeItem {
                             <cc-pill tone="info">{{ standup.data()!.isToday ? 'Today' : standup.data()!.date }}</cc-pill>
                           </div>
                           @for (section of standup.data()!.sections; track section.repo) {
-                            <div class="rounded-2xl border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] p-4">
+                            <div class="cc-list-card p-4">
                               <div class="flex items-center justify-between gap-3">
                                 <div class="text-sm font-semibold text-[var(--cc-text)]">{{ section.repo }}</div>
                                 <div class="text-xs text-[var(--cc-text-soft)]">{{ section.stats }}</div>

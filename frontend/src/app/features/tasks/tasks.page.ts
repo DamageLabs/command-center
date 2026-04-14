@@ -12,8 +12,8 @@ import { StatePanelComponent } from '../../shared/ui/state-panel.component';
   template: `
     <app-view-shell eyebrow="Tasks" title="Tasks" subtitle="Open tasks from your Obsidian task lists, with search and pinning." [meta]="meta()">
       <div view-actions class="flex flex-wrap items-center gap-3">
-        <button type="button" (click)="tasks.refresh()" class="inline-flex items-center rounded-full border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] px-4 py-2 text-sm font-medium text-[var(--cc-text-muted)] transition hover:border-amber-300/40 hover:text-[var(--cc-text)]">Refresh</button>
-        <input [value]="searchText()" (input)="searchText.set($any($event.target).value)" class="min-w-64 rounded-full border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] px-4 py-2 text-sm text-[var(--cc-text)] outline-none transition focus:border-amber-300/40" placeholder="Search tasks…" />
+        <button type="button" (click)="tasks.refresh()" class="cc-action-button">Refresh</button>
+        <input [value]="searchText()" (input)="searchText.set($any($event.target).value)" class="cc-input min-w-64 px-4 py-2 text-sm" placeholder="Search tasks…" />
       </div>
 
       @if (tasks.isLoading()) {
@@ -27,12 +27,12 @@ import { StatePanelComponent } from '../../shared/ui/state-panel.component';
           @if (pinnedItems().length) {
             <div class="lg:col-span-2 2xl:col-span-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-amber-300"><span>📌</span><span>Pinned</span></div>
             @for (task of pinnedItems(); track taskKey(task)) {
-              <article class="rounded-2xl border border-[var(--cc-border)] bg-[var(--cc-surface)] p-5 shadow-sm">
+              <article class="cc-list-card p-5">
                 <div class="flex items-start justify-between gap-4">
                   <div class="min-w-0">
                     <div class="text-base font-semibold leading-6 text-[var(--cc-text)]">{{ task.title }}</div>
                     <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-[var(--cc-text-soft)]">
-                      <span class="rounded-full bg-[var(--cc-surface-muted)] px-3 py-1 font-medium text-[var(--cc-text-muted)]">{{ task.source }}</span>
+                      <span class="cc-label-pill">{{ task.source }}</span>
                       @if (task.section) {
                         <span>{{ task.section }}</span>
                       }
@@ -44,7 +44,7 @@ import { StatePanelComponent } from '../../shared/ui/state-panel.component';
                       }
                     </div>
                   </div>
-                  <button type="button" (click)="togglePinned(task)" class="rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-xs font-semibold text-amber-200">Unpin</button>
+                  <button type="button" (click)="togglePinned(task)" class="cc-small-button cc-small-button-accent">Unpin</button>
                 </div>
               </article>
             }
@@ -54,12 +54,12 @@ import { StatePanelComponent } from '../../shared/ui/state-panel.component';
           }
 
           @for (task of unpinnedItems(); track taskKey(task)) {
-            <article class="rounded-2xl border border-[var(--cc-border)] bg-[var(--cc-surface)] p-5 shadow-sm">
+            <article class="cc-list-card p-5">
               <div class="flex items-start justify-between gap-4">
                 <div class="min-w-0">
                   <div class="text-base font-semibold leading-6 text-[var(--cc-text)]">{{ task.title }}</div>
                   <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-[var(--cc-text-soft)]">
-                    <span class="rounded-full bg-[var(--cc-surface-muted)] px-3 py-1 font-medium text-[var(--cc-text-muted)]">{{ task.source }}</span>
+                    <span class="cc-label-pill">{{ task.source }}</span>
                     @if (task.section) {
                       <span>{{ task.section }}</span>
                     }
@@ -71,7 +71,7 @@ import { StatePanelComponent } from '../../shared/ui/state-panel.component';
                     }
                   </div>
                 </div>
-                <button type="button" (click)="togglePinned(task)" class="rounded-full border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] px-3 py-2 text-xs font-semibold text-[var(--cc-text-muted)]">Pin</button>
+                <button type="button" (click)="togglePinned(task)" class="cc-small-button">Pin</button>
               </div>
             </article>
           }

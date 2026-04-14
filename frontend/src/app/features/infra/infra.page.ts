@@ -11,7 +11,7 @@ import { StatePanelComponent } from '../../shared/ui/state-panel.component';
   template: `
     <app-view-shell eyebrow="Infrastructure" title="Infrastructure" subtitle="Process status, uptime, restarts, and degraded-state handling." [meta]="meta()">
       <div view-actions class="flex flex-wrap items-center gap-3">
-        <button type="button" (click)="infra.refresh()" class="inline-flex items-center rounded-full border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] px-4 py-2 text-sm font-medium text-[var(--cc-text-muted)] transition hover:border-amber-300/40 hover:text-[var(--cc-text)]">Refresh</button>
+        <button type="button" (click)="infra.refresh()" class="cc-action-button">Refresh</button>
       </div>
 
       @if (infra.isLoading()) {
@@ -22,15 +22,15 @@ import { StatePanelComponent } from '../../shared/ui/state-panel.component';
         <cc-state-panel kind="empty" title="No process data" message="No infrastructure processes were returned for the current environment."></cc-state-panel>
       } @else {
         <section class="grid gap-4 md:grid-cols-4">
-          <div class="rounded-2xl border border-[var(--cc-border)] bg-[var(--cc-surface)] p-5"><div class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--cc-text-soft)]">Total</div><div class="mt-3 text-3xl font-semibold text-[var(--cc-text)]">{{ infra.data()!.length }}</div></div>
-          <div class="rounded-2xl border border-[var(--cc-border)] bg-[var(--cc-surface)] p-5"><div class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--cc-text-soft)]">Online</div><div class="mt-3 text-3xl font-semibold text-emerald-300">{{ onlineCount() }}</div></div>
-          <div class="rounded-2xl border border-[var(--cc-border)] bg-[var(--cc-surface)] p-5"><div class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--cc-text-soft)]">Down</div><div class="mt-3 text-3xl font-semibold text-rose-300">{{ downCount() }}</div></div>
-          <div class="rounded-2xl border border-[var(--cc-border)] bg-[var(--cc-surface)] p-5"><div class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--cc-text-soft)]">Restarts</div><div class="mt-3 text-3xl font-semibold text-amber-300">{{ restartCount() }}</div></div>
+          <div class="cc-list-card p-5"><div class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--cc-text-soft)]">Total</div><div class="mt-3 text-3xl font-semibold text-[var(--cc-text)]">{{ infra.data()!.length }}</div></div>
+          <div class="cc-list-card p-5"><div class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--cc-text-soft)]">Online</div><div class="mt-3 text-3xl font-semibold text-emerald-300">{{ onlineCount() }}</div></div>
+          <div class="cc-list-card p-5"><div class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--cc-text-soft)]">Down</div><div class="mt-3 text-3xl font-semibold text-rose-300">{{ downCount() }}</div></div>
+          <div class="cc-list-card p-5"><div class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--cc-text-soft)]">Restarts</div><div class="mt-3 text-3xl font-semibold text-amber-300">{{ restartCount() }}</div></div>
         </section>
 
         <section class="grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
           @for (process of infra.data()!; track process.name + ':' + process.id) {
-            <article class="rounded-2xl border border-[var(--cc-border)] bg-[var(--cc-surface)] p-5 shadow-sm">
+            <article class="cc-list-card p-5">
               <div class="flex items-start justify-between gap-4">
                 <div>
                   <div class="text-base font-semibold text-[var(--cc-text)]">{{ process.name }}</div>
@@ -40,9 +40,9 @@ import { StatePanelComponent } from '../../shared/ui/state-panel.component';
               </div>
 
               <div class="mt-4 grid grid-cols-3 gap-3 text-sm">
-                <div class="rounded-2xl bg-[var(--cc-surface-muted)] p-3"><div class="text-[var(--cc-text-soft)]">Uptime</div><div class="mt-1 font-semibold text-[var(--cc-text)]">{{ formatUptime(process.uptime) }}</div></div>
-                <div class="rounded-2xl bg-[var(--cc-surface-muted)] p-3"><div class="text-[var(--cc-text-soft)]">Memory</div><div class="mt-1 font-semibold text-[var(--cc-text)]">{{ formatMemory(process.memory) }}</div></div>
-                <div class="rounded-2xl bg-[var(--cc-surface-muted)] p-3"><div class="text-[var(--cc-text-soft)]">Restarts</div><div class="mt-1 font-semibold text-[var(--cc-text)]">{{ process.restarts }}</div></div>
+                <div class="cc-stat-tile"><div class="text-[var(--cc-text-soft)]">Uptime</div><div class="mt-1 font-semibold text-[var(--cc-text)]">{{ formatUptime(process.uptime) }}</div></div>
+                <div class="cc-stat-tile"><div class="text-[var(--cc-text-soft)]">Memory</div><div class="mt-1 font-semibold text-[var(--cc-text)]">{{ formatMemory(process.memory) }}</div></div>
+                <div class="cc-stat-tile"><div class="text-[var(--cc-text-soft)]">Restarts</div><div class="mt-1 font-semibold text-[var(--cc-text)]">{{ process.restarts }}</div></div>
               </div>
             </article>
           }
