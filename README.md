@@ -33,6 +33,7 @@ A personal command center dashboard. Aggregates GitHub issues and PRs, Google Ca
 | **Tasks** | Open tasks from Obsidian vault markdown files | 2 min |
 | **Calendar** | Google Calendar events — next 30 days | 10 min |
 | **Repos** | All GitHub repos with open issue counts | 5 min |
+| **Analytics** | Umami analytics snapshot | 15 min |
 
 **Keyboard shortcuts:** `H` Home · `U` Urgent · `A` Active · `B` Backlog · `P` PRs · `N` Notes · `I` Infra · `T` Tasks · `C` Calendar · `R` Repos · `/` Search · `Shift+R` Refresh · `?` Help
 
@@ -45,9 +46,9 @@ A personal command center dashboard. Aggregates GitHub issues and PRs, Google Ca
 ## Stack
 
 - **Backend:** Node.js + Express
-- **Frontend:** Vanilla HTML/CSS/JS — no framework, no build step
+- **Frontend:** Angular + Tailwind
 - **Process manager:** PM2
-- **Data sources:** `gh` CLI · Google Calendar iCal · Obsidian markdown · PM2 `jlist`
+- **Data sources:** `gh` CLI · Google Calendar iCal · Obsidian markdown · PM2 `jlist` · Umami
 
 ---
 
@@ -67,6 +68,7 @@ A personal command center dashboard. Aggregates GitHub issues and PRs, Google Ca
 git clone git@github.com:DamageLabs/command-center.git
 cd command-center
 npm install
+npm --prefix frontend install
 ```
 
 ### 3. Configure
@@ -151,18 +153,21 @@ Issue bucketing is still controlled in `server.js` via `issuePriority(labels)`.
 ### 4. Run
 
 ```bash
-# Development (legacy UI served directly by Express)
-npm start
-
-# Development (Angular scaffold + Express API together)
+# Development (Angular dev server + Express API together)
 npm run dev
 
 # Or run them separately
-npm run dev:api   # Express API + current local runtime on :4500
-npm run dev:web   # Angular scaffold on :4200, proxying /api to :4500
+npm run dev:api   # Express API on :4500
+npm run dev:web   # Angular dev server on :4200, proxying /api to :4500
 
-# Build the Angular frontend scaffold
+# Build the shipped Angular UI
 npm run build:web
+
+# Verify the current shipped setup
+npm run check
+
+# Serve the built Angular UI through Express
+npm start
 
 # Production (PM2)
 pm2 start ecosystem.config.cjs
@@ -172,14 +177,13 @@ pm2 startup  # auto-start on reboot
 
 Runs on **http://localhost:4500**.
 
-#### Angular scaffold notes
-
-Issue `#68` adds a dedicated Angular workspace under `frontend/`.
+#### Angular runtime notes
 
 - Angular dev server runs on **http://localhost:4200**
 - `frontend/proxy.conf.json` proxies `/api/*` to the existing Express backend on **:4500**
-- the legacy static UI in `public/` remains the active shipped frontend for now
-- production cutover to serve the Angular build is deferred to issue `#73`
+- `npm start` now serves the built Angular frontend from `frontend/dist/frontend/browser`
+- if the Angular dist is missing, Express returns a helpful message telling you to run `npm run build:web` or `npm run dev`
+- the legacy single-file frontend has been archived under `archive/legacy-static-frontend/`
 
 ### 5. Local HTTPS with Caddy (optional but recommended)
 
@@ -218,6 +222,7 @@ Then open **https://command.test** — first visit will prompt to trust the loca
 | `/api/calendar` | GET | Events for next 30 days |
 | `/api/tasks` | GET | Open Obsidian tasks |
 | `/api/notes` | GET | Daily note + recent decisions |
+| `/api/analytics` | GET | Umami analytics totals + site breakdown |
 | `/api/standup` | GET | Most recent daily standup |
 | `/api/infra` | GET | PM2 process list |
 | `/api/refresh` | POST | Force refresh all data sources |

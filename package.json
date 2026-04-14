@@ -9,7 +9,8 @@
     "dev:web": "npm --prefix frontend start",
     "dev": "concurrently -k -n api,web -c yellow,cyan \"npm run dev:api\" \"npm run dev:web\"",
     "build:web": "npm --prefix frontend run build",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "check": "npm run build:web && node --check server.js",
+    "test": "npm run check"
   },
   "keywords": [],
   "author": "",
