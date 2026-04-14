@@ -11,38 +11,38 @@ import { StatePanelComponent } from '../../shared/ui/state-panel.component';
   imports: [RouterLink, ViewShellComponent, CardComponent, PillComponent, StatePanelComponent],
   template: `
     <app-view-shell
-      eyebrow="Migration target"
+      eyebrow="Coming soon"
       [title]="title"
       [subtitle]="description"
-      meta="This route exists now so future feature work lands inside the shared shell instead of inventing its own structure."
+      meta="This route is reserved and ready when the feature is implemented."
     >
       <div view-actions>
-        <cc-pill tone="info">Route shell ready</cc-pill>
+        <cc-pill tone="info">Placeholder</cc-pill>
       </div>
 
       <section class="grid gap-6 xl:grid-cols-[1.25fr_0.9fr]">
         <cc-card
-          eyebrow="Why this matters"
-          title="The route exists before the feature"
-          description="That sounds small, but it keeps the migration honest. The Angular rewrite can now land feature work into a stable shell instead of mixing routing, page chrome, and business logic in one pass."
+          eyebrow="Status"
+          title="This view is not wired up yet"
+          description="The page shell is in place so the eventual feature can land cleanly without inventing a new layout."
         >
           <div class="space-y-3 text-sm leading-6 text-[var(--cc-text-muted)]">
-            <p>• route-level framing is shared and reusable</p>
-            <p>• state panels are consistent before real data arrives</p>
-            <p>• future feature work can focus on composition, not layout glue</p>
+            <p>• shared navigation and framing are already in place</p>
+            <p>• state panels will stay visually consistent</p>
+            <p>• the route is ready whenever the feature work starts</p>
           </div>
         </cc-card>
 
         <div class="space-y-6">
           <cc-state-panel
             kind="empty"
-            title="Feature migration not started yet"
-            message="This page is intentionally waiting for its follow-on issue so #69 can stay focused on shared shell and primitive work."
+            title="Feature not implemented yet"
+            message="There is not real data behind this page yet."
           ></cc-state-panel>
 
-          <cc-card eyebrow="Next step" title="Back to the scaffold home" tone="muted" [compact]="true">
+          <cc-card eyebrow="Next step" title="Back to Home" tone="muted" [compact]="true">
             <a routerLink="/" class="inline-flex rounded-full border border-amber-400/30 bg-amber-400/10 px-4 py-2 text-sm font-medium text-amber-200 transition hover:border-amber-300/60 hover:bg-amber-300/15">
-              Return to overview
+              Return to Home
             </a>
           </cc-card>
         </div>
