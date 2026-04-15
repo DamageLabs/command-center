@@ -14,6 +14,7 @@ const {
   parseStandupSections,
   extractDailyNotePreview,
   extractDecisionSummary,
+  dedupeCalendarEvents,
 } = require('./lib/parsers');
 const { config: runtimeConfig, configPath, warnings: configWarnings } = loadConfig();
 const PORT = runtimeConfig.server.port;
@@ -473,13 +474,13 @@ async function fetchCalendars() {
       }
     }
 
-    // Sort by start time
-    allEvents.sort((a, b) => new Date(a.start) - new Date(b.start));
+    const dedupedEvents = dedupeCalendarEvents(allEvents)
+      .sort((a, b) => new Date(a.start) - new Date(b.start));
 
-    cache.events = allEvents;
+    cache.events = dedupedEvents;
     cache.eventsUpdatedAt = Date.now();
     succeedSource('calendar', cache.eventsUpdatedAt);
-    console.log(`[calendar] fetched ${allEvents.length} events`);
+    console.log(`[calendar] fetched ${dedupedEvents.length} events (${allEvents.length - dedupedEvents.length} duplicates collapsed)`);
   } catch (err) {
     failSource('calendar', err);
     console.error('[calendar] fetch error:', err.message);

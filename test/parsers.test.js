@@ -8,6 +8,7 @@ const {
   parseStandupSections,
   extractDailyNotePreview,
   extractDecisionSummary,
+  dedupeCalendarEvents,
 } = require('../lib/parsers');
 
 test('parseTaskRecord strips metadata and keeps due date/recurring state', () => {
@@ -76,4 +77,57 @@ test('extractDecisionSummary prefers explicit metadata when present', () => {
     preview: 'This decision locks in Angular as the shipped frontend. Second supporting sentence with more context.',
     file: '2026-04-14-ship-angular',
   });
+});
+
+test('dedupeCalendarEvents prefers Work entries for duplicate events', () => {
+  const events = [
+    {
+      title: 'Flight to Denver (UA 2479)',
+      start: '2026-04-30T21:35:00.000Z',
+      end: '2026-04-30T23:57:00.000Z',
+      allDay: false,
+      calendar: 'Personal',
+      location: null,
+      description: 'Personal copy',
+    },
+    {
+      title: ' Flight   to Denver (UA 2479) ',
+      start: '2026-04-30T21:35:00.000Z',
+      end: '2026-04-30T23:57:00.000Z',
+      allDay: false,
+      calendar: 'Work',
+      location: 'San Antonio SAT',
+      description: null,
+    },
+  ];
+
+  const deduped = dedupeCalendarEvents(events);
+
+  assert.equal(deduped.length, 1);
+  assert.equal(deduped[0].calendar, 'Work');
+  assert.equal(deduped[0].location, 'San Antonio SAT');
+  assert.equal(deduped[0].description, 'Personal copy');
+});
+
+test('dedupeCalendarEvents keeps distinct events when times differ', () => {
+  const events = [
+    {
+      title: 'Bellamy Brothers',
+      start: '2026-05-09T00:00:00.000Z',
+      end: '2026-05-09T00:30:00.000Z',
+      allDay: false,
+      calendar: 'Personal',
+    },
+    {
+      title: 'Bellamy Brothers',
+      start: '2026-05-09T01:00:00.000Z',
+      end: '2026-05-09T01:30:00.000Z',
+      allDay: false,
+      calendar: 'Work',
+    },
+  ];
+
+  const deduped = dedupeCalendarEvents(events);
+
+  assert.equal(deduped.length, 2);
 });
