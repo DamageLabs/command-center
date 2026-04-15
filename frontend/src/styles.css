@@ -20,6 +20,12 @@
   --cc-info-border: rgba(56, 189, 248, 0.28);
   --cc-info-surface: rgba(14, 165, 233, 0.12);
   --cc-info-text: #e0f2fe;
+  --cc-success-border: rgba(52, 211, 153, 0.28);
+  --cc-success-surface: rgba(16, 185, 129, 0.12);
+  --cc-success-text: #d1fae5;
+  --cc-warning-border: rgba(251, 191, 36, 0.28);
+  --cc-warning-surface: rgba(245, 158, 11, 0.12);
+  --cc-warning-text: #fef3c7;
   --cc-danger-border: rgba(251, 113, 133, 0.28);
   --cc-danger-surface: rgba(244, 63, 94, 0.12);
   --cc-danger-text: #ffe4e6;
@@ -51,6 +57,12 @@ html.light {
   --cc-info-border: rgba(56, 189, 248, 0.34);
   --cc-info-surface: rgba(14, 165, 233, 0.12);
   --cc-info-text: #0c4a6e;
+  --cc-success-border: rgba(52, 211, 153, 0.34);
+  --cc-success-surface: rgba(16, 185, 129, 0.12);
+  --cc-success-text: #166534;
+  --cc-warning-border: rgba(251, 191, 36, 0.34);
+  --cc-warning-surface: rgba(245, 158, 11, 0.12);
+  --cc-warning-text: #92400e;
   --cc-danger-border: rgba(251, 113, 133, 0.34);
   --cc-danger-surface: rgba(244, 63, 94, 0.12);
   --cc-danger-text: #881337;
