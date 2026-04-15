@@ -150,6 +150,82 @@ import { StatePanelComponent } from '../../shared/ui/state-panel.component';
           </article>
         </section>
 
+        <section class="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
+          <article class="cc-list-card p-5">
+            <div class="flex items-center justify-between gap-3">
+              <div>
+                <div class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--cc-text-soft)]">Grouped runtime issues</div>
+                <div class="mt-2 text-lg font-semibold text-[var(--cc-text)]">Warnings and errors that keep recurring</div>
+              </div>
+              <cc-pill [tone]="errorFeedCount() ? 'danger' : 'success'">{{ errorFeedCount() }} grouped</cc-pill>
+            </div>
+
+            @if (openClaw.data()!.logsError && !openClaw.data()!.errorFeed.length) {
+              <cc-state-panel class="mt-5" kind="unavailable" title="Grouped runtime issues unavailable" [message]="openClaw.data()!.logsError || 'Unable to collect OpenClaw runtime issues.'"></cc-state-panel>
+            } @else if (!openClaw.data()!.errorFeed.length) {
+              <cc-state-panel class="mt-5" kind="empty" title="No recurring runtime issues" message="Recent OpenClaw warnings and errors are currently quiet."></cc-state-panel>
+            } @else {
+              <div class="mt-5 space-y-3">
+                @for (group of openClaw.data()!.errorFeed; track group.signature) {
+                  <div class="cc-stat-surface p-4">
+                    <div class="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <div class="text-sm font-semibold text-[var(--cc-text)]">{{ group.sampleMessage }}</div>
+                        <div class="mt-2 text-xs text-[var(--cc-text-soft)]">First seen {{ formatAgeFromTimestamp(group.firstSeen) }} · last seen {{ formatAgeFromTimestamp(group.lastSeen) }}</div>
+                      </div>
+                      <div class="flex flex-wrap items-center gap-2">
+                        <cc-pill [tone]="logLevelTone(group.severity)">{{ group.severity }}</cc-pill>
+                        <cc-pill tone="info">{{ group.source }}</cc-pill>
+                        <cc-pill [tone]="group.count > 1 ? 'warning' : 'success'">{{ group.count }}x</cc-pill>
+                      </div>
+                    </div>
+                    <div class="mt-4 space-y-2">
+                      @for (occurrence of group.lastOccurrences; track occurrence.timestamp + ':' + occurrence.message) {
+                        <div class="rounded-2xl border border-[var(--cc-border)]/70 bg-[var(--cc-surface-muted)]/70 px-3 py-2 font-mono text-xs leading-5 text-[var(--cc-text-muted)]">
+                          <span class="text-[var(--cc-text-soft)]">{{ formatClock(occurrence.timestamp) }}</span>
+                          <span class="mx-2 text-[var(--cc-text-soft)]">·</span>
+                          <span>{{ occurrence.message }}</span>
+                        </div>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </article>
+
+          <article class="cc-list-card p-5">
+            <div class="flex items-center justify-between gap-3">
+              <div>
+                <div class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--cc-text-soft)]">Recent log tail</div>
+                <div class="mt-2 text-lg font-semibold text-[var(--cc-text)]">Latest OpenClaw runtime log lines</div>
+              </div>
+              <cc-pill tone="info">{{ openClaw.data()!.logsTail.length }} lines</cc-pill>
+            </div>
+
+            @if (openClaw.data()!.logsError && !openClaw.data()!.logsTail.length) {
+              <cc-state-panel class="mt-5" kind="unavailable" title="OpenClaw log tail unavailable" [message]="openClaw.data()!.logsError || 'Unable to collect OpenClaw logs.'"></cc-state-panel>
+            } @else if (!openClaw.data()!.logsTail.length) {
+              <cc-state-panel class="mt-5" kind="empty" title="No recent log lines" message="OpenClaw did not return any recent runtime log lines."></cc-state-panel>
+            } @else {
+              <div class="mt-5 space-y-3">
+                @for (entry of openClaw.data()!.logsTail; track entry.timestamp + ':' + entry.source + ':' + entry.message) {
+                  <div class="cc-stat-surface p-4">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                      <div class="font-mono text-xs text-[var(--cc-text-soft)]">{{ formatClock(entry.timestamp) }}</div>
+                      <div class="flex flex-wrap items-center gap-2">
+                        <cc-pill [tone]="logLevelTone(entry.level)">{{ entry.level }}</cc-pill>
+                        <cc-pill tone="info">{{ entry.source }}</cc-pill>
+                      </div>
+                    </div>
+                    <div class="mt-3 break-words font-mono text-xs leading-6 text-[var(--cc-text-muted)]">{{ entry.message }}</div>
+                  </div>
+                }
+              </div>
+            }
+          </article>
+        </section>
+
         <section class="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
           <article class="cc-list-card p-5">
             <div class="flex items-center justify-between gap-3">
@@ -261,11 +337,13 @@ export class OpenClawPage {
     return Boolean(latest && current && latest !== current);
   });
   protected readonly activeSessionCount = computed(() => (this.openClaw.data()?.activeSessions ?? []).filter((session) => session.active).length);
+  protected readonly errorFeedCount = computed(() => this.openClaw.data()?.errorFeed?.length || 0);
   protected readonly meta = computed(() => {
     const gateway = this.openClaw.data()?.gateway?.reachable ? 'gateway reachable' : 'gateway down';
     const service = this.openClaw.data()?.gatewayService?.runtime?.status || 'unknown service';
     const sessions = this.activeSessionCount();
-    return `${gateway} · ${service} · ${sessions} live sessions`;
+    const issues = this.errorFeedCount();
+    return `${gateway} · ${service} · ${sessions} live sessions · ${issues} grouped issues`;
   });
 
   protected onHeaderAction(actionId: string): void {
@@ -315,6 +393,13 @@ export class OpenClawPage {
     return 'warning';
   }
 
+  protected logLevelTone(level?: string | null): 'success' | 'danger' | 'warning' | 'info' {
+    if (level === 'error') return 'danger';
+    if (level === 'warn' || level === 'warning') return 'warning';
+    if (level === 'debug') return 'info';
+    return 'success';
+  }
+
   protected taskStatus(): string {
     const failures = this.openClaw.data()?.tasks?.failures || 0;
     const warnings = this.openClaw.data()?.taskAudit?.warnings || 0;
@@ -340,6 +425,16 @@ export class OpenClawPage {
   protected formatMemory(bytes?: number | null): string {
     if (!bytes) return 'memory unavailable';
     return `${(bytes / 1024 / 1024).toFixed(1)} MB RSS`;
+  }
+
+  protected formatAgeFromTimestamp(timestamp?: number | null): string {
+    if (!timestamp) return '—';
+    return this.formatAge(Math.max(0, Date.now() - timestamp));
+  }
+
+  protected formatClock(timestamp?: number | null): string {
+    if (!timestamp) return '—';
+    return new Date(timestamp).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' });
   }
 
   protected formatDuration(seconds?: number | null): string {

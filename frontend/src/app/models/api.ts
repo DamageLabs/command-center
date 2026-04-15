@@ -327,6 +327,32 @@ export interface OpenClawRunSummary extends OpenClawSessionSummary {
   status: string;
 }
 
+export interface OpenClawLogEntry {
+  timestamp: number;
+  seenAt: string;
+  level: string;
+  source: string;
+  message: string;
+}
+
+export interface OpenClawErrorOccurrence {
+  timestamp: number;
+  source: string;
+  level: string;
+  message: string;
+}
+
+export interface OpenClawErrorGroup {
+  signature: string;
+  source: string;
+  severity: string;
+  count: number;
+  firstSeen: number;
+  lastSeen: number;
+  sampleMessage: string;
+  lastOccurrences: OpenClawErrorOccurrence[];
+}
+
 export interface OpenClawResponse extends ApiEnvelope {
   version: string | null;
   gateway: OpenClawGateway | null;
@@ -342,6 +368,9 @@ export interface OpenClawResponse extends ApiEnvelope {
   channelSummary?: string[];
   activeSessions: OpenClawSessionSummary[];
   recentRuns: OpenClawRunSummary[];
+  logsTail: OpenClawLogEntry[];
+  errorFeed: OpenClawErrorGroup[];
+  logsError?: string | null;
   updateAvailable?: boolean | null;
   updateChannel?: string | null;
   updateInfo?: { latestVersion?: string | null } | null;
