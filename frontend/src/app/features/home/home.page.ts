@@ -374,9 +374,13 @@ export class HomePage {
     const service = data.gatewayService?.runtime?.status || 'unknown service';
     const liveSessions = (data.activeSessions ?? []).filter((session) => session.active).length;
     const groupedIssues = data.errorFeed?.length || 0;
-    return groupedIssues > 0
-      ? `${service} · ${liveSessions} live sessions · ${groupedIssues} grouped issues`
-      : `${service} · ${liveSessions} live sessions`;
+    const todaySpend = data.usageAnalytics?.windows?.today?.totalCostUsd;
+    const spendLabel = todaySpend != null ? `$${todaySpend.toFixed(2)} today` : null;
+
+    const parts = [`${service}`, `${liveSessions} live sessions`];
+    if (spendLabel) parts.push(spendLabel);
+    if (groupedIssues > 0) parts.push(`${groupedIssues} grouped issues`);
+    return parts.join(' · ');
   });
   protected readonly upcomingEvents = computed(() => {
     return (this.calendar.data() ?? [])
