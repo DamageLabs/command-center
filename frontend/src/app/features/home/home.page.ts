@@ -7,7 +7,9 @@ import { PinService } from '../../core/state/pin.service';
 import { ReminderItem, RemindersService } from '../../core/state/reminders.service';
 import { CalendarEvent, IssueItem, PullRequestItem, RepoSummary, TaskItem } from '../../models/api';
 import { ViewShellComponent } from '../../layout/view-shell.component';
+import { PanelAction } from '../../shared/models/panel-action';
 import { CardComponent } from '../../shared/ui/card.component';
+import { PanelActionsComponent } from '../../shared/ui/panel-actions.component';
 import { PillComponent } from '../../shared/ui/pill.component';
 import { StatePanelComponent } from '../../shared/ui/state-panel.component';
 
@@ -22,7 +24,7 @@ interface PinnedHomeItem {
 
 @Component({
   selector: 'app-home-page',
-  imports: [ViewShellComponent, CardComponent, PillComponent, StatePanelComponent],
+  imports: [ViewShellComponent, CardComponent, PanelActionsComponent, PillComponent, StatePanelComponent],
   template: `
     <app-view-shell
       eyebrow="Overview"
@@ -140,6 +142,9 @@ interface PinnedHomeItem {
                   <div class="text-lg font-semibold tracking-tight text-[var(--cc-text)]">{{ sectionLabel(sectionId) }}</div>
                 </div>
                 <div class="flex flex-wrap justify-end gap-2">
+                  @if (panelActions(sectionId).length) {
+                    <cc-panel-actions [actions]="panelActions(sectionId)" (actionSelected)="onPanelAction(sectionId, $event)"></cc-panel-actions>
+                  }
                   <button type="button" (click)="homeLayout.toggleCollapsed(sectionId)" class="cc-small-button">{{ isSectionCollapsed(sectionId) ? 'Expand' : 'Collapse' }}</button>
                   @if (homeLayout.customizeMode()) {
                     <button type="button" (click)="homeLayout.pinToTop(sectionId)" class="cc-small-button">Top</button>
@@ -331,6 +336,7 @@ export class HomePage {
   protected readonly editingReminderId = signal<string | null>(null);
   protected readonly reminderText = signal('');
   protected readonly reminderDue = signal<string | null>(null);
+  protected readonly copiedPanel = signal<string | null>(null);
 
   protected readonly onlineServices = computed(() => (this.infra.data() ?? []).filter((process) => process.status === 'online').length);
   protected readonly upcomingEvents = computed(() => {
@@ -439,6 +445,34 @@ export class HomePage {
     this.data.refreshAll();
   }
 
+  protected panelActions(sectionId: string): PanelAction[] {
+    const route = this.panelRoute(sectionId);
+    const copied = this.copiedPanel() === sectionId;
+
+    const actions: PanelAction[] = [];
+    if (route) actions.push({ id: 'open', label: 'Open', icon: '↗' });
+    if (this.canRefreshPanel(sectionId)) actions.push({ id: 'refresh', label: 'Refresh', icon: '↻', tone: 'accent' });
+    if (route) actions.push({ id: 'copy', label: copied ? 'Copied' : 'Copy link', icon: '⧉' });
+    return actions;
+  }
+
+  protected onPanelAction(sectionId: string, actionId: string): void {
+    if (actionId === 'open') {
+      const route = this.panelRoute(sectionId);
+      if (route) this.go(route);
+      return;
+    }
+
+    if (actionId === 'refresh') {
+      this.refreshPanel(sectionId);
+      return;
+    }
+
+    if (actionId === 'copy') {
+      void this.copyPanelLink(sectionId);
+    }
+  }
+
   protected go(path: string): void {
     this.router.navigateByUrl(path);
   }
@@ -460,6 +494,39 @@ export class HomePage {
 
   protected isSectionHidden(sectionId: string): boolean {
     return this.homeLayout.layout().hidden.includes(sectionId) || (sectionId === 'pinned' && !this.homeLayout.customizeMode() && this.pinnedHomeItems().length === 0);
+  }
+
+  protected panelRoute(sectionId: string): string | null {
+    return {
+      upcoming: '/calendar',
+      issues: '/issues/urgent',
+      tasks: '/tasks',
+      'daily-note': '/notes',
+      standup: '/notes',
+      pinned: null,
+    }[sectionId] ?? null;
+  }
+
+  protected canRefreshPanel(sectionId: string): boolean {
+    return ['upcoming', 'issues', 'tasks', 'daily-note', 'standup'].includes(sectionId);
+  }
+
+  protected refreshPanel(sectionId: string): void {
+    if (sectionId === 'upcoming') this.calendar.refresh();
+    if (sectionId === 'issues') this.issues.refresh();
+    if (sectionId === 'tasks') this.tasks.refresh();
+    if (sectionId === 'daily-note') this.notes.refresh();
+    if (sectionId === 'standup') this.standup.refresh();
+  }
+
+  protected async copyPanelLink(sectionId: string): Promise<void> {
+    const route = this.panelRoute(sectionId);
+    if (!route || typeof window === 'undefined' || !navigator?.clipboard) return;
+    await navigator.clipboard.writeText(`${window.location.origin}${route}`);
+    this.copiedPanel.set(sectionId);
+    window.setTimeout(() => {
+      if (this.copiedPanel() === sectionId) this.copiedPanel.set(null);
+    }, 1500);
   }
 
   protected openReminderComposer(): void {
