@@ -373,7 +373,10 @@ export class HomePage {
     if (!data) return 'runtime unavailable';
     const service = data.gatewayService?.runtime?.status || 'unknown service';
     const liveSessions = (data.activeSessions ?? []).filter((session) => session.active).length;
-    return `${service} · ${liveSessions} live sessions`;
+    const groupedIssues = data.errorFeed?.length || 0;
+    return groupedIssues > 0
+      ? `${service} · ${liveSessions} live sessions · ${groupedIssues} grouped issues`
+      : `${service} · ${liveSessions} live sessions`;
   });
   protected readonly upcomingEvents = computed(() => {
     return (this.calendar.data() ?? [])
