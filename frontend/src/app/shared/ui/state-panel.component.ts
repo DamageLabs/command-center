@@ -46,7 +46,7 @@ export class StatePanelComponent {
     const tones = {
       loading: 'bg-white/5',
       empty: 'bg-white/5',
-      unavailable: 'bg-rose-500/15 text-rose-100',
+      unavailable: 'bg-[var(--cc-danger-surface)] text-[var(--cc-danger-text)]',
     } as const;
 
     return tones[this.kind()];

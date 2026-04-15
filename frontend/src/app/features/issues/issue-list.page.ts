@@ -288,7 +288,7 @@ export class IssueListPage {
   }
 
   protected priorityBadgeClass(issue: IssueItem): string {
-    if (issue.priority === 'urgent') return 'cc-label-pill border-rose-400/25 bg-rose-500/10 text-rose-100';
+    if (issue.priority === 'urgent') return 'cc-label-pill border-[var(--cc-danger-border)] bg-[var(--cc-danger-surface)] text-[var(--cc-danger-text)]';
     if (issue.priority === 'active') return 'cc-label-pill border-sky-400/25 bg-sky-500/10 text-sky-100';
     return 'cc-label-pill border-white/10 bg-white/5 text-[var(--cc-text-muted)]';
   }

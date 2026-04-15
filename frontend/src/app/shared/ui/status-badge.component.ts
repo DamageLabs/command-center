@@ -17,7 +17,7 @@ export class StatusBadgeComponent {
       neutral: 'border-[var(--cc-border)] bg-white/5 text-[var(--cc-text-soft)]',
       success: 'border-emerald-400/25 bg-emerald-500/10 text-emerald-100',
       warning: 'border-amber-400/25 bg-amber-500/10 text-amber-100',
-      danger: 'border-rose-400/25 bg-rose-500/10 text-rose-100',
+      danger: 'border-[var(--cc-danger-border)] bg-[var(--cc-danger-surface)] text-[var(--cc-danger-text)]',
       info: 'border-sky-400/25 bg-sky-500/10 text-sky-100',
     } as const;
 
