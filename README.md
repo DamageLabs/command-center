@@ -5,19 +5,23 @@ A personal command center dashboard. Aggregates GitHub issues and PRs, Google Ca
 ## Screenshots
 
 ### Home
-![Home](https://raw.githubusercontent.com/DamageLabs/command-center/main/docs/screenshot-home.png)
+![Home](./docs/screenshots/01-home.png)
 
 | Urgent & Bugs | Active | PRs |
 |---|---|---|
-| ![Urgent](https://raw.githubusercontent.com/DamageLabs/command-center/main/docs/screenshot-urgent.png) | ![Active](https://raw.githubusercontent.com/DamageLabs/command-center/main/docs/screenshot-active.png) | ![PRs](https://raw.githubusercontent.com/DamageLabs/command-center/main/docs/screenshot-prs.png) |
+| ![Urgent](./docs/screenshots/02-issues-urgent.png) | ![Active](./docs/screenshots/03-issues-active.png) | ![PRs](./docs/screenshots/05-prs.png) |
 
 | Backlog | Infra | Notes |
 |---|---|---|
-| ![Backlog](https://raw.githubusercontent.com/DamageLabs/command-center/main/docs/screenshot-backlog.png) | ![Infra](https://raw.githubusercontent.com/DamageLabs/command-center/main/docs/screenshot-infra.png) | ![Notes](https://raw.githubusercontent.com/DamageLabs/command-center/main/docs/screenshot-notes.png) |
+| ![Backlog](./docs/screenshots/04-issues-backlog.png) | ![Infra](./docs/screenshots/11-infra.png) | ![Notes](./docs/screenshots/08-notes.png) |
 
 | Tasks | Calendar | Repos |
 |---|---|---|
-| ![Tasks](https://raw.githubusercontent.com/DamageLabs/command-center/main/docs/screenshot-tasks.png) | ![Calendar](https://raw.githubusercontent.com/DamageLabs/command-center/main/docs/screenshot-calendar.png) | ![Repos](https://raw.githubusercontent.com/DamageLabs/command-center/main/docs/screenshot-repos.png) |
+| ![Tasks](./docs/screenshots/06-tasks.png) | ![Calendar](./docs/screenshots/09-calendar.png) | ![Repos](./docs/screenshots/10-repos.png) |
+
+| Done | OpenClaw |
+|---|---|
+| ![Done](./docs/screenshots/07-done.png) | ![OpenClaw](./docs/screenshots/12-openclaw.png) |
 
 ## Features
 
@@ -260,10 +264,10 @@ Then open **https://command.test** — first visit will prompt to trust the loca
 ## Refreshing screenshots
 
 ```bash
-node scripts/screenshot.js
+node scripts/capture-doc-screenshots.js
 ```
 
-Requires the server to be running on port 4500. Screenshots saved to `docs/`.
+Requires the server to be running on port 4500. Screenshots are saved to `docs/screenshots/`.
 
 ---
 

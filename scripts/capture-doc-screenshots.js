@@ -20,7 +20,6 @@ const routes = [
   ['repos', '/repos'],
   ['infra', '/infra'],
   ['openclaw', '/openclaw'],
-  ['analytics', '/analytics'],
 ];
 
 function sleep(ms) {
@@ -252,12 +251,6 @@ async function main() {
         'Route: `/openclaw`',
         '',
         '![OpenClaw](./12-openclaw.png)',
-        '',
-        '## Analytics',
-        '',
-        'Route: `/analytics`',
-        '',
-        '![Analytics](./13-analytics.png)',
         '',
       ].join('\n');
 

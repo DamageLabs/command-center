@@ -74,9 +74,3 @@ Route: `/infra`
 Route: `/openclaw`
 
 ![OpenClaw](./12-openclaw.png)
-
-## Analytics
-
-Route: `/analytics`
-
-![Analytics](./13-analytics.png)
