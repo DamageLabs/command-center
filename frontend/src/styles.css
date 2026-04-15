@@ -343,3 +343,56 @@ code {
   background: rgba(99, 102, 241, 0.14);
   color: #dbeafe;
 }
+
+.cc-command-palette-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 5rem 1rem 2rem;
+  background: rgba(2, 6, 23, 0.72);
+  backdrop-filter: blur(14px);
+}
+
+.cc-command-palette-shell {
+  width: min(52rem, 100%);
+  overflow: hidden;
+  border: 1px solid var(--cc-border);
+  border-radius: 1.75rem;
+  background: color-mix(in srgb, var(--cc-surface) 94%, #020617 6%);
+  box-shadow: 0 40px 120px rgba(2, 6, 23, 0.5);
+}
+
+.cc-command-palette-input {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--cc-text);
+  font-size: 1rem;
+  line-height: 1.5rem;
+  outline: none;
+}
+
+.cc-command-palette-input::placeholder {
+  color: var(--cc-text-soft);
+}
+
+.cc-command-palette-item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 1rem;
+  border: 1px solid transparent;
+  border-radius: 1rem;
+  padding: 0.85rem 0.9rem;
+  background: transparent;
+  transition: 160ms ease;
+}
+
+.cc-command-palette-item:hover,
+.cc-command-palette-item-active {
+  border-color: rgba(99, 102, 241, 0.24);
+  background: rgba(99, 102, 241, 0.12);
+}
