@@ -436,3 +436,47 @@ code {
   text-transform: uppercase;
   color: var(--cc-text-soft);
 }
+
+.cc-trend-bars {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 0.28rem;
+  height: 2rem;
+}
+
+.cc-trend-bars-compact {
+  height: 1.7rem;
+}
+
+.cc-trend-bar {
+  width: 0.34rem;
+  min-height: 0.35rem;
+  border-radius: 9999px;
+  background: var(--cc-trend-color, rgba(125, 211, 252, 0.9));
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
+  opacity: 0.92;
+}
+
+.cc-trend-bars[data-tone='rose'] {
+  --cc-trend-color: rgba(251, 113, 133, 0.95);
+}
+
+.cc-trend-bars[data-tone='amber'] {
+  --cc-trend-color: rgba(252, 211, 77, 0.95);
+}
+
+.cc-trend-bars[data-tone='slate'] {
+  --cc-trend-color: rgba(148, 163, 184, 0.95);
+}
+
+.cc-trend-bars[data-tone='fuchsia'] {
+  --cc-trend-color: rgba(232, 121, 249, 0.95);
+}
+
+.cc-trend-bars[data-tone='emerald'] {
+  --cc-trend-color: rgba(52, 211, 153, 0.95);
+}
+
+.cc-trend-bars[data-tone='sky'] {
+  --cc-trend-color: rgba(56, 189, 248, 0.95);
+}
