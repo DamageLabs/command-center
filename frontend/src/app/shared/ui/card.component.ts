@@ -42,5 +42,5 @@ export class CardComponent {
     return `${base} ${tones[this.tone()]}`;
   });
 
-  protected readonly bodyClasses = computed(() => (this.compact() ? 'mt-4' : 'mt-6'));
+  protected readonly bodyClasses = computed(() => (this.compact() ? 'mt-5' : 'mt-6'));
 }
