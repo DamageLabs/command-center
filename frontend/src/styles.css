@@ -12,6 +12,8 @@
   --cc-surface-muted: rgba(30, 41, 59, 0.72);
   --cc-surface-soft: rgba(15, 23, 42, 0.58);
   --cc-surface-highlight: linear-gradient(135deg, rgba(99, 102, 241, 0.18), rgba(56, 189, 248, 0.14));
+  --cc-table-surface: rgba(15, 23, 42, 0.65);
+  --cc-table-shadow: 0 30px 90px -48px rgba(15, 23, 42, 1);
   --cc-border: rgba(148, 163, 184, 0.16);
   --cc-border-strong: rgba(255, 255, 255, 0.16);
   --cc-text: #e5edf8;
@@ -32,6 +34,8 @@ html.light {
   --cc-surface-muted: rgba(248, 250, 252, 0.92);
   --cc-surface-soft: rgba(255, 255, 255, 0.66);
   --cc-surface-highlight: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(56, 189, 248, 0.09));
+  --cc-table-surface: rgba(255, 255, 255, 0.82);
+  --cc-table-shadow: 0 30px 90px -48px rgba(15, 23, 42, 0.16);
   --cc-border: rgba(15, 23, 42, 0.08);
   --cc-border-strong: rgba(15, 23, 42, 0.12);
   --cc-text: #0f172a;
@@ -265,9 +269,9 @@ code {
 .cc-table-shell {
   overflow: hidden;
   border-radius: 1.75rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(15, 23, 42, 0.65);
-  box-shadow: 0 30px 90px -48px rgba(15, 23, 42, 1);
+  border: 1px solid var(--cc-border);
+  background: var(--cc-table-surface);
+  box-shadow: var(--cc-table-shadow);
   backdrop-filter: blur(24px);
 }
 
