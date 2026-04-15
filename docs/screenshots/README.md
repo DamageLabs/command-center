@@ -3,18 +3,80 @@
 - Base URL: http://127.0.0.1:4500
 - Capture window: 1600,5000
 
-## Captured views
+## Home
 
-- `01-home.png` → `/`
-- `02-issues-urgent.png` → `/issues/urgent`
-- `03-issues-active.png` → `/issues/active`
-- `04-issues-backlog.png` → `/issues/backlog`
-- `05-prs.png` → `/prs`
-- `06-tasks.png` → `/tasks`
-- `07-done.png` → `/done`
-- `08-notes.png` → `/notes`
-- `09-calendar.png` → `/calendar`
-- `10-repos.png` → `/repos`
-- `11-infra.png` → `/infra`
-- `12-openclaw.png` → `/openclaw`
-- `13-analytics.png` → `/analytics`
+Route: `/`
+
+![Home](./01-home.png)
+
+## Issues, Urgent
+
+Route: `/issues/urgent`
+
+![Issues, Urgent](./02-issues-urgent.png)
+
+## Issues, Active
+
+Route: `/issues/active`
+
+![Issues, Active](./03-issues-active.png)
+
+## Issues, Backlog
+
+Route: `/issues/backlog`
+
+![Issues, Backlog](./04-issues-backlog.png)
+
+## Pull Requests
+
+Route: `/prs`
+
+![Pull Requests](./05-prs.png)
+
+## Tasks
+
+Route: `/tasks`
+
+![Tasks](./06-tasks.png)
+
+## Done
+
+Route: `/done`
+
+![Done](./07-done.png)
+
+## Notes
+
+Route: `/notes`
+
+![Notes](./08-notes.png)
+
+## Calendar
+
+Route: `/calendar`
+
+![Calendar](./09-calendar.png)
+
+## Repositories
+
+Route: `/repos`
+
+![Repositories](./10-repos.png)
+
+## Infrastructure
+
+Route: `/infra`
+
+![Infrastructure](./11-infra.png)
+
+## OpenClaw
+
+Route: `/openclaw`
+
+![OpenClaw](./12-openclaw.png)
+
+## Analytics
+
+Route: `/analytics`
+
+![Analytics](./13-analytics.png)
