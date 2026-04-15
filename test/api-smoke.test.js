@@ -78,6 +78,20 @@ function createTestApp({ cacheOverrides = {}, sourceOverrides = {}, infraError =
       memoryPlugin: { enabled: true, slot: 'memory-core' },
       activeSessions: [{ key: 'agent:main:discord:direct:123', sessionId: 'sid-1', agent: 'main', type: 'direct', name: 'Tony DM', model: 'gpt-5.4', updatedAt: 1713124800000, ageMs: 60000, active: true, percentUsed: 12, totalTokens: 3200, contextTokens: 272000, estimatedCostUsd: 0.01, chatType: 'direct', label: 'Tony DM', subject: null, spawnedBy: null, abortedLastRun: false }],
       recentRuns: [{ key: 'agent:main:cron:test:run:sid-2', sessionId: 'sid-2', agent: 'main', type: 'run', name: 'Daily Standup', model: 'gpt-5.4', updatedAt: 1713124800000, ageMs: 120000, active: false, percentUsed: 8, totalTokens: 2800, contextTokens: 272000, estimatedCostUsd: 0.02, chatType: 'direct', label: 'Daily Standup', subject: null, spawnedBy: null, abortedLastRun: false, durationSec: 45, status: 'completed' }],
+      usageAnalytics: {
+        generatedAt: 1713124800000,
+        filesScanned: 3,
+        usageEvents: 12,
+        duplicateEvents: 1,
+        firstSeenAt: 1713038400000,
+        lastSeenAt: 1713124800000,
+        windows: {
+          today: { key: 'today', label: 'Today', startAt: 1713052800000, endAt: 1713124800000, calls: 4, costAvailableCalls: 4, totalCostUsd: 0.1234, inputTokens: 4000, outputTokens: 600, cacheReadTokens: 800, cacheWriteTokens: 0, totalTokens: 5400, models: [{ model: 'openai/gpt-5.4', calls: 4, costAvailableCalls: 4, totalCostUsd: 0.1234, inputTokens: 4000, outputTokens: 600, cacheReadTokens: 800, cacheWriteTokens: 0, totalTokens: 5400, lastSeenAt: 1713124800000 }], daily: [{ date: '2026-04-15', calls: 4, costAvailableCalls: 4, totalCostUsd: 0.1234, inputTokens: 4000, outputTokens: 600, cacheReadTokens: 800, cacheWriteTokens: 0, totalTokens: 5400 }] },
+          '7d': { key: '7d', label: '7d', startAt: 1712534400000, endAt: 1713124800000, calls: 8, costAvailableCalls: 8, totalCostUsd: 0.2345, inputTokens: 8000, outputTokens: 1200, cacheReadTokens: 1600, cacheWriteTokens: 0, totalTokens: 10800, models: [{ model: 'openai/gpt-5.4', calls: 8, costAvailableCalls: 8, totalCostUsd: 0.2345, inputTokens: 8000, outputTokens: 1200, cacheReadTokens: 1600, cacheWriteTokens: 0, totalTokens: 10800, lastSeenAt: 1713124800000 }], daily: [{ date: '2026-04-14', calls: 4, costAvailableCalls: 4, totalCostUsd: 0.1111, inputTokens: 4000, outputTokens: 600, cacheReadTokens: 800, cacheWriteTokens: 0, totalTokens: 5400 }, { date: '2026-04-15', calls: 4, costAvailableCalls: 4, totalCostUsd: 0.1234, inputTokens: 4000, outputTokens: 600, cacheReadTokens: 800, cacheWriteTokens: 0, totalTokens: 5400 }] },
+          '30d': { key: '30d', label: '30d', startAt: 1710547200000, endAt: 1713124800000, calls: 12, costAvailableCalls: 12, totalCostUsd: 0.3456, inputTokens: 12000, outputTokens: 1800, cacheReadTokens: 2400, cacheWriteTokens: 0, totalTokens: 16200, models: [{ model: 'openai/gpt-5.4', calls: 12, costAvailableCalls: 12, totalCostUsd: 0.3456, inputTokens: 12000, outputTokens: 1800, cacheReadTokens: 2400, cacheWriteTokens: 0, totalTokens: 16200, lastSeenAt: 1713124800000 }], daily: [{ date: '2026-04-01', calls: 4, costAvailableCalls: 4, totalCostUsd: 0.1111, inputTokens: 4000, outputTokens: 600, cacheReadTokens: 800, cacheWriteTokens: 0, totalTokens: 5400 }, { date: '2026-04-14', calls: 4, costAvailableCalls: 4, totalCostUsd: 0.1111, inputTokens: 4000, outputTokens: 600, cacheReadTokens: 800, cacheWriteTokens: 0, totalTokens: 5400 }, { date: '2026-04-15', calls: 4, costAvailableCalls: 4, totalCostUsd: 0.1234, inputTokens: 4000, outputTokens: 600, cacheReadTokens: 800, cacheWriteTokens: 0, totalTokens: 5400 }] },
+          all: { key: 'all', label: 'All time', startAt: null, endAt: 1713124800000, calls: 12, costAvailableCalls: 12, totalCostUsd: 0.3456, inputTokens: 12000, outputTokens: 1800, cacheReadTokens: 2400, cacheWriteTokens: 0, totalTokens: 16200, models: [{ model: 'openai/gpt-5.4', calls: 12, costAvailableCalls: 12, totalCostUsd: 0.3456, inputTokens: 12000, outputTokens: 1800, cacheReadTokens: 2400, cacheWriteTokens: 0, totalTokens: 16200, lastSeenAt: 1713124800000 }], daily: [{ date: '2026-04-01', calls: 4, costAvailableCalls: 4, totalCostUsd: 0.1111, inputTokens: 4000, outputTokens: 600, cacheReadTokens: 800, cacheWriteTokens: 0, totalTokens: 5400 }, { date: '2026-04-14', calls: 4, costAvailableCalls: 4, totalCostUsd: 0.1111, inputTokens: 4000, outputTokens: 600, cacheReadTokens: 800, cacheWriteTokens: 0, totalTokens: 5400 }, { date: '2026-04-15', calls: 4, costAvailableCalls: 4, totalCostUsd: 0.1234, inputTokens: 4000, outputTokens: 600, cacheReadTokens: 800, cacheWriteTokens: 0, totalTokens: 5400 }] },
+        },
+      },
       logsTail: [{ timestamp: 1713124800000, seenAt: '2026-04-15T12:00:00Z', level: 'error', source: 'tools', message: '[tools] read failed: ENOENT' }],
       errorFeed: [{ signature: 'tools|enoent', source: 'tools', severity: 'error', count: 2, firstSeen: 1713124700000, lastSeen: 1713124800000, sampleMessage: '[tools] read failed: ENOENT', lastOccurrences: [{ timestamp: 1713124800000, source: 'tools', level: 'error', message: '[tools] read failed: ENOENT' }] }],
       logsError: null,
@@ -153,6 +167,8 @@ test('main API routes return smoke-level shapes', async () => {
       assert.equal(openClaw.agents.totalSessions, 16);
       assert.equal(openClaw.activeSessions.length, 1);
       assert.equal(openClaw.recentRuns.length, 1);
+      assert.equal(openClaw.usageAnalytics.windows.today.calls, 4);
+      assert.equal(openClaw.usageAnalytics.windows.all.totalCostUsd, 0.3456);
       assert.equal(openClaw.logsTail.length, 1);
       assert.equal(openClaw.errorFeed.length, 1);
     });

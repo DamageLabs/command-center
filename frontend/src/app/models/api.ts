@@ -327,6 +327,47 @@ export interface OpenClawRunSummary extends OpenClawSessionSummary {
   status: string;
 }
 
+export type OpenClawUsageWindowKey = 'today' | '7d' | '30d' | 'all';
+
+export interface OpenClawUsageTotals {
+  calls: number;
+  costAvailableCalls: number;
+  totalCostUsd: number | null;
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  cacheWriteTokens: number;
+  totalTokens: number;
+}
+
+export interface OpenClawUsageModel extends OpenClawUsageTotals {
+  model: string;
+  lastSeenAt: number | null;
+}
+
+export interface OpenClawUsageDay extends OpenClawUsageTotals {
+  date: string;
+}
+
+export interface OpenClawUsageWindow extends OpenClawUsageTotals {
+  key: OpenClawUsageWindowKey;
+  label: string;
+  startAt: number | null;
+  endAt: number;
+  models: OpenClawUsageModel[];
+  daily: OpenClawUsageDay[];
+}
+
+export interface OpenClawUsageAnalytics {
+  generatedAt: number;
+  filesScanned: number;
+  usageEvents: number;
+  duplicateEvents: number;
+  firstSeenAt: number | null;
+  lastSeenAt: number | null;
+  windows: Record<OpenClawUsageWindowKey, OpenClawUsageWindow>;
+}
+
 export interface OpenClawLogEntry {
   timestamp: number;
   seenAt: string;
@@ -368,6 +409,7 @@ export interface OpenClawResponse extends ApiEnvelope {
   channelSummary?: string[];
   activeSessions: OpenClawSessionSummary[];
   recentRuns: OpenClawRunSummary[];
+  usageAnalytics: OpenClawUsageAnalytics;
   logsTail: OpenClawLogEntry[];
   errorFeed: OpenClawErrorGroup[];
   logsError?: string | null;

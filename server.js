@@ -643,6 +643,7 @@ const OPENCLAW_LOG_TIMEOUT_MS = 10000;
 const OPENCLAW_ERROR_FEED_LIMIT = 12;
 const OPENCLAW_ERROR_OCCURRENCES_LIMIT = 3;
 const OPENCLAW_ERROR_WINDOW_MS = 24 * 60 * 60 * 1000;
+const OPENCLAW_USAGE_WINDOW_KEYS = ['today', '7d', '30d', 'all'];
 
 const OPENCLAW_UUID_RE = /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi;
 const OPENCLAW_ID_TOKEN_RE = /\b(?:id|session|task|job|trace|request|pid|diagId|sessionKey|lane)[:=]?\s*[^\s,]+/gi;
@@ -651,6 +652,8 @@ const OPENCLAW_PATH_RE = /\/(?:home|tmp)\/[^\s]+/g;
 const OPENCLAW_AGENT_KEY_RE = /agent:[^\s]+/gi;
 const OPENCLAW_NUMERIC_RE = /\b\d+\b/g;
 const OPENCLAW_TIMESTAMP_RE = /\b\d{4}-\d{2}-\d{2}[t\s]\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:z|[+\-]\d{2}:\d{2})?\b/gi;
+
+const openClawUsageFileCache = new Map();
 
 function readJsonFileSafe(filePath) {
   return JSON.parse(fs.readFileSync(filePath, 'utf8'));
@@ -725,6 +728,383 @@ function readSessionDurationSec(sessionFile, entry = {}) {
   } catch {
     return null;
   }
+}
+
+function openClawUsageRootSessionId(filePath) {
+  const name = path.basename(filePath);
+  const deletedIndex = name.indexOf('.jsonl.deleted.');
+  if (deletedIndex >= 0) {
+    return name.slice(0, deletedIndex);
+  }
+
+  const withoutSuffix = name.endsWith('.jsonl') ? name.slice(0, -6) : name;
+  const checkpointIndex = withoutSuffix.indexOf('.checkpoint.');
+  return checkpointIndex >= 0 ? withoutSuffix.slice(0, checkpointIndex) : withoutSuffix;
+}
+
+function openClawUsageNumber(value, fallback = 0) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : fallback;
+}
+
+function openClawUsageCost(value) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? Math.max(0, numeric) : null;
+}
+
+function openClawUsageModel(provider, model) {
+  if (!model) return 'unknown';
+  if (String(model).includes('/')) return String(model);
+  return provider ? `${provider}/${model}` : String(model);
+}
+
+function openClawStartOfDay(timestamp = Date.now()) {
+  const date = new Date(timestamp);
+  date.setHours(0, 0, 0, 0);
+  return date.getTime();
+}
+
+function openClawWindowStart(days, now = Date.now()) {
+  if (!days) return null;
+  const start = new Date(openClawStartOfDay(now));
+  start.setDate(start.getDate() - (days - 1));
+  return start.getTime();
+}
+
+function openClawUsageDateKey(timestamp) {
+  const date = new Date(timestamp);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function createOpenClawUsageAccumulator(key, label, startAt, endAt) {
+  return {
+    key,
+    label,
+    startAt,
+    endAt,
+    calls: 0,
+    costAvailableCalls: 0,
+    totalCostUsd: 0,
+    inputTokens: 0,
+    outputTokens: 0,
+    cacheReadTokens: 0,
+    cacheWriteTokens: 0,
+    totalTokens: 0,
+    models: new Map(),
+    daily: new Map(),
+  };
+}
+
+function addOpenClawUsageToAccumulator(bucket, event, modelKey) {
+  bucket.calls += 1;
+  bucket.inputTokens += event.inputTokens;
+  bucket.outputTokens += event.outputTokens;
+  bucket.cacheReadTokens += event.cacheReadTokens;
+  bucket.cacheWriteTokens += event.cacheWriteTokens;
+  bucket.totalTokens += event.totalTokens;
+
+  if (event.totalCostUsd !== null) {
+    bucket.costAvailableCalls += 1;
+    bucket.totalCostUsd += event.totalCostUsd;
+  }
+
+  if (!modelKey) return;
+
+  const existingModel = bucket.models.get(modelKey) || {
+    model: modelKey,
+    calls: 0,
+    costAvailableCalls: 0,
+    totalCostUsd: 0,
+    inputTokens: 0,
+    outputTokens: 0,
+    cacheReadTokens: 0,
+    cacheWriteTokens: 0,
+    totalTokens: 0,
+    lastSeenAt: null,
+  };
+
+  existingModel.calls += 1;
+  existingModel.inputTokens += event.inputTokens;
+  existingModel.outputTokens += event.outputTokens;
+  existingModel.cacheReadTokens += event.cacheReadTokens;
+  existingModel.cacheWriteTokens += event.cacheWriteTokens;
+  existingModel.totalTokens += event.totalTokens;
+  existingModel.lastSeenAt = existingModel.lastSeenAt === null ? event.timestamp : Math.max(existingModel.lastSeenAt, event.timestamp);
+
+  if (event.totalCostUsd !== null) {
+    existingModel.costAvailableCalls += 1;
+    existingModel.totalCostUsd += event.totalCostUsd;
+  }
+
+  bucket.models.set(modelKey, existingModel);
+
+  const dayKey = openClawUsageDateKey(event.timestamp);
+  const existingDay = bucket.daily.get(dayKey) || {
+    date: dayKey,
+    calls: 0,
+    costAvailableCalls: 0,
+    totalCostUsd: 0,
+    inputTokens: 0,
+    outputTokens: 0,
+    cacheReadTokens: 0,
+    cacheWriteTokens: 0,
+    totalTokens: 0,
+  };
+
+  existingDay.calls += 1;
+  existingDay.inputTokens += event.inputTokens;
+  existingDay.outputTokens += event.outputTokens;
+  existingDay.cacheReadTokens += event.cacheReadTokens;
+  existingDay.cacheWriteTokens += event.cacheWriteTokens;
+  existingDay.totalTokens += event.totalTokens;
+
+  if (event.totalCostUsd !== null) {
+    existingDay.costAvailableCalls += 1;
+    existingDay.totalCostUsd += event.totalCostUsd;
+  }
+
+  bucket.daily.set(dayKey, existingDay);
+}
+
+function finalizeOpenClawUsageAccumulator(bucket) {
+  const models = [...bucket.models.values()]
+    .map(model => ({
+      ...model,
+      totalCostUsd: model.costAvailableCalls ? Number(model.totalCostUsd.toFixed(6)) : null,
+    }))
+    .sort((a, b) => {
+      const costA = a.totalCostUsd ?? -1;
+      const costB = b.totalCostUsd ?? -1;
+      if (costB !== costA) return costB - costA;
+      if (b.totalTokens !== a.totalTokens) return b.totalTokens - a.totalTokens;
+      return a.model.localeCompare(b.model);
+    });
+
+  const daily = [...bucket.daily.values()]
+    .map(day => ({
+      ...day,
+      totalCostUsd: day.costAvailableCalls ? Number(day.totalCostUsd.toFixed(6)) : null,
+    }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  return {
+    key: bucket.key,
+    label: bucket.label,
+    startAt: bucket.startAt,
+    endAt: bucket.endAt,
+    calls: bucket.calls,
+    costAvailableCalls: bucket.costAvailableCalls,
+    totalCostUsd: bucket.costAvailableCalls ? Number(bucket.totalCostUsd.toFixed(6)) : null,
+    inputTokens: bucket.inputTokens,
+    outputTokens: bucket.outputTokens,
+    cacheReadTokens: bucket.cacheReadTokens,
+    cacheWriteTokens: bucket.cacheWriteTokens,
+    totalTokens: bucket.totalTokens,
+    models,
+    daily,
+  };
+}
+
+function emptyOpenClawUsageAnalytics(now = Date.now()) {
+  const windowLabels = {
+    today: 'Today',
+    '7d': '7d',
+    '30d': '30d',
+    all: 'All time',
+  };
+  const windowStarts = {
+    today: openClawWindowStart(1, now),
+    '7d': openClawWindowStart(7, now),
+    '30d': openClawWindowStart(30, now),
+    all: null,
+  };
+
+  return {
+    generatedAt: now,
+    filesScanned: 0,
+    usageEvents: 0,
+    duplicateEvents: 0,
+    firstSeenAt: null,
+    lastSeenAt: null,
+    windows: Object.fromEntries(OPENCLAW_USAGE_WINDOW_KEYS.map(key => [key, finalizeOpenClawUsageAccumulator(createOpenClawUsageAccumulator(key, windowLabels[key], windowStarts[key], now))])),
+  };
+}
+
+function listOpenClawUsageFiles() {
+  const files = [];
+  if (!OPENCLAW_AGENTS_DIR || !fs.existsSync(OPENCLAW_AGENTS_DIR)) {
+    return files;
+  }
+
+  for (const agentName of fs.readdirSync(OPENCLAW_AGENTS_DIR)) {
+    const sessionsDir = path.join(OPENCLAW_AGENTS_DIR, agentName, 'sessions');
+    if (!fs.existsSync(sessionsDir)) continue;
+
+    for (const name of fs.readdirSync(sessionsDir)) {
+      if (name.endsWith('.lock')) continue;
+      if (name.endsWith('.jsonl') || name.includes('.jsonl.deleted.')) {
+        files.push(path.join(sessionsDir, name));
+      }
+    }
+  }
+
+  return files.sort();
+}
+
+function parseOpenClawUsageFile(filePath, stats) {
+  const events = [];
+  const rootSessionId = openClawUsageRootSessionId(filePath);
+  const lines = fs.readFileSync(filePath, 'utf8').split('\n').filter(Boolean);
+
+  for (const line of lines) {
+    try {
+      const parsed = JSON.parse(line);
+      const message = parsed?.message;
+      if (!message || message.role !== 'assistant' || !message.usage) continue;
+
+      const usage = message.usage || {};
+      const totalTokens = openClawUsageNumber(usage.totalTokens, 0);
+      if (totalTokens <= 0) continue;
+
+      const model = openClawUsageModel(message.provider, message.model);
+      if (!model || model.includes('delivery-mirror')) continue;
+
+      const inputTokens = openClawUsageNumber(usage.input, 0);
+      const outputTokens = openClawUsageNumber(usage.output, 0);
+      const cacheReadTokens = openClawUsageNumber(usage.cacheRead, 0);
+      const cacheWriteTokens = openClawUsageNumber(usage.cacheWrite, 0);
+      const cost = usage.cost || {};
+      const costInputUsd = openClawUsageCost(cost.input);
+      const costOutputUsd = openClawUsageCost(cost.output);
+      const costCacheReadUsd = openClawUsageCost(cost.cacheRead);
+      const costCacheWriteUsd = openClawUsageCost(cost.cacheWrite);
+      let totalCostUsd = openClawUsageCost(cost.total);
+
+      if (totalCostUsd === null) {
+        const components = [costInputUsd, costOutputUsd, costCacheReadUsd, costCacheWriteUsd].filter(value => value !== null);
+        if (components.length) {
+          totalCostUsd = components.reduce((sum, value) => sum + value, 0);
+        }
+      }
+
+      let timestamp = Date.parse(parsed.timestamp || '');
+      if (Number.isNaN(timestamp)) {
+        timestamp = openClawUsageNumber(message.timestamp, 0);
+      }
+      if (!timestamp) continue;
+
+      const responseId = String(message.responseId || parsed.id || '').trim();
+      const eventKey = responseId
+        ? `resp:${responseId}`
+        : `${rootSessionId}:${timestamp}:${model}:${inputTokens}:${outputTokens}:${cacheReadTokens}:${cacheWriteTokens}:${totalTokens}`;
+
+      events.push({
+        key: eventKey,
+        sessionId: rootSessionId,
+        timestamp,
+        model,
+        inputTokens,
+        outputTokens,
+        cacheReadTokens,
+        cacheWriteTokens,
+        totalTokens,
+        totalCostUsd,
+      });
+    } catch {
+      // ignore malformed lines
+    }
+  }
+
+  return {
+    size: stats.size,
+    mtimeMs: stats.mtimeMs,
+    events,
+  };
+}
+
+function readOpenClawUsageAnalytics() {
+  const now = Date.now();
+  const files = listOpenClawUsageFiles();
+  const livePaths = new Set(files);
+
+  for (const cachedPath of [...openClawUsageFileCache.keys()]) {
+    if (!livePaths.has(cachedPath)) {
+      openClawUsageFileCache.delete(cachedPath);
+    }
+  }
+
+  const allEvents = [];
+
+  for (const filePath of files) {
+    let stats;
+    try {
+      stats = fs.statSync(filePath);
+    } catch {
+      openClawUsageFileCache.delete(filePath);
+      continue;
+    }
+
+    const cached = openClawUsageFileCache.get(filePath);
+    const unchanged = cached && cached.size === stats.size && cached.mtimeMs === stats.mtimeMs;
+    const summary = unchanged ? cached : parseOpenClawUsageFile(filePath, stats);
+    summary.size = stats.size;
+    summary.mtimeMs = stats.mtimeMs;
+    openClawUsageFileCache.set(filePath, summary);
+    allEvents.push(...summary.events);
+  }
+
+  const windows = {
+    today: createOpenClawUsageAccumulator('today', 'Today', openClawWindowStart(1, now), now),
+    '7d': createOpenClawUsageAccumulator('7d', '7d', openClawWindowStart(7, now), now),
+    '30d': createOpenClawUsageAccumulator('30d', '30d', openClawWindowStart(30, now), now),
+    all: createOpenClawUsageAccumulator('all', 'All time', null, now),
+  };
+
+  const seenKeys = new Set();
+  let duplicateEvents = 0;
+  let firstSeenAt = null;
+  let lastSeenAt = null;
+
+  allEvents.sort((a, b) => a.timestamp - b.timestamp);
+
+  for (const event of allEvents) {
+    if (!event || !event.key) continue;
+    if (seenKeys.has(event.key)) {
+      duplicateEvents += 1;
+      continue;
+    }
+    seenKeys.add(event.key);
+
+    firstSeenAt = firstSeenAt === null ? event.timestamp : Math.min(firstSeenAt, event.timestamp);
+    lastSeenAt = lastSeenAt === null ? event.timestamp : Math.max(lastSeenAt, event.timestamp);
+
+    addOpenClawUsageToAccumulator(windows.all, event, event.model);
+
+    if (windows.today.startAt !== null && event.timestamp >= windows.today.startAt) {
+      addOpenClawUsageToAccumulator(windows.today, event, event.model);
+    }
+
+    if (windows['7d'].startAt !== null && event.timestamp >= windows['7d'].startAt) {
+      addOpenClawUsageToAccumulator(windows['7d'], event, event.model);
+    }
+
+    if (windows['30d'].startAt !== null && event.timestamp >= windows['30d'].startAt) {
+      addOpenClawUsageToAccumulator(windows['30d'], event, event.model);
+    }
+  }
+
+  return {
+    generatedAt: now,
+    filesScanned: files.length,
+    usageEvents: seenKeys.size,
+    duplicateEvents,
+    firstSeenAt,
+    lastSeenAt,
+    windows: Object.fromEntries(OPENCLAW_USAGE_WINDOW_KEYS.map(key => [key, finalizeOpenClawUsageAccumulator(windows[key])])),
+  };
 }
 
 function collectOpenClawActivity() {
@@ -1000,6 +1380,12 @@ function fetchOpenClawRuntime() {
     const gatewayPid = status.gatewayService?.runtime?.pid;
     const gatewayProcess = readProcessSnapshot(gatewayPid);
     const activity = collectOpenClawActivity();
+    let usageAnalytics = emptyOpenClawUsageAnalytics(updatedAt);
+    try {
+      usageAnalytics = readOpenClawUsageAnalytics();
+    } catch (error) {
+      console.warn('[openclaw] usage analytics unavailable:', error.message);
+    }
     let logsTail = [];
     let errorFeed = [];
     let logsError = null;
@@ -1038,6 +1424,7 @@ function fetchOpenClawRuntime() {
       secretDiagnostics: status.secretDiagnostics || [],
       activeSessions: activity.activeSessions,
       recentRuns: activity.recentRuns,
+      usageAnalytics,
       logsTail,
       errorFeed,
       logsError,
