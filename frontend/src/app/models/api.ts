@@ -218,6 +218,109 @@ export interface NotesResponse extends ApiEnvelope {
   decisions: DecisionNote[];
 }
 
+export interface OpenClawGatewaySelf {
+  host: string;
+  ip: string;
+  version: string;
+  platform: string;
+}
+
+export interface OpenClawGateway {
+  mode: string;
+  url: string;
+  urlSource?: string | null;
+  misconfigured: boolean;
+  reachable: boolean;
+  connectLatencyMs?: number | null;
+  self?: OpenClawGatewaySelf | null;
+  error?: string | null;
+  authWarning?: string | null;
+}
+
+export interface OpenClawServiceRuntime {
+  status: string;
+  state: string;
+  subState?: string | null;
+  pid?: number | null;
+  lastExitStatus?: number | null;
+  lastExitReason?: string | null;
+}
+
+export interface OpenClawServiceStatus {
+  label: string;
+  installed: boolean;
+  loaded: boolean;
+  managedByOpenClaw: boolean;
+  externallyManaged: boolean;
+  loadedText?: string | null;
+  runtime?: OpenClawServiceRuntime | null;
+  runtimeShort?: string | null;
+}
+
+export interface OpenClawAgentStatus {
+  id: string;
+  name: string;
+  workspaceDir: string;
+  bootstrapPending: boolean;
+  sessionsPath: string;
+  sessionsCount: number;
+  lastUpdatedAt?: number | null;
+  lastActiveAgeMs?: number | null;
+}
+
+export interface OpenClawAgentsSummary {
+  defaultId?: string | null;
+  agents: OpenClawAgentStatus[];
+  totalSessions: number;
+  bootstrapPendingCount: number;
+}
+
+export interface OpenClawMemoryPlugin {
+  enabled: boolean;
+  slot?: string | null;
+}
+
+export interface OpenClawProcessSnapshot {
+  elapsed: string;
+  memoryBytes: number | null;
+}
+
+export interface OpenClawTasksSummary {
+  total: number;
+  active: number;
+  terminal: number;
+  failures: number;
+  byStatus?: Record<string, number>;
+  byRuntime?: Record<string, number>;
+}
+
+export interface OpenClawTaskAudit {
+  total: number;
+  warnings: number;
+  errors: number;
+  byCode?: Record<string, number>;
+}
+
+export interface OpenClawResponse extends ApiEnvelope {
+  version: string | null;
+  gateway: OpenClawGateway | null;
+  gatewayService: OpenClawServiceStatus | null;
+  gatewayProcess?: OpenClawProcessSnapshot | null;
+  nodeService: OpenClawServiceStatus | null;
+  agents: OpenClawAgentsSummary | null;
+  sessions?: unknown;
+  memory?: unknown;
+  memoryPlugin: OpenClawMemoryPlugin | null;
+  tasks?: OpenClawTasksSummary | null;
+  taskAudit?: OpenClawTaskAudit | null;
+  channelSummary?: string[];
+  updateAvailable?: boolean | null;
+  updateChannel?: string | null;
+  updateInfo?: { latestVersion?: string | null } | null;
+  secretDiagnostics: unknown[];
+  updatedAt: number | null;
+}
+
 export interface RefreshResponse {
   ok: boolean;
 }

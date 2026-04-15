@@ -2,7 +2,7 @@
 
 require('dotenv').config();
 
-const { execSync } = require('child_process');
+const { execFileSync, execSync } = require('child_process');
 const path = require('path');
 const cron = require('node-cron');
 const ical = require('node-ical');
@@ -111,6 +111,7 @@ const SOURCE_CONFIG = {
   prs: { label: 'PRs', staleAfterMs: 15 * 60 * 1000 },
   analytics: { label: 'Analytics', staleAfterMs: 30 * 60 * 1000 },
   infra: { label: 'Infra', staleAfterMs: 5 * 60 * 1000 },
+  openclaw: { label: 'OpenClaw', staleAfterMs: 2 * 60 * 1000 },
 };
 
 let sourceState = Object.fromEntries(
@@ -609,6 +610,66 @@ function loadInfraProcesses() {
   }));
 }
 
+function readProcessSnapshot(pid) {
+  if (!pid) return null;
+
+  try {
+    const raw = execFileSync('ps', ['-p', String(pid), '-o', 'etime=,rss='], {
+      encoding: 'utf8',
+      timeout: 5000,
+    }).trim();
+
+    if (!raw) return null;
+
+    const [elapsed, rssKb] = raw.split(/\s+/, 2);
+    return {
+      elapsed,
+      memoryBytes: rssKb ? Number(rssKb) * 1024 : null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function fetchOpenClawRuntime() {
+  beginSource('openclaw');
+  try {
+    const raw = execFileSync('openclaw', ['status', '--json'], {
+      encoding: 'utf8',
+      timeout: 15000,
+      maxBuffer: 2 * 1024 * 1024,
+    });
+    const status = JSON.parse(raw);
+    const updatedAt = Date.now();
+    const gatewayPid = status.gatewayService?.runtime?.pid;
+    const gatewayProcess = readProcessSnapshot(gatewayPid);
+
+    succeedSource('openclaw', updatedAt);
+    return {
+      version: status.runtimeVersion || status.gateway?.self?.version || null,
+      gateway: status.gateway || null,
+      gatewayService: status.gatewayService || null,
+      gatewayProcess,
+      nodeService: status.nodeService || null,
+      agents: status.agents || null,
+      sessions: status.sessions || null,
+      memory: status.memory || null,
+      memoryPlugin: status.memoryPlugin || null,
+      tasks: status.tasks || null,
+      taskAudit: status.taskAudit || null,
+      channelSummary: status.channelSummary || [],
+      updateAvailable: status.update?.registry?.latestVersion ? status.update.registry.latestVersion !== (status.runtimeVersion || status.gateway?.self?.version || null) : null,
+      updateChannel: status.updateChannel || null,
+      updateInfo: status.update?.registry || null,
+      secretDiagnostics: status.secretDiagnostics || [],
+      updatedAt,
+    };
+  } catch (error) {
+    failSource('openclaw', error);
+    throw error;
+  }
+}
+
 const app = createApp({
   cache,
   sourceMeta,
@@ -623,6 +684,7 @@ const app = createApp({
   fetchStandup,
   fetchPRs,
   fetchAnalytics,
+  fetchOpenClawRuntime,
   closeIssue: ({ owner, repo, number }) => execSync(`gh issue close ${number} --repo ${owner}/${repo}`, { encoding: 'utf8' }),
   loadInfraProcesses,
   frontend: {
@@ -661,4 +723,5 @@ module.exports = {
   sourceMeta,
   sourceResponseStatus,
   loadInfraProcesses,
+  fetchOpenClawRuntime,
 };

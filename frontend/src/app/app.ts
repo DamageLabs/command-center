@@ -22,6 +22,7 @@ export class App {
     { path: '/calendar', label: 'Calendar' },
     { path: '/repos', label: 'Repos' },
     { path: '/infra', label: 'Infra' },
+    { path: '/openclaw', label: 'OpenClaw' },
     { path: '/analytics', label: 'Analytics' },
   ];
 }
