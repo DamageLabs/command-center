@@ -1,12 +1,13 @@
-import { Component, input } from '@angular/core';
+import { Component, HostListener, input, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 
 import { NavItem } from '../shared/models/nav-item';
+import { CommandPaletteComponent } from '../shared/ui/command-palette.component';
 import { ThemeToggleComponent } from './theme-toggle.component';
 
 @Component({
   selector: 'app-shell',
-  imports: [RouterLink, RouterLinkActive, RouterOutlet, ThemeToggleComponent],
+  imports: [RouterLink, RouterLinkActive, RouterOutlet, CommandPaletteComponent, ThemeToggleComponent],
   template: `
     <div class="min-h-screen cc-app-bg text-[var(--cc-text)]">
       <div class="mx-auto min-h-screen max-w-[1680px] xl:grid xl:grid-cols-[280px_minmax(0,1fr)] xl:gap-6 xl:px-6 xl:py-6">
@@ -21,9 +22,11 @@ import { ThemeToggleComponent } from './theme-toggle.component';
             </div>
           </div>
 
-          <div class="mt-6 rounded-2xl border border-[var(--cc-border)] bg-white/5 px-4 py-4 text-sm text-[var(--cc-text-muted)]">
-            GitHub, notes, tasks, calendar, analytics, and runtime status in one place.
-          </div>
+          <button type="button" class="mt-6 w-full rounded-2xl border border-[var(--cc-border)] bg-white/5 px-4 py-4 text-left text-sm text-[var(--cc-text-muted)] transition hover:border-sky-400/40 hover:text-[var(--cc-text)]" (click)="openPalette()">
+            <div class="font-semibold text-[var(--cc-text)]">Open command palette</div>
+            <div class="mt-1">Jump to a view, repo, issue, PR, or quick action.</div>
+            <div class="mt-3 inline-flex items-center rounded-full border border-[var(--cc-border)] px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--cc-text-soft)]">Ctrl/Cmd + K</div>
+          </button>
 
           <nav class="mt-6 flex flex-wrap gap-2 xl:flex-col">
             @for (item of navItems(); track item.path) {
@@ -48,9 +51,34 @@ import { ThemeToggleComponent } from './theme-toggle.component';
           <router-outlet></router-outlet>
         </main>
       </div>
+
+      <cc-command-palette [open]="paletteOpen()" [navItems]="navItems()" (closed)="closePalette()"></cc-command-palette>
     </div>
   `,
 })
 export class AppShellComponent {
   readonly navItems = input.required<NavItem[]>();
+  protected readonly paletteOpen = signal(false);
+
+  @HostListener('document:keydown', ['$event'])
+  protected onDocumentKeydown(event: KeyboardEvent): void {
+    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+      event.preventDefault();
+      this.paletteOpen.set(true);
+      return;
+    }
+
+    if (event.key === 'Escape' && this.paletteOpen()) {
+      event.preventDefault();
+      this.closePalette();
+    }
+  }
+
+  protected openPalette(): void {
+    this.paletteOpen.set(true);
+  }
+
+  protected closePalette(): void {
+    this.paletteOpen.set(false);
+  }
 }
