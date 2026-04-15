@@ -25,6 +25,11 @@ interface CommandSection {
   items: CommandPaletteItem[];
 }
 
+interface CommandSearchState {
+  query: string;
+  groups: CommandGroup[] | null;
+}
+
 const RECENT_COMMANDS_KEY = 'command-center-recent-commands';
 const RECENT_COMMANDS_LIMIT = 6;
 
@@ -47,7 +52,7 @@ const RECENT_COMMANDS_LIMIT = 6;
                   class="cc-command-palette-input"
                   placeholder="Jump to a view, repo, issue, PR, or action..."
                 />
-                <div class="mt-1 text-xs text-[var(--cc-text-soft)]">Views, loaded GitHub objects, and quick actions in one place.</div>
+                <div class="mt-1 text-xs text-[var(--cc-text-soft)]">Views, loaded dashboard objects, and quick actions in one place.</div>
               </div>
             </div>
           </div>
@@ -93,6 +98,8 @@ const RECENT_COMMANDS_LIMIT = 6;
           <div class="cc-command-palette-footer">
             <span>↑ ↓ move</span>
             <span>↵ open</span>
+            <span>> actions</span>
+            <span>repo: / note: / task:</span>
             <span>esc close</span>
           </div>
         </section>
@@ -113,6 +120,7 @@ export class CommandPaletteComponent {
   protected readonly query = signal('');
   protected readonly activeIndex = signal(0);
   private readonly recentIds = signal<string[]>(this.readRecentIds());
+  private readonly searchState = computed(() => this.parseQuery(this.query()));
 
   private readonly navCommands = computed<CommandPaletteItem[]>(() => this.navItems().map((item, index) => ({
     id: `view:${item.path}`,
@@ -153,7 +161,7 @@ export class CommandPaletteComponent {
       },
     ];
 
-    const query = this.query().trim().toLowerCase();
+    const query = this.searchState().query;
     if (!query) return actions;
 
     const repo = this.bestMatch(this.repoCommands(), query);
@@ -292,8 +300,10 @@ export class CommandPaletteComponent {
   });
 
   protected readonly flatResults = computed<CommandPaletteItem[]>(() => {
-    const q = this.query().trim().toLowerCase();
-    const items = q ? this.allCommands() : [...this.recentCommands(), ...this.allCommands()];
+    const search = this.searchState();
+    const q = search.query;
+    const candidates = q ? this.allCommands() : [...this.recentCommands(), ...this.allCommands()];
+    const items = search.groups ? candidates.filter((item) => search.groups!.includes(item.group)) : candidates;
 
     return items
       .map((item) => ({ item, score: this.scoreItem(item, q) }))
@@ -378,6 +388,24 @@ export class CommandPaletteComponent {
     const data = this.data.issues().data();
     if (!data) return [];
     return [...data.urgent, ...data.active, ...data.deferred];
+  }
+
+  private parseQuery(value: string): CommandSearchState {
+    const raw = value.trim().toLowerCase();
+    if (!raw) return { query: '', groups: null };
+
+    if (raw.startsWith('>')) return { query: raw.slice(1).trim(), groups: ['Actions'] };
+    if (raw.startsWith('view:')) return { query: raw.slice(5).trim(), groups: ['Views'] };
+    if (raw.startsWith('repo:')) return { query: raw.slice(5).trim(), groups: ['Repos'] };
+    if (raw.startsWith('issue:')) return { query: raw.slice(6).trim(), groups: ['Issues'] };
+    if (raw.startsWith('#')) return { query: raw.slice(1).trim(), groups: ['Issues'] };
+    if (raw.startsWith('pr:')) return { query: raw.slice(3).trim(), groups: ['PRs'] };
+    if (raw.startsWith('note:')) return { query: raw.slice(5).trim(), groups: ['Notes'] };
+    if (raw.startsWith('task:')) return { query: raw.slice(5).trim(), groups: ['Tasks'] };
+    if (raw.startsWith('event:')) return { query: raw.slice(6).trim(), groups: ['Events'] };
+    if (raw.startsWith('cal:')) return { query: raw.slice(4).trim(), groups: ['Events'] };
+
+    return { query: raw, groups: null };
   }
 
   private scoreItem(item: CommandPaletteItem, query: string): number {
