@@ -1,7 +1,7 @@
 # Command Center screenshots
 
 - Base URL: http://127.0.0.1:4500
-- Capture window: 1600,5000
+- Theme: dark
 
 ## Home
 
