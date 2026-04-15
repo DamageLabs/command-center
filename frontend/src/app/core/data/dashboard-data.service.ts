@@ -37,9 +37,15 @@ export class DashboardDataService {
     version: OpenClawResponse['version'];
     gateway: OpenClawResponse['gateway'];
     gatewayService: OpenClawResponse['gatewayService'];
+    gatewayProcess: OpenClawResponse['gatewayProcess'];
     nodeService: OpenClawResponse['nodeService'];
     agents: OpenClawResponse['agents'];
+    sessions: OpenClawResponse['sessions'];
+    memory: OpenClawResponse['memory'];
     memoryPlugin: OpenClawResponse['memoryPlugin'];
+    tasks: OpenClawResponse['tasks'];
+    taskAudit: OpenClawResponse['taskAudit'];
+    channelSummary: OpenClawResponse['channelSummary'];
     updateAvailable: OpenClawResponse['updateAvailable'];
     updateChannel: OpenClawResponse['updateChannel'];
     updateInfo: OpenClawResponse['updateInfo'];
@@ -144,9 +150,15 @@ export class DashboardDataService {
     version: OpenClawResponse['version'];
     gateway: OpenClawResponse['gateway'];
     gatewayService: OpenClawResponse['gatewayService'];
+    gatewayProcess: OpenClawResponse['gatewayProcess'];
     nodeService: OpenClawResponse['nodeService'];
     agents: OpenClawResponse['agents'];
+    sessions: OpenClawResponse['sessions'];
+    memory: OpenClawResponse['memory'];
     memoryPlugin: OpenClawResponse['memoryPlugin'];
+    tasks: OpenClawResponse['tasks'];
+    taskAudit: OpenClawResponse['taskAudit'];
+    channelSummary: OpenClawResponse['channelSummary'];
     updateAvailable: OpenClawResponse['updateAvailable'];
     updateChannel: OpenClawResponse['updateChannel'];
     updateInfo: OpenClawResponse['updateInfo'];
@@ -159,9 +171,15 @@ export class DashboardDataService {
         version: response.version,
         gateway: response.gateway,
         gatewayService: response.gatewayService,
+        gatewayProcess: response.gatewayProcess,
         nodeService: response.nodeService,
         agents: response.agents,
+        sessions: response.sessions,
+        memory: response.memory,
         memoryPlugin: response.memoryPlugin,
+        tasks: response.tasks,
+        taskAudit: response.taskAudit,
+        channelSummary: response.channelSummary,
         updateAvailable: response.updateAvailable,
         updateChannel: response.updateChannel,
         updateInfo: response.updateInfo,

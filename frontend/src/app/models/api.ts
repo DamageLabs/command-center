@@ -280,13 +280,40 @@ export interface OpenClawMemoryPlugin {
   slot?: string | null;
 }
 
+export interface OpenClawProcessSnapshot {
+  elapsed: string;
+  memoryBytes: number | null;
+}
+
+export interface OpenClawTasksSummary {
+  total: number;
+  active: number;
+  terminal: number;
+  failures: number;
+  byStatus?: Record<string, number>;
+  byRuntime?: Record<string, number>;
+}
+
+export interface OpenClawTaskAudit {
+  total: number;
+  warnings: number;
+  errors: number;
+  byCode?: Record<string, number>;
+}
+
 export interface OpenClawResponse extends ApiEnvelope {
   version: string | null;
   gateway: OpenClawGateway | null;
   gatewayService: OpenClawServiceStatus | null;
+  gatewayProcess?: OpenClawProcessSnapshot | null;
   nodeService: OpenClawServiceStatus | null;
   agents: OpenClawAgentsSummary | null;
+  sessions?: unknown;
+  memory?: unknown;
   memoryPlugin: OpenClawMemoryPlugin | null;
+  tasks?: OpenClawTasksSummary | null;
+  taskAudit?: OpenClawTaskAudit | null;
+  channelSummary?: string[];
   updateAvailable?: boolean | null;
   updateChannel?: string | null;
   updateInfo?: { latestVersion?: string | null } | null;

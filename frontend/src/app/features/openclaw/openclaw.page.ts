@@ -47,7 +47,9 @@ import { StatePanelComponent } from '../../shared/ui/state-panel.component';
             </div>
             <div class="mt-4 text-2xl font-semibold text-[var(--cc-text)]">{{ openClaw.data()!.gatewayService?.label || 'service' }}</div>
             <div class="mt-2 text-sm text-[var(--cc-text-muted)]">{{ openClaw.data()!.gatewayService?.runtimeShort || 'No runtime summary reported' }}</div>
-            <div class="mt-4 text-xs text-[var(--cc-text-soft)]">{{ openClaw.data()!.gatewayService?.loadedText || 'unknown load state' }}</div>
+            <div class="mt-4 text-xs text-[var(--cc-text-soft)]">
+              {{ openClaw.data()!.gatewayProcess?.elapsed || 'uptime unavailable' }} · {{ formatMemory(openClaw.data()!.gatewayProcess?.memoryBytes) }}
+            </div>
           </article>
 
           <article class="cc-list-card p-5">
@@ -119,8 +121,32 @@ import { StatePanelComponent } from '../../shared/ui/state-panel.component';
               <li>Gateway is <span class="font-semibold text-[var(--cc-text)]">{{ openClaw.data()!.gateway?.reachable ? 'reachable' : 'not reachable' }}</span>.</li>
               <li>Memory plugin is <span class="font-semibold text-[var(--cc-text)]">{{ openClaw.data()!.memoryPlugin?.enabled ? 'enabled' : 'disabled' }}</span>{{ openClaw.data()!.memoryPlugin?.slot ? ' via ' + openClaw.data()!.memoryPlugin?.slot : '' }}.</li>
               <li>{{ openClaw.data()!.agents?.bootstrapPendingCount || 0 }} agents are waiting on bootstrap.</li>
+              <li>{{ taskStatus() }}</li>
               <li>{{ secretStatus() }}</li>
             </ul>
+          </article>
+        </section>
+
+        <section class="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+          <article class="cc-list-card p-5">
+            <div class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--cc-text-soft)]">Channel summary</div>
+            <div class="mt-2 text-lg font-semibold text-[var(--cc-text)]">Configured surfaces</div>
+            <div class="mt-5 space-y-3">
+              @for (line of openClaw.data()!.channelSummary || []; track line) {
+                <div class="cc-stat-surface p-4 text-sm text-[var(--cc-text-muted)]">{{ line }}</div>
+              }
+            </div>
+          </article>
+
+          <article class="cc-list-card p-5">
+            <div class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--cc-text-soft)]">Task health</div>
+            <div class="mt-2 text-lg font-semibold text-[var(--cc-text)]">Recent runtime jobs</div>
+            <div class="mt-5 grid grid-cols-2 gap-4">
+              <div class="cc-stat-surface p-4"><div class="text-xs uppercase tracking-[0.18em] text-[var(--cc-text-soft)]">Total</div><div class="mt-2 text-2xl font-semibold text-[var(--cc-text)]">{{ openClaw.data()!.tasks?.total || 0 }}</div></div>
+              <div class="cc-stat-surface p-4"><div class="text-xs uppercase tracking-[0.18em] text-[var(--cc-text-soft)]">Failures</div><div class="mt-2 text-2xl font-semibold text-rose-300">{{ openClaw.data()!.tasks?.failures || 0 }}</div></div>
+              <div class="cc-stat-surface p-4"><div class="text-xs uppercase tracking-[0.18em] text-[var(--cc-text-soft)]">Warnings</div><div class="mt-2 text-2xl font-semibold text-amber-300">{{ openClaw.data()!.taskAudit?.warnings || 0 }}</div></div>
+              <div class="cc-stat-surface p-4"><div class="text-xs uppercase tracking-[0.18em] text-[var(--cc-text-soft)]">Errors</div><div class="mt-2 text-2xl font-semibold text-[var(--cc-text)]">{{ openClaw.data()!.taskAudit?.errors || 0 }}</div></div>
+            </div>
           </article>
         </section>
 
@@ -198,6 +224,15 @@ export class OpenClawPage {
     return 'warning';
   }
 
+  protected taskStatus(): string {
+    const failures = this.openClaw.data()?.tasks?.failures || 0;
+    const warnings = this.openClaw.data()?.taskAudit?.warnings || 0;
+    if (!failures && !warnings) return 'Recent runtime jobs look clean.';
+    if (failures && warnings) return `${failures} runtime job failures and ${warnings} audit warnings are currently reported.`;
+    if (failures) return `${failures} runtime job failures are currently reported.`;
+    return `${warnings} runtime audit warnings are currently reported.`;
+  }
+
   protected secretStatus(): string {
     const count = this.openClaw.data()?.secretDiagnostics?.length || 0;
     return count > 0 ? `${count} secret diagnostics need attention.` : 'No secret diagnostics are currently flagged.';
@@ -209,6 +244,11 @@ export class OpenClawPage {
     if (ageMs < 3_600_000) return `${Math.round(ageMs / 60_000)}m ago`;
     if (ageMs < 86_400_000) return `${Math.round(ageMs / 3_600_000)}h ago`;
     return `${Math.round(ageMs / 86_400_000)}d ago`;
+  }
+
+  protected formatMemory(bytes?: number | null): string {
+    if (!bytes) return 'memory unavailable';
+    return `${(bytes / 1024 / 1024).toFixed(1)} MB RSS`;
   }
 
   private async copyLink(): Promise<void> {

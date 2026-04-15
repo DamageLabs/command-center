@@ -610,6 +610,27 @@ function loadInfraProcesses() {
   }));
 }
 
+function readProcessSnapshot(pid) {
+  if (!pid) return null;
+
+  try {
+    const raw = execFileSync('ps', ['-p', String(pid), '-o', 'etime=,rss='], {
+      encoding: 'utf8',
+      timeout: 5000,
+    }).trim();
+
+    if (!raw) return null;
+
+    const [elapsed, rssKb] = raw.split(/\s+/, 2);
+    return {
+      elapsed,
+      memoryBytes: rssKb ? Number(rssKb) * 1024 : null,
+    };
+  } catch {
+    return null;
+  }
+}
+
 function fetchOpenClawRuntime() {
   beginSource('openclaw');
   try {
@@ -620,17 +641,26 @@ function fetchOpenClawRuntime() {
     });
     const status = JSON.parse(raw);
     const updatedAt = Date.now();
+    const gatewayPid = status.gatewayService?.runtime?.pid;
+    const gatewayProcess = readProcessSnapshot(gatewayPid);
+
     succeedSource('openclaw', updatedAt);
     return {
-      version: status.gateway?.self?.version || null,
+      version: status.runtimeVersion || status.gateway?.self?.version || null,
       gateway: status.gateway || null,
       gatewayService: status.gatewayService || null,
+      gatewayProcess,
       nodeService: status.nodeService || null,
       agents: status.agents || null,
+      sessions: status.sessions || null,
+      memory: status.memory || null,
       memoryPlugin: status.memoryPlugin || null,
-      updateAvailable: status.updateAvailable || null,
+      tasks: status.tasks || null,
+      taskAudit: status.taskAudit || null,
+      channelSummary: status.channelSummary || [],
+      updateAvailable: status.update?.registry?.latestVersion ? status.update.registry.latestVersion !== (status.runtimeVersion || status.gateway?.self?.version || null) : null,
       updateChannel: status.updateChannel || null,
-      updateInfo: status.doctor?.registry || null,
+      updateInfo: status.update?.registry || null,
       secretDiagnostics: status.secretDiagnostics || [],
       updatedAt,
     };
