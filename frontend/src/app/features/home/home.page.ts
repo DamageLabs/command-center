@@ -100,7 +100,7 @@ interface PinnedHomeItem {
         </section>
       </cc-card>
 
-      <article class="cc-panel mt-2 rounded-[28px] px-6 pb-6 pt-7 md:px-7 md:pb-7 md:pt-8">
+      <article class="cc-panel mt-3 rounded-[28px] px-6 pb-6 pt-7 md:px-7 md:pb-7 md:pt-8">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <p class="text-[11px] font-semibold uppercase tracking-[0.3em] text-[var(--cc-text-soft)]">Reminders</p>
