@@ -123,30 +123,140 @@ export class CommandPaletteComponent {
     },
   })));
 
-  private readonly actionCommands = computed<CommandPaletteItem[]>(() => [
-    {
-      id: 'action:refresh-all',
-      group: 'Actions',
-      title: 'Refresh all sources',
-      subtitle: 'Kick every dashboard resource refresh now',
-      keywords: 'refresh all sources reload dashboard sync update',
-      icon: '↻',
-      badge: 'Global',
-      emptyRank: 500,
-      run: () => this.data.refreshAll(),
-    },
-    {
-      id: 'action:toggle-theme',
-      group: 'Actions',
-      title: `Switch to ${this.theme.theme() === 'dark' ? 'light' : 'dark'} mode`,
-      subtitle: 'Toggle the dashboard theme',
-      keywords: 'theme dark light toggle appearance mode',
-      icon: '◐',
-      badge: 'Theme',
-      emptyRank: 490,
-      run: () => this.theme.toggleTheme(),
-    },
-  ]);
+  private readonly actionCommands = computed<CommandPaletteItem[]>(() => {
+    const actions: CommandPaletteItem[] = [
+      {
+        id: 'action:refresh-all',
+        group: 'Actions',
+        title: 'Refresh all sources',
+        subtitle: 'Kick every dashboard resource refresh now',
+        keywords: 'refresh all sources reload dashboard sync update',
+        icon: '↻',
+        badge: 'Global',
+        emptyRank: 500,
+        run: () => this.data.refreshAll(),
+      },
+      {
+        id: 'action:toggle-theme',
+        group: 'Actions',
+        title: `Switch to ${this.theme.theme() === 'dark' ? 'light' : 'dark'} mode`,
+        subtitle: 'Toggle the dashboard theme',
+        keywords: 'theme dark light toggle appearance mode',
+        icon: '◐',
+        badge: 'Theme',
+        emptyRank: 490,
+        run: () => this.theme.toggleTheme(),
+      },
+    ];
+
+    const query = this.query().trim().toLowerCase();
+    if (!query) return actions;
+
+    const repo = this.bestMatch(this.repoCommands(), query);
+    if (repo) {
+      actions.push(
+        {
+          id: `action:repo-active:${repo.id}`,
+          group: 'Actions',
+          title: `Open active issues for ${repo.title}`,
+          subtitle: `Jump into the ${repo.title} active queue`,
+          keywords: `${repo.title} repo active issues queue open`.toLowerCase(),
+          icon: '→',
+          badge: 'Repo',
+          emptyRank: 470,
+          run: repo.run,
+        },
+        {
+          id: `action:repo-backlog:${repo.id}`,
+          group: 'Actions',
+          title: `Open backlog for ${repo.title}`,
+          subtitle: `Filter the backlog view down to ${repo.title}`,
+          keywords: `${repo.title} repo backlog deferred`.toLowerCase(),
+          icon: '⋯',
+          badge: 'Repo',
+          emptyRank: 460,
+          run: () => {
+            void this.router.navigate(['/issues/backlog'], { queryParams: { repo: repo.title } });
+          },
+        },
+        {
+          id: `action:repo-copy:${repo.id}`,
+          group: 'Actions',
+          title: `Copy repo filter for ${repo.title}`,
+          subtitle: 'Copy the short repo name for filtering and quick search',
+          keywords: `${repo.title} repo copy filter`.toLowerCase(),
+          icon: '⧉',
+          badge: 'Copy',
+          emptyRank: 450,
+          run: () => {
+            void this.copyToClipboard(repo.title);
+          },
+        },
+      );
+    }
+
+    const issue = this.bestMatch(this.issueCommands(), query);
+    if (issue) {
+      actions.push(
+        {
+          id: `action:issue-open:${issue.id}`,
+          group: 'Actions',
+          title: `Open ${issue.subtitle}`,
+          subtitle: issue.title,
+          keywords: `${issue.title} ${issue.subtitle} open github issue`.toLowerCase(),
+          icon: '!',
+          badge: 'Issue',
+          emptyRank: 445,
+          run: issue.run,
+        },
+        {
+          id: `action:issue-copy:${issue.id}`,
+          group: 'Actions',
+          title: `Copy link for ${issue.subtitle}`,
+          subtitle: issue.title,
+          keywords: `${issue.title} ${issue.subtitle} copy link issue`.toLowerCase(),
+          icon: '⧉',
+          badge: 'Copy',
+          emptyRank: 440,
+          run: () => {
+            void this.copyToClipboard(this.objectUrl(issue.id));
+          },
+        },
+      );
+    }
+
+    const pr = this.bestMatch(this.prCommands(), query);
+    if (pr) {
+      actions.push(
+        {
+          id: `action:pr-open:${pr.id}`,
+          group: 'Actions',
+          title: `Open ${pr.subtitle}`,
+          subtitle: pr.title,
+          keywords: `${pr.title} ${pr.subtitle} open github pr pull request`.toLowerCase(),
+          icon: '⇅',
+          badge: 'PR',
+          emptyRank: 435,
+          run: pr.run,
+        },
+        {
+          id: `action:pr-copy:${pr.id}`,
+          group: 'Actions',
+          title: `Copy link for ${pr.subtitle}`,
+          subtitle: pr.title,
+          keywords: `${pr.title} ${pr.subtitle} copy link pr pull request`.toLowerCase(),
+          icon: '⧉',
+          badge: 'Copy',
+          emptyRank: 430,
+          run: () => {
+            void this.copyToClipboard(this.objectUrl(pr.id));
+          },
+        },
+      );
+    }
+
+    return actions;
+  });
 
   private readonly repoCommands = computed<CommandPaletteItem[]>(() => this.repoItems(this.data.repos().data() ?? []));
   private readonly issueCommands = computed<CommandPaletteItem[]>(() => this.issueItems(this.allIssues()));
@@ -265,6 +375,26 @@ export class CommandPaletteComponent {
 
     if (haystack.includes(query)) score += 30;
     return score + item.emptyRank / 10;
+  }
+
+  private bestMatch(items: CommandPaletteItem[], query: string): CommandPaletteItem | null {
+    return items
+      .map((item) => ({ item, score: this.scoreItem(item, query) }))
+      .filter((entry) => entry.score > 0)
+      .sort((a, b) => b.score - a.score)[0]?.item ?? null;
+  }
+
+  private objectUrl(id: string): string {
+    const [, repoAndNumber] = id.split(':');
+    if (!repoAndNumber) return '';
+    const [repoFull, number] = repoAndNumber.split('#');
+    if (!repoFull || !number) return '';
+    return `https://github.com/${repoFull}/${id.startsWith('pr:') ? 'pull' : 'issues'}/${number}`;
+  }
+
+  private async copyToClipboard(value: string): Promise<void> {
+    if (!value || typeof window === 'undefined' || !navigator?.clipboard) return;
+    await navigator.clipboard.writeText(value);
   }
 
   private repoItems(repos: RepoSummary[]): CommandPaletteItem[] {
