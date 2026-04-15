@@ -118,7 +118,7 @@ interface PinnedHomeItem {
             </div>
           }
 
-          <div class="space-y-3">
+          <div class="space-y-3 py-2">
             @if (!reminders.items().length) {
               <cc-state-panel kind="empty" title="No reminders yet" message="Add one above, or press N while on Home to capture a quick reminder."></cc-state-panel>
             } @else {
