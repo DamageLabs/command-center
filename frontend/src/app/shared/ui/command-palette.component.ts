@@ -3,10 +3,10 @@ import { Router } from '@angular/router';
 
 import { DashboardDataService } from '../../core/data/dashboard-data.service';
 import { ThemeService } from '../../core/theme/theme.service';
-import { IssueItem, PullRequestItem, RepoSummary } from '../../models/api';
+import { CalendarEvent, DailyNote, DecisionNote, IssueItem, PullRequestItem, RepoSummary, StandupSummary, TaskItem } from '../../models/api';
 import { NavItem } from '../models/nav-item';
 
-type CommandGroup = 'Actions' | 'Views' | 'Repos' | 'Issues' | 'PRs';
+type CommandGroup = 'Recent' | 'Actions' | 'Views' | 'Notes' | 'Tasks' | 'Events' | 'Repos' | 'Issues' | 'PRs';
 
 interface CommandPaletteItem {
   id: string;
@@ -24,6 +24,14 @@ interface CommandSection {
   group: CommandGroup;
   items: CommandPaletteItem[];
 }
+
+interface CommandSearchState {
+  query: string;
+  groups: CommandGroup[] | null;
+}
+
+const RECENT_COMMANDS_KEY = 'command-center-recent-commands';
+const RECENT_COMMANDS_LIMIT = 6;
 
 @Component({
   selector: 'cc-command-palette',
@@ -44,7 +52,7 @@ interface CommandSection {
                   class="cc-command-palette-input"
                   placeholder="Jump to a view, repo, issue, PR, or action..."
                 />
-                <div class="mt-1 text-xs text-[var(--cc-text-soft)]">Views, loaded GitHub objects, and quick actions in one place.</div>
+                <div class="mt-1 text-xs text-[var(--cc-text-soft)]">Views, loaded dashboard objects, and quick actions in one place.</div>
               </div>
             </div>
           </div>
@@ -90,6 +98,8 @@ interface CommandSection {
           <div class="cc-command-palette-footer">
             <span>↑ ↓ move</span>
             <span>↵ open</span>
+            <span>> actions</span>
+            <span>repo: / note: / task:</span>
             <span>esc close</span>
           </div>
         </section>
@@ -109,6 +119,8 @@ export class CommandPaletteComponent {
 
   protected readonly query = signal('');
   protected readonly activeIndex = signal(0);
+  private readonly recentIds = signal<string[]>(this.readRecentIds());
+  private readonly searchState = computed(() => this.parseQuery(this.query()));
 
   private readonly navCommands = computed<CommandPaletteItem[]>(() => this.navItems().map((item, index) => ({
     id: `view:${item.path}`,
@@ -149,7 +161,7 @@ export class CommandPaletteComponent {
       },
     ];
 
-    const query = this.query().trim().toLowerCase();
+    const query = this.searchState().query;
     if (!query) return actions;
 
     const repo = this.bestMatch(this.repoCommands(), query);
@@ -258,19 +270,40 @@ export class CommandPaletteComponent {
     return actions;
   });
 
+  private readonly noteCommands = computed<CommandPaletteItem[]>(() => this.noteItems(this.data.notes().data()?.dailyNote ?? null, this.data.notes().data()?.decisions ?? [], this.data.standup().data()));
+  private readonly taskCommands = computed<CommandPaletteItem[]>(() => this.taskItems(this.data.tasks().data()?.open ?? []));
+  private readonly eventCommands = computed<CommandPaletteItem[]>(() => this.eventItems(this.data.calendar().data() ?? []));
   private readonly repoCommands = computed<CommandPaletteItem[]>(() => this.repoItems(this.data.repos().data() ?? []));
   private readonly issueCommands = computed<CommandPaletteItem[]>(() => this.issueItems(this.allIssues()));
   private readonly prCommands = computed<CommandPaletteItem[]>(() => this.prItems(this.data.prs().data() ?? []));
+  private readonly allCommands = computed<CommandPaletteItem[]>(() => [
+    ...this.actionCommands(),
+    ...this.navCommands(),
+    ...this.noteCommands(),
+    ...this.taskCommands(),
+    ...this.eventCommands(),
+    ...this.repoCommands(),
+    ...this.issueCommands(),
+    ...this.prCommands(),
+  ]);
+  private readonly recentCommands = computed<CommandPaletteItem[]>(() => {
+    const byId = new Map(this.allCommands().map((item) => [item.id, item]));
+    return this.recentIds()
+      .map((id) => byId.get(id))
+      .filter(Boolean)
+      .map((item) => ({
+        ...item!,
+        group: 'Recent' as const,
+        badge: item!.badge || 'Recent',
+        emptyRank: 800,
+      }));
+  });
 
   protected readonly flatResults = computed<CommandPaletteItem[]>(() => {
-    const q = this.query().trim().toLowerCase();
-    const items = [
-      ...this.actionCommands(),
-      ...this.navCommands(),
-      ...this.repoCommands(),
-      ...this.issueCommands(),
-      ...this.prCommands(),
-    ];
+    const search = this.searchState();
+    const q = search.query;
+    const candidates = q ? this.allCommands() : [...this.recentCommands(), ...this.allCommands()];
+    const items = search.groups ? candidates.filter((item) => search.groups!.includes(item.group)) : candidates;
 
     return items
       .map((item) => ({ item, score: this.scoreItem(item, q) }))
@@ -281,7 +314,7 @@ export class CommandPaletteComponent {
   });
 
   protected readonly groupedResults = computed<CommandSection[]>(() => {
-    const groups: CommandGroup[] = ['Actions', 'Views', 'Repos', 'Issues', 'PRs'];
+    const groups: CommandGroup[] = ['Recent', 'Actions', 'Views', 'Notes', 'Tasks', 'Events', 'Repos', 'Issues', 'PRs'];
     return groups
       .map((group) => ({ group, items: this.flatResults().filter((item) => item.group === group) }))
       .filter((section) => section.items.length > 0);
@@ -342,6 +375,7 @@ export class CommandPaletteComponent {
   }
 
   protected select(item: CommandPaletteItem): void {
+    this.rememberCommand(item.id);
     item.run();
     this.close();
   }
@@ -354,6 +388,24 @@ export class CommandPaletteComponent {
     const data = this.data.issues().data();
     if (!data) return [];
     return [...data.urgent, ...data.active, ...data.deferred];
+  }
+
+  private parseQuery(value: string): CommandSearchState {
+    const raw = value.trim().toLowerCase();
+    if (!raw) return { query: '', groups: null };
+
+    if (raw.startsWith('>')) return { query: raw.slice(1).trim(), groups: ['Actions'] };
+    if (raw.startsWith('view:')) return { query: raw.slice(5).trim(), groups: ['Views'] };
+    if (raw.startsWith('repo:')) return { query: raw.slice(5).trim(), groups: ['Repos'] };
+    if (raw.startsWith('issue:')) return { query: raw.slice(6).trim(), groups: ['Issues'] };
+    if (raw.startsWith('#')) return { query: raw.slice(1).trim(), groups: ['Issues'] };
+    if (raw.startsWith('pr:')) return { query: raw.slice(3).trim(), groups: ['PRs'] };
+    if (raw.startsWith('note:')) return { query: raw.slice(5).trim(), groups: ['Notes'] };
+    if (raw.startsWith('task:')) return { query: raw.slice(5).trim(), groups: ['Tasks'] };
+    if (raw.startsWith('event:')) return { query: raw.slice(6).trim(), groups: ['Events'] };
+    if (raw.startsWith('cal:')) return { query: raw.slice(4).trim(), groups: ['Events'] };
+
+    return { query: raw, groups: null };
   }
 
   private scoreItem(item: CommandPaletteItem, query: string): number {
@@ -374,7 +426,30 @@ export class CommandPaletteComponent {
     }
 
     if (haystack.includes(query)) score += 30;
+    if (this.recentIds().includes(item.id)) score += 24;
     return score + item.emptyRank / 10;
+  }
+
+  private readRecentIds(): string[] {
+    if (typeof window === 'undefined') return [];
+    try {
+      const raw = window.localStorage.getItem(RECENT_COMMANDS_KEY);
+      const parsed = JSON.parse(raw || '[]');
+      return Array.isArray(parsed) ? parsed.filter((value) => typeof value === 'string').slice(0, RECENT_COMMANDS_LIMIT) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  private rememberCommand(id: string): void {
+    const next = [id, ...this.recentIds().filter((value) => value !== id)].slice(0, RECENT_COMMANDS_LIMIT);
+    this.recentIds.set(next);
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.setItem(RECENT_COMMANDS_KEY, JSON.stringify(next));
+    } catch {
+      // ignore localStorage failures
+    }
   }
 
   private bestMatch(items: CommandPaletteItem[], query: string): CommandPaletteItem | null {
@@ -395,6 +470,96 @@ export class CommandPaletteComponent {
   private async copyToClipboard(value: string): Promise<void> {
     if (!value || typeof window === 'undefined' || !navigator?.clipboard) return;
     await navigator.clipboard.writeText(value);
+  }
+
+  private noteItems(dailyNote: DailyNote | null, decisions: DecisionNote[], standup: StandupSummary | null): CommandPaletteItem[] {
+    const items: CommandPaletteItem[] = [];
+
+    if (dailyNote) {
+      items.push({
+        id: `note:daily:${dailyNote.date}`,
+        group: 'Notes',
+        title: dailyNote.isToday ? 'Daily note (today)' : `Daily note · ${dailyNote.date}`,
+        subtitle: dailyNote.preview || dailyNote.date,
+        keywords: `${dailyNote.date} daily note journal today ${dailyNote.preview}`.toLowerCase(),
+        icon: '✎',
+        badge: dailyNote.isToday ? 'Today' : 'Daily',
+        emptyRank: dailyNote.isToday ? 260 : 230,
+        run: () => {
+          void this.router.navigateByUrl('/notes');
+        },
+      });
+    }
+
+    for (const decision of decisions.slice(0, 6)) {
+      items.push({
+        id: `note:decision:${decision.title}`,
+        group: 'Notes',
+        title: decision.title,
+        subtitle: `${decision.date}${decision.status ? ` · ${decision.status}` : ''}`,
+        keywords: `${decision.title} ${decision.date} decision note ${decision.status || ''} ${decision.preview}`.toLowerCase(),
+        icon: '◆',
+        badge: decision.status || 'Decision',
+        emptyRank: 220,
+        run: () => {
+          void this.router.navigateByUrl('/notes');
+        },
+      });
+    }
+
+    if (standup) {
+      items.push({
+        id: `note:standup:${standup.date}`,
+        group: 'Notes',
+        title: standup.title,
+        subtitle: `${standup.sections.length} repo section${standup.sections.length === 1 ? '' : 's'}`,
+        keywords: `${standup.title} ${standup.date} standup status ${standup.sections.map((section) => section.repo).join(' ')}`.toLowerCase(),
+        icon: '☰',
+        badge: standup.isToday ? 'Today' : 'Standup',
+        emptyRank: standup.isToday ? 250 : 225,
+        run: () => {
+          void this.router.navigateByUrl('/notes');
+        },
+      });
+    }
+
+    return items;
+  }
+
+  private taskItems(tasks: TaskItem[]): CommandPaletteItem[] {
+    return tasks.slice(0, 8).map((task) => ({
+      id: `task:${task.title}:${task.source}`,
+      group: 'Tasks',
+      title: task.title,
+      subtitle: `${task.source}${task.section ? ` · ${task.section}` : ''}${task.due ? ` · due ${task.due}` : ''}`,
+      keywords: `${task.title} ${task.source} ${task.section || ''} ${task.due || ''} task open`.toLowerCase(),
+      icon: '✓',
+      badge: task.due ? 'Due' : 'Task',
+      emptyRank: task.due ? 215 : 205,
+      run: () => {
+        void this.router.navigateByUrl('/tasks');
+      },
+    }));
+  }
+
+  private eventItems(events: CalendarEvent[]): CommandPaletteItem[] {
+    const now = Date.now();
+    return events
+      .filter((event) => new Date(event.start).getTime() >= now)
+      .slice(0, 8)
+      .map((event) => ({
+        id: `event:${event.start}:${event.title}`,
+        group: 'Events',
+        title: event.title,
+        subtitle: `${this.eventDateLabel(event)} · ${this.eventTimeLabel(event)} · ${event.calendar}`,
+        keywords: `${event.title} ${event.calendar} ${event.location || ''} event calendar ${event.start}`.toLowerCase(),
+        icon: '◷',
+        badge: event.allDay ? 'All day' : 'Upcoming',
+        emptyRank: 210,
+        run: () => {
+          void this.router.navigateByUrl('/calendar');
+        },
+      }));
   }
 
   private repoItems(repos: RepoSummary[]): CommandPaletteItem[] {
@@ -427,6 +592,15 @@ export class CommandPaletteComponent {
         if (typeof window !== 'undefined') window.open(issue.url, '_blank', 'noopener');
       },
     }));
+  }
+
+  private eventDateLabel(event: CalendarEvent): string {
+    return new Date(event.start).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+
+  private eventTimeLabel(event: CalendarEvent): string {
+    if (event.allDay) return 'all day';
+    return new Date(event.start).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
   }
 
   private prItems(prs: PullRequestItem[]): CommandPaletteItem[] {
