@@ -138,28 +138,6 @@ interface PinnedHomeItem {
         </div>
       </cc-card>
 
-      <section class="rounded-3xl border border-[var(--cc-border)] bg-[var(--cc-surface)] p-6 md:p-7">
-        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <div class="text-sm font-semibold text-[var(--cc-text)]">Home layout</div>
-            <div class="mt-2 text-sm text-[var(--cc-text-muted)]">{{ layoutSummary() }}</div>
-          </div>
-          <div class="flex flex-wrap gap-3">
-            <button type="button" (click)="homeLayout.toggleCompact()" class="cc-action-button">{{ homeLayout.layout().compact ? 'Compact on' : 'Compact mode' }}</button>
-            <button type="button" (click)="homeLayout.toggleCustomize()" class="cc-action-button">{{ homeLayout.customizeMode() ? 'Done customizing' : 'Customize' }}</button>
-            <button type="button" (click)="homeLayout.reset()" class="cc-action-button">Reset layout</button>
-          </div>
-        </div>
-
-        @if (hiddenSections().length) {
-          <div class="mt-4 flex flex-wrap gap-2">
-            @for (sectionId of hiddenSections(); track sectionId) {
-              <button type="button" (click)="homeLayout.restore(sectionId)" class="cc-small-button">Show {{ sectionLabel(sectionId) }}</button>
-            }
-          </div>
-        }
-      </section>
-
       <section class="grid gap-6" [class.lg:grid-cols-3]="!homeLayout.layout().compact" [class.lg:grid-cols-2]="homeLayout.layout().compact">
         @for (sectionId of homeLayout.layout().order; track sectionId; let index = $index) {
           @if (!isSectionHidden(sectionId)) {
