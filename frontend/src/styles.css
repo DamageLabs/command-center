@@ -361,9 +361,9 @@ code {
 }
 
 .cc-panel-action-accent {
-  border-color: rgba(99, 102, 241, 0.24);
-  background: rgba(99, 102, 241, 0.14);
-  color: #dbeafe;
+  border-color: var(--cc-accent-border);
+  background: var(--cc-accent-surface);
+  color: var(--cc-accent-text);
 }
 
 .cc-command-palette-backdrop {
