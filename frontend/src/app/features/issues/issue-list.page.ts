@@ -5,6 +5,8 @@ import { DashboardDataService } from '../../core/data/dashboard-data.service';
 import { PinService } from '../../core/state/pin.service';
 import { IssueItem } from '../../models/api';
 import { ViewShellComponent } from '../../layout/view-shell.component';
+import { STANDARD_PANEL_ACTIONS } from '../../shared/models/panel-action';
+import { PanelActionsComponent } from '../../shared/ui/panel-actions.component';
 import { StatePanelComponent } from '../../shared/ui/state-panel.component';
 
 type IssueSection = {
@@ -16,11 +18,11 @@ type IssueSection = {
 
 @Component({
   selector: 'app-issue-list-page',
-  imports: [ViewShellComponent, StatePanelComponent],
+  imports: [ViewShellComponent, PanelActionsComponent, StatePanelComponent],
   template: `
     <app-view-shell [eyebrow]="eyebrow()" [title]="title()" [subtitle]="subtitle()" [meta]="meta()">
       <div view-actions class="flex flex-wrap items-center gap-3">
-        <button type="button" (click)="issues.refresh()" class="cc-action-button">Refresh</button>
+        <cc-panel-actions [actions]="headerActions" (actionSelected)="onHeaderAction($event)"></cc-panel-actions>
         <input
           [value]="searchText()"
           (input)="searchText.set($any($event.target).value)"
@@ -179,6 +181,7 @@ export class IssueListPage {
   protected readonly issues = this.data.issues();
   protected readonly searchText = signal('');
   protected readonly repoFilter = signal<string | null>(this.route.snapshot.queryParamMap.get('repo'));
+  protected readonly headerActions = STANDARD_PANEL_ACTIONS;
 
   protected readonly priority = this.route.snapshot.data['priority'] as 'urgent' | 'active' | 'backlog';
   protected readonly title = computed(() => this.route.snapshot.data['title'] as string);
@@ -239,6 +242,17 @@ export class IssueListPage {
     this.pins.toggle('issue', this.issueKey(issue));
   }
 
+  protected onHeaderAction(actionId: string): void {
+    if (actionId === 'refresh') {
+      this.issues.refresh();
+      return;
+    }
+
+    if (actionId === 'copy') {
+      void this.copyLink();
+    }
+  }
+
   protected close(issue: IssueItem): void {
     if (!window.confirm(`Close issue #${issue.number}?`)) return;
     this.data.closeIssue(issue.repoFull, issue.number);
@@ -283,6 +297,11 @@ export class IssueListPage {
     if (issue.priority === 'urgent') return 'rgba(251, 113, 133, 0.8)';
     if (issue.priority === 'active') return 'rgba(56, 189, 248, 0.8)';
     return 'rgba(148, 163, 184, 0.5)';
+  }
+
+  private async copyLink(): Promise<void> {
+    if (typeof window === 'undefined' || !navigator?.clipboard) return;
+    await navigator.clipboard.writeText(window.location.href);
   }
 
   protected timeAgo(iso: string): string {

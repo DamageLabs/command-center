@@ -5,15 +5,17 @@ import { DashboardDataService } from '../../core/data/dashboard-data.service';
 import { PinService } from '../../core/state/pin.service';
 import { RepoSummary } from '../../models/api';
 import { ViewShellComponent } from '../../layout/view-shell.component';
+import { STANDARD_PANEL_ACTIONS } from '../../shared/models/panel-action';
+import { PanelActionsComponent } from '../../shared/ui/panel-actions.component';
 import { StatePanelComponent } from '../../shared/ui/state-panel.component';
 
 @Component({
   selector: 'app-repos-page',
-  imports: [ViewShellComponent, StatePanelComponent],
+  imports: [ViewShellComponent, PanelActionsComponent, StatePanelComponent],
   template: `
     <app-view-shell eyebrow="Repositories" title="Repositories" subtitle="Repository health, open issue counts, and quick handoff into issue views." [meta]="meta()">
       <div view-actions class="flex flex-wrap items-center gap-3">
-        <button type="button" (click)="repos.refresh()" class="cc-action-button">Refresh</button>
+        <cc-panel-actions [actions]="headerActions" (actionSelected)="onHeaderAction($event)"></cc-panel-actions>
         <input [value]="searchText()" (input)="searchText.set($any($event.target).value)" class="cc-input min-w-64 px-4 py-2 text-sm" placeholder="Search repos…" />
       </div>
 
@@ -101,6 +103,7 @@ export class ReposPage {
 
   protected readonly repos = this.data.repos();
   protected readonly searchText = signal('');
+  protected readonly headerActions = STANDARD_PANEL_ACTIONS;
   protected readonly allItems = computed(() => [...(this.repos.data() ?? [])].sort((a, b) => b.openIssues - a.openIssues));
   protected readonly filteredItems = computed(() => {
     const q = this.searchText().trim().toLowerCase();
@@ -119,8 +122,24 @@ export class ReposPage {
     this.pins.toggle('repo', repo.repoFull);
   }
 
+  protected onHeaderAction(actionId: string): void {
+    if (actionId === 'refresh') {
+      this.repos.refresh();
+      return;
+    }
+
+    if (actionId === 'copy') {
+      void this.copyLink();
+    }
+  }
+
   protected openIssueFilter(repo: RepoSummary): void {
     this.router.navigate(['/issues/active'], { queryParams: { repo: repo.repo } });
+  }
+
+  private async copyLink(): Promise<void> {
+    if (typeof window === 'undefined' || !navigator?.clipboard) return;
+    await navigator.clipboard.writeText(window.location.href);
   }
 
   protected timeAgo(iso: string): string {

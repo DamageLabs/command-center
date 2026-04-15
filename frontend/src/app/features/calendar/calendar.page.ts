@@ -4,15 +4,17 @@ import { DashboardDataService } from '../../core/data/dashboard-data.service';
 import { PinService } from '../../core/state/pin.service';
 import { CalendarEvent } from '../../models/api';
 import { ViewShellComponent } from '../../layout/view-shell.component';
+import { STANDARD_PANEL_ACTIONS } from '../../shared/models/panel-action';
+import { PanelActionsComponent } from '../../shared/ui/panel-actions.component';
 import { StatePanelComponent } from '../../shared/ui/state-panel.component';
 
 @Component({
   selector: 'app-calendar-page',
-  imports: [ViewShellComponent, StatePanelComponent],
+  imports: [ViewShellComponent, PanelActionsComponent, StatePanelComponent],
   template: `
     <app-view-shell eyebrow="Calendar" title="Calendar" subtitle="Upcoming events with quick pinning." [meta]="meta()">
       <div view-actions class="flex flex-wrap items-center gap-3">
-        <button type="button" (click)="calendar.refresh()" class="cc-action-button">Refresh</button>
+        <cc-panel-actions [actions]="headerActions" (actionSelected)="onHeaderAction($event)"></cc-panel-actions>
       </div>
 
       @if (calendar.isLoading()) {
@@ -68,6 +70,7 @@ export class CalendarPage {
   protected readonly pins = inject(PinService);
 
   protected readonly calendar = this.data.calendar();
+  protected readonly headerActions = STANDARD_PANEL_ACTIONS;
   protected readonly allItems = computed(() => this.calendar.data() ?? []);
   protected readonly pinnedItems = computed(() => this.allItems().filter((event) => this.pins.isPinned('event', this.eventKey(event))));
   protected readonly unpinnedItems = computed(() => this.allItems().filter((event) => !this.pins.isPinned('event', this.eventKey(event))));
@@ -75,6 +78,22 @@ export class CalendarPage {
 
   protected togglePinned(event: CalendarEvent): void {
     this.pins.toggle('event', this.eventKey(event));
+  }
+
+  protected onHeaderAction(actionId: string): void {
+    if (actionId === 'refresh') {
+      this.calendar.refresh();
+      return;
+    }
+
+    if (actionId === 'copy') {
+      void this.copyLink();
+    }
+  }
+
+  private async copyLink(): Promise<void> {
+    if (typeof window === 'undefined' || !navigator?.clipboard) return;
+    await navigator.clipboard.writeText(window.location.href);
   }
 
   protected eventKey(event: CalendarEvent): string {

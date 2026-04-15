@@ -2,16 +2,18 @@ import { Component, computed, inject } from '@angular/core';
 
 import { DashboardDataService } from '../../core/data/dashboard-data.service';
 import { ViewShellComponent } from '../../layout/view-shell.component';
+import { STANDARD_PANEL_ACTIONS } from '../../shared/models/panel-action';
 import { PillComponent } from '../../shared/ui/pill.component';
+import { PanelActionsComponent } from '../../shared/ui/panel-actions.component';
 import { StatePanelComponent } from '../../shared/ui/state-panel.component';
 
 @Component({
   selector: 'app-notes-page',
-  imports: [ViewShellComponent, PillComponent, StatePanelComponent],
+  imports: [ViewShellComponent, PillComponent, PanelActionsComponent, StatePanelComponent],
   template: `
     <app-view-shell eyebrow="Notes" title="Notes" subtitle="Daily note, recent decisions, and latest standup context." [meta]="meta()">
       <div view-actions class="flex flex-wrap items-center gap-3">
-        <button type="button" (click)="refresh()" class="cc-action-button">Refresh</button>
+        <cc-panel-actions [actions]="headerActions" (actionSelected)="onHeaderAction($event)"></cc-panel-actions>
       </div>
 
       <section class="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
@@ -109,6 +111,7 @@ export class NotesPage {
 
   protected readonly notes = this.data.notes();
   protected readonly standup = this.data.standup();
+  protected readonly headerActions = STANDARD_PANEL_ACTIONS;
   protected readonly meta = computed(() => {
     const noteBits = this.notes.data()?.dailyNote ? this.notes.data()!.dailyNote!.date : 'No recent daily note';
     const decisions = this.notes.data()?.decisions.length ?? 0;
@@ -118,6 +121,22 @@ export class NotesPage {
   protected refresh(): void {
     this.notes.refresh();
     this.standup.refresh();
+  }
+
+  protected onHeaderAction(actionId: string): void {
+    if (actionId === 'refresh') {
+      this.refresh();
+      return;
+    }
+
+    if (actionId === 'copy') {
+      void this.copyLink();
+    }
+  }
+
+  private async copyLink(): Promise<void> {
+    if (typeof window === 'undefined' || !navigator?.clipboard) return;
+    await navigator.clipboard.writeText(window.location.href);
   }
 
   protected cleanedBullet(bullet: string): string {
