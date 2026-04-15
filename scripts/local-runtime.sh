@@ -32,6 +32,7 @@ RestartSec=3
 KillMode=mixed
 TimeoutStopSec=20
 Environment=NODE_ENV=development
+Environment=PATH=%h/.npm-global/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 [Install]
 WantedBy=default.target
@@ -53,6 +54,7 @@ RestartSec=3
 KillMode=mixed
 TimeoutStopSec=20
 Environment=NODE_ENV=development
+Environment=PATH=%h/.npm-global/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 [Install]
 WantedBy=default.target
