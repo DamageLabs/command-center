@@ -100,15 +100,17 @@ interface PinnedHomeItem {
         </section>
       </cc-card>
 
-      <cc-card eyebrow="Reminders" title="Keep the little stuff visible" [compact]="true">
-        <div class="space-y-5">
-          <div class="flex items-start justify-between gap-4">
-            <div>
-              <p class="text-sm text-[var(--cc-text-muted)]">Quick capture for things you do not want falling through the cracks.</p>
-            </div>
-            <button type="button" (click)="openReminderComposer()" class="cc-action-button">＋ Add</button>
+      <article class="rounded-3xl border border-[var(--cc-border)] bg-[var(--cc-surface)] p-6 md:p-7">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p class="text-[11px] font-semibold uppercase tracking-[0.3em] text-[var(--cc-text-soft)]">Reminders</p>
+            <h2 class="mt-3 text-[1.6rem] font-semibold tracking-tight text-[var(--cc-text)]">Keep the little stuff visible</h2>
+            <p class="mt-3 text-sm leading-7 text-[var(--cc-text-muted)]">Quick capture for things you do not want falling through the cracks.</p>
           </div>
+          <button type="button" (click)="openReminderComposer()" class="cc-action-button">＋ Add</button>
+        </div>
 
+        <div class="mt-5 space-y-5">
           @if (composerOpen()) {
             <div class="cc-list-card grid gap-3 p-4 md:grid-cols-[1fr_180px_auto_auto]">
               <input [value]="reminderText()" (input)="reminderText.set($any($event.target).value)" (keydown)="onReminderKeydown($event)" class="cc-input rounded-xl px-4 py-3 text-sm" placeholder="What do you need to remember?" />
@@ -118,7 +120,7 @@ interface PinnedHomeItem {
             </div>
           }
 
-          <div class="space-y-3 py-2">
+          <div class="space-y-3">
             @if (!reminders.items().length) {
               <cc-state-panel kind="empty" title="No reminders yet" message="Add one above, or press N while on Home to capture a quick reminder."></cc-state-panel>
             } @else {
@@ -138,7 +140,7 @@ interface PinnedHomeItem {
             }
           </div>
         </div>
-      </cc-card>
+      </article>
 
       <section class="grid gap-6" [class.lg:grid-cols-3]="!homeLayout.layout().compact" [class.lg:grid-cols-2]="homeLayout.layout().compact">
         @for (sectionId of homeLayout.layout().order; track sectionId; let index = $index) {
