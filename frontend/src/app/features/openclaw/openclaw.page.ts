@@ -1,15 +1,17 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 
 import { DashboardDataService } from '../../core/data/dashboard-data.service';
+import type { OpenClawUsageDay, OpenClawUsageModel, OpenClawUsageWindow, OpenClawUsageWindowKey } from '../../models/api';
 import { ViewShellComponent } from '../../layout/view-shell.component';
 import { STANDARD_PANEL_ACTIONS } from '../../shared/models/panel-action';
 import { PanelActionsComponent } from '../../shared/ui/panel-actions.component';
 import { PillComponent } from '../../shared/ui/pill.component';
 import { StatePanelComponent } from '../../shared/ui/state-panel.component';
+import { TrendBarsComponent } from '../../shared/ui/trend-bars.component';
 
 @Component({
   selector: 'app-openclaw-page',
-  imports: [ViewShellComponent, PanelActionsComponent, PillComponent, StatePanelComponent],
+  imports: [ViewShellComponent, PanelActionsComponent, PillComponent, StatePanelComponent, TrendBarsComponent],
   template: `
     <app-view-shell eyebrow="OpenClaw" title="OpenClaw Runtime" subtitle="Gateway reachability, service state, agents, and the local runtime posture without leaving command-center." [meta]="meta()">
       <div view-actions class="flex flex-wrap items-center gap-3">
@@ -147,6 +149,111 @@ import { StatePanelComponent } from '../../shared/ui/state-panel.component';
               <div class="cc-stat-surface p-4"><div class="text-xs uppercase tracking-[0.18em] text-[var(--cc-text-soft)]">Warnings</div><div class="mt-2 text-2xl font-semibold text-amber-300">{{ openClaw.data()!.taskAudit?.warnings || 0 }}</div></div>
               <div class="cc-stat-surface p-4"><div class="text-xs uppercase tracking-[0.18em] text-[var(--cc-text-soft)]">Errors</div><div class="mt-2 text-2xl font-semibold text-[var(--cc-text)]">{{ openClaw.data()!.taskAudit?.errors || 0 }}</div></div>
             </div>
+          </article>
+        </section>
+
+        <section class="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+          <article class="cc-list-card p-5">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <div class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--cc-text-soft)]">Token and cost analytics</div>
+                <div class="mt-2 text-lg font-semibold text-[var(--cc-text)]">Model usage over time</div>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                @for (window of usageWindowOptions; track window.key) {
+                  <button type="button" (click)="selectUsageWindow(window.key)" class="cc-small-button rounded-full px-3 py-1.5 text-xs" [class.cc-small-button-accent]="selectedUsageWindow() === window.key">
+                    {{ window.label }}
+                  </button>
+                }
+              </div>
+            </div>
+
+            @if (!openClaw.data()!.usageAnalytics.usageEvents) {
+              <cc-state-panel class="mt-5" kind="empty" title="No OpenClaw usage data yet" message="Assistant token and cost analytics will appear here once OpenClaw records usage-bearing responses."></cc-state-panel>
+            } @else if (!selectedUsageWindowData() || !selectedUsageWindowData()!.calls) {
+              <cc-state-panel class="mt-5" kind="empty" title="No usage in this window" message="Try another time range to see recorded token and cost activity."></cc-state-panel>
+            } @else {
+              <div class="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                <div class="cc-stat-surface p-4"><div class="text-xs uppercase tracking-[0.18em] text-[var(--cc-text-soft)]">Spend</div><div class="mt-2 text-2xl font-semibold text-emerald-300">{{ formatCost(selectedUsageWindowData()!.totalCostUsd) }}</div><div class="mt-2 text-xs text-[var(--cc-text-soft)]">{{ usageCoverageText() }}</div></div>
+                <div class="cc-stat-surface p-4"><div class="text-xs uppercase tracking-[0.18em] text-[var(--cc-text-soft)]">Input</div><div class="mt-2 text-2xl font-semibold text-[var(--cc-text)]">{{ formatTokenCount(selectedUsageWindowData()!.inputTokens) }}</div><div class="mt-2 text-xs text-[var(--cc-text-soft)]">prompt tokens</div></div>
+                <div class="cc-stat-surface p-4"><div class="text-xs uppercase tracking-[0.18em] text-[var(--cc-text-soft)]">Output</div><div class="mt-2 text-2xl font-semibold text-[var(--cc-text)]">{{ formatTokenCount(selectedUsageWindowData()!.outputTokens) }}</div><div class="mt-2 text-xs text-[var(--cc-text-soft)]">completion tokens</div></div>
+                <div class="cc-stat-surface p-4"><div class="text-xs uppercase tracking-[0.18em] text-[var(--cc-text-soft)]">Cache read</div><div class="mt-2 text-2xl font-semibold text-[var(--cc-text)]">{{ formatTokenCount(selectedUsageWindowData()!.cacheReadTokens) }}</div><div class="mt-2 text-xs text-[var(--cc-text-soft)]">reused tokens</div></div>
+                <div class="cc-stat-surface p-4"><div class="text-xs uppercase tracking-[0.18em] text-[var(--cc-text-soft)]">Cache write</div><div class="mt-2 text-2xl font-semibold text-[var(--cc-text)]">{{ formatTokenCount(selectedUsageWindowData()!.cacheWriteTokens) }}</div><div class="mt-2 text-xs text-[var(--cc-text-soft)]">new cache tokens</div></div>
+                <div class="cc-stat-surface p-4"><div class="text-xs uppercase tracking-[0.18em] text-[var(--cc-text-soft)]">Total tokens</div><div class="mt-2 text-2xl font-semibold text-[var(--cc-text)]">{{ formatTokenCount(selectedUsageWindowData()!.totalTokens) }}</div><div class="mt-2 text-xs text-[var(--cc-text-soft)]">all assistant calls</div></div>
+                <div class="cc-stat-surface p-4"><div class="text-xs uppercase tracking-[0.18em] text-[var(--cc-text-soft)]">Top model</div><div class="mt-2 text-lg font-semibold text-[var(--cc-text)]">{{ usageTopModel() }}</div><div class="mt-2 text-xs text-[var(--cc-text-soft)]">{{ selectedUsageWindowData()!.calls }} assistant calls</div></div>
+              </div>
+
+              <div class="mt-5 flex flex-wrap items-center justify-between gap-3 text-xs text-[var(--cc-text-soft)]">
+                <div>{{ usageFootnote() }}</div>
+                <cc-pill [tone]="selectedUsageWindowData()!.costAvailableCalls === selectedUsageWindowData()!.calls ? 'success' : 'warning'">{{ selectedUsageWindowData()!.costAvailableCalls }}/{{ selectedUsageWindowData()!.calls }} costed</cc-pill>
+              </div>
+
+              <div class="mt-5 space-y-3">
+                @for (model of selectedUsageModels(); track model.model) {
+                  <div class="cc-stat-surface p-4">
+                    <div class="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <div class="text-sm font-semibold text-[var(--cc-text)]">{{ model.model }}</div>
+                        <div class="mt-2 text-xs text-[var(--cc-text-soft)]">Last seen {{ formatAgeFromTimestamp(model.lastSeenAt) }}</div>
+                      </div>
+                      <div class="flex flex-wrap items-center gap-2">
+                        <cc-pill tone="info">{{ model.calls }} calls</cc-pill>
+                        <cc-pill [tone]="model.costAvailableCalls ? 'success' : 'warning'">{{ formatCost(model.totalCostUsd) }}</cc-pill>
+                        <cc-pill [tone]="modelUsageShareTone(model)">{{ modelUsageShareLabel(model) }}</cc-pill>
+                      </div>
+                    </div>
+                    <dl class="mt-4 grid gap-3 text-sm text-[var(--cc-text-muted)] md:grid-cols-3 xl:grid-cols-6">
+                      <div><dt class="text-[var(--cc-text-soft)]">Input</dt><dd class="mt-1 font-medium text-[var(--cc-text)]">{{ formatTokenCount(model.inputTokens) }}</dd></div>
+                      <div><dt class="text-[var(--cc-text-soft)]">Output</dt><dd class="mt-1 font-medium text-[var(--cc-text)]">{{ formatTokenCount(model.outputTokens) }}</dd></div>
+                      <div><dt class="text-[var(--cc-text-soft)]">Cache read</dt><dd class="mt-1 font-medium text-[var(--cc-text)]">{{ formatTokenCount(model.cacheReadTokens) }}</dd></div>
+                      <div><dt class="text-[var(--cc-text-soft)]">Cache write</dt><dd class="mt-1 font-medium text-[var(--cc-text)]">{{ formatTokenCount(model.cacheWriteTokens) }}</dd></div>
+                      <div><dt class="text-[var(--cc-text-soft)]">Total</dt><dd class="mt-1 font-medium text-[var(--cc-text)]">{{ formatTokenCount(model.totalTokens) }}</dd></div>
+                      <div><dt class="text-[var(--cc-text-soft)]">Spend</dt><dd class="mt-1 font-medium text-[var(--cc-text)]">{{ formatCost(model.totalCostUsd) }}</dd></div>
+                    </dl>
+                  </div>
+                }
+              </div>
+            }
+          </article>
+
+          <article class="cc-list-card p-5">
+            <div class="flex items-center justify-between gap-3">
+              <div>
+                <div class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--cc-text-soft)]">Spend trend</div>
+                <div class="mt-2 text-lg font-semibold text-[var(--cc-text)]">Daily usage shape</div>
+              </div>
+              <cc-pill tone="info">{{ selectedUsageWindowData()?.daily?.length || 0 }} days</cc-pill>
+            </div>
+
+            @if (!selectedUsageWindowData() || !selectedUsageWindowData()!.daily.length) {
+              <cc-state-panel class="mt-5" kind="empty" title="No daily usage trend" message="Daily model spend and token activity will show up here for the selected window."></cc-state-panel>
+            } @else {
+              <div class="cc-stat-surface mt-5 p-4">
+                <div class="text-sm font-semibold text-[var(--cc-text)]">Daily spend</div>
+                <div class="mt-3 flex items-end gap-4">
+                  <cc-trend-bars class="flex-1" [values]="selectedUsageCostTrend()" tone="emerald" [compact]="false"></cc-trend-bars>
+                  <div class="max-w-40 text-xs leading-5 text-[var(--cc-text-soft)]">{{ usageCoverageText() }}</div>
+                </div>
+              </div>
+
+              <div class="mt-4 space-y-3">
+                @for (day of selectedUsageDailyPreview(); track day.date) {
+                  <div class="cc-stat-surface p-4">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <div class="text-sm font-semibold text-[var(--cc-text)]">{{ formatUsageDate(day.date) }}</div>
+                        <div class="mt-2 text-xs text-[var(--cc-text-soft)]">{{ day.calls }} assistant calls</div>
+                      </div>
+                      <cc-pill [tone]="day.totalCostUsd ? 'success' : 'warning'">{{ formatCost(day.totalCostUsd) }}</cc-pill>
+                    </div>
+                    <dl class="mt-4 grid grid-cols-2 gap-3 text-sm text-[var(--cc-text-muted)]">
+                      <div><dt class="text-[var(--cc-text-soft)]">Tokens</dt><dd class="mt-1 font-medium text-[var(--cc-text)]">{{ formatTokenCount(day.totalTokens) }}</dd></div>
+                      <div><dt class="text-[var(--cc-text-soft)]">Cache read</dt><dd class="mt-1 font-medium text-[var(--cc-text)]">{{ formatTokenCount(day.cacheReadTokens) }}</dd></div>
+                    </dl>
+                  </div>
+                }
+              </div>
+            }
           </article>
         </section>
 
@@ -329,6 +436,13 @@ export class OpenClawPage {
 
   protected readonly openClaw = this.data.openClaw();
   protected readonly headerActions = STANDARD_PANEL_ACTIONS;
+  protected readonly usageWindowOptions: ReadonlyArray<{ key: OpenClawUsageWindowKey; label: string }> = [
+    { key: 'today', label: 'Today' },
+    { key: '7d', label: '7d' },
+    { key: '30d', label: '30d' },
+    { key: 'all', label: 'All time' },
+  ];
+  protected readonly selectedUsageWindow = signal<OpenClawUsageWindowKey>('7d');
   protected readonly currentVersion = computed(() => this.openClaw.data()?.version || this.openClaw.data()?.gateway?.self?.version || 'unknown');
   protected readonly latestVersion = computed(() => this.openClaw.data()?.updateInfo?.latestVersion || 'available');
   protected readonly showUpdateBadge = computed(() => {
@@ -338,12 +452,32 @@ export class OpenClawPage {
   });
   protected readonly activeSessionCount = computed(() => (this.openClaw.data()?.activeSessions ?? []).filter((session) => session.active).length);
   protected readonly errorFeedCount = computed(() => this.openClaw.data()?.errorFeed?.length || 0);
+  protected readonly selectedUsageWindowData = computed<OpenClawUsageWindow | null>(() => this.openClaw.data()?.usageAnalytics?.windows?.[this.selectedUsageWindow()] ?? null);
+  protected readonly selectedUsageModels = computed<OpenClawUsageModel[]>(() => (this.selectedUsageWindowData()?.models ?? []).slice(0, 8));
+  protected readonly selectedUsageCostTrend = computed<number[]>(() => (this.selectedUsageWindowData()?.daily ?? []).slice(-14).map((day) => day.totalCostUsd ?? 0));
+  protected readonly selectedUsageDailyPreview = computed<OpenClawUsageDay[]>(() => [...(this.selectedUsageWindowData()?.daily ?? [])].slice(-7).reverse());
+  protected readonly usageTopModel = computed(() => this.selectedUsageModels()[0]?.model || '—');
+  protected readonly usageCoverageText = computed(() => {
+    const window = this.selectedUsageWindowData();
+    if (!window || !window.calls) return 'No assistant responses in this window.';
+    if (window.costAvailableCalls === window.calls) return `Cost available for all ${window.calls} calls.`;
+    return `Cost available for ${window.costAvailableCalls} of ${window.calls} calls.`;
+  });
+  protected readonly usageFootnote = computed(() => {
+    const usage = this.openClaw.data()?.usageAnalytics;
+    if (!usage) return 'Usage analytics unavailable.';
+    const duplicates = usage.duplicateEvents ? `, deduped ${usage.duplicateEvents} duplicate entries` : '';
+    return `${usage.usageEvents} assistant calls across ${usage.filesScanned} transcript files${duplicates}.`;
+  });
   protected readonly meta = computed(() => {
     const gateway = this.openClaw.data()?.gateway?.reachable ? 'gateway reachable' : 'gateway down';
     const service = this.openClaw.data()?.gatewayService?.runtime?.status || 'unknown service';
     const sessions = this.activeSessionCount();
     const issues = this.errorFeedCount();
-    return `${gateway} · ${service} · ${sessions} live sessions · ${issues} grouped issues`;
+    const spend = this.openClaw.data()?.usageAnalytics?.windows?.today?.totalCostUsd;
+    return spend != null
+      ? `${gateway} · ${service} · ${sessions} live sessions · ${issues} grouped issues · $${spend.toFixed(2)} today`
+      : `${gateway} · ${service} · ${sessions} live sessions · ${issues} grouped issues`;
   });
 
   protected onHeaderAction(actionId: string): void {
@@ -355,6 +489,10 @@ export class OpenClawPage {
     if (actionId === 'copy') {
       void this.copyLink();
     }
+  }
+
+  protected selectUsageWindow(window: OpenClawUsageWindowKey): void {
+    this.selectedUsageWindow.set(window);
   }
 
   protected gatewayTone(): 'success' | 'danger' | 'warning' {
@@ -450,6 +588,44 @@ export class OpenClawPage {
   protected formatCost(value?: number | null): string {
     if (value == null) return '—';
     return `$${value.toFixed(4)}`;
+  }
+
+  protected formatTokenCount(value?: number | null): string {
+    if (value == null) return '—';
+    return new Intl.NumberFormat('en-US', { notation: value >= 1000 ? 'compact' : 'standard', maximumFractionDigits: value >= 1000 ? 1 : 0 }).format(value);
+  }
+
+  protected formatUsageDate(date: string): string {
+    return new Date(`${date}T00:00:00`).toLocaleDateString([], { month: 'short', day: 'numeric' });
+  }
+
+  protected modelUsageShareLabel(model: OpenClawUsageModel): string {
+    const window = this.selectedUsageWindowData();
+    if (!window) return '—';
+
+    if (window.totalCostUsd && model.totalCostUsd != null) {
+      const share = (model.totalCostUsd / window.totalCostUsd) * 100;
+      return `${Math.max(1, Math.round(share))}% spend`;
+    }
+
+    if (!window.totalTokens) return '—';
+    const share = (model.totalTokens / window.totalTokens) * 100;
+    return `${Math.max(1, Math.round(share))}% tokens`;
+  }
+
+  protected modelUsageShareTone(model: OpenClawUsageModel): 'success' | 'warning' | 'info' {
+    const window = this.selectedUsageWindowData();
+    if (!window) return 'info';
+
+    const basis = window.totalCostUsd && model.totalCostUsd != null
+      ? (model.totalCostUsd / window.totalCostUsd) * 100
+      : window.totalTokens
+        ? (model.totalTokens / window.totalTokens) * 100
+        : 0;
+
+    if (basis >= 50) return 'warning';
+    if (basis >= 20) return 'info';
+    return 'success';
   }
 
   private async copyLink(): Promise<void> {
