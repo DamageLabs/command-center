@@ -110,7 +110,7 @@ interface PinnedHomeItem {
           <button type="button" (click)="openReminderComposer()" class="cc-action-button">＋ Add</button>
         </div>
 
-        <div class="mt-5 space-y-5">
+        <div class="mt-6 space-y-5">
           @if (composerOpen()) {
             <div class="cc-list-card grid gap-3 p-4 md:grid-cols-[1fr_180px_auto_auto]">
               <input [value]="reminderText()" (input)="reminderText.set($any($event.target).value)" (keydown)="onReminderKeydown($event)" class="cc-input rounded-xl px-4 py-3 text-sm" placeholder="What do you need to remember?" />
