@@ -211,7 +211,7 @@ export class PrsPage {
     if (pr.reviewDecision === 'CHANGES_REQUESTED') return 'cc-label-pill border-[var(--cc-danger-border)] bg-[var(--cc-danger-surface)] text-[var(--cc-danger-text)]';
     if (pr.reviewDecision === 'APPROVED') return 'cc-label-pill border-emerald-400/25 bg-emerald-500/10 text-emerald-100';
     if (pr.isDraft) return 'cc-label-pill border-white/10 bg-white/5 text-[var(--cc-text-muted)]';
-    return 'cc-label-pill border-sky-400/25 bg-sky-500/10 text-sky-100';
+    return 'cc-label-pill border-[var(--cc-info-border)] bg-[var(--cc-info-surface)] text-[var(--cc-info-text)]';
   }
 
   protected attentionBadgeClass(pr: PullRequestItem): string {
