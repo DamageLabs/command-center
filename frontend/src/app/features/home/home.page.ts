@@ -100,7 +100,7 @@ interface PinnedHomeItem {
         </section>
       </cc-card>
 
-      <article class="rounded-3xl border border-[var(--cc-border)] bg-[var(--cc-surface)] p-6 md:p-7">
+      <article class="rounded-3xl border border-[var(--cc-border)] bg-[var(--cc-surface)] px-6 pb-6 pt-7 md:px-7 md:pb-7 md:pt-8">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <p class="text-[11px] font-semibold uppercase tracking-[0.3em] text-[var(--cc-text-soft)]">Reminders</p>
@@ -110,7 +110,7 @@ interface PinnedHomeItem {
           <button type="button" (click)="openReminderComposer()" class="cc-action-button">＋ Add</button>
         </div>
 
-        <div class="mt-6 space-y-5">
+        <div class="mt-5 space-y-5">
           @if (composerOpen()) {
             <div class="cc-list-card grid gap-3 p-4 md:grid-cols-[1fr_180px_auto_auto]">
               <input [value]="reminderText()" (input)="reminderText.set($any($event.target).value)" (keydown)="onReminderKeydown($event)" class="cc-input rounded-xl px-4 py-3 text-sm" placeholder="What do you need to remember?" />
