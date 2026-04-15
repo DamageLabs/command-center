@@ -46,6 +46,8 @@ export class DashboardDataService {
     tasks: OpenClawResponse['tasks'];
     taskAudit: OpenClawResponse['taskAudit'];
     channelSummary: OpenClawResponse['channelSummary'];
+    activeSessions: OpenClawResponse['activeSessions'];
+    recentRuns: OpenClawResponse['recentRuns'];
     updateAvailable: OpenClawResponse['updateAvailable'];
     updateChannel: OpenClawResponse['updateChannel'];
     updateInfo: OpenClawResponse['updateInfo'];
@@ -159,6 +161,8 @@ export class DashboardDataService {
     tasks: OpenClawResponse['tasks'];
     taskAudit: OpenClawResponse['taskAudit'];
     channelSummary: OpenClawResponse['channelSummary'];
+    activeSessions: OpenClawResponse['activeSessions'];
+    recentRuns: OpenClawResponse['recentRuns'];
     updateAvailable: OpenClawResponse['updateAvailable'];
     updateChannel: OpenClawResponse['updateChannel'];
     updateInfo: OpenClawResponse['updateInfo'];
@@ -180,6 +184,8 @@ export class DashboardDataService {
         tasks: response.tasks,
         taskAudit: response.taskAudit,
         channelSummary: response.channelSummary,
+        activeSessions: response.activeSessions,
+        recentRuns: response.recentRuns,
         updateAvailable: response.updateAvailable,
         updateChannel: response.updateChannel,
         updateInfo: response.updateInfo,

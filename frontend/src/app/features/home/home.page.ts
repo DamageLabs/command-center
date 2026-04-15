@@ -372,8 +372,8 @@ export class HomePage {
     const data = this.openClaw.data();
     if (!data) return 'runtime unavailable';
     const service = data.gatewayService?.runtime?.status || 'unknown service';
-    const sessions = data.agents?.totalSessions || 0;
-    return `${service} · ${sessions} sessions`;
+    const liveSessions = (data.activeSessions ?? []).filter((session) => session.active).length;
+    return `${service} · ${liveSessions} live sessions`;
   });
   protected readonly upcomingEvents = computed(() => {
     return (this.calendar.data() ?? [])

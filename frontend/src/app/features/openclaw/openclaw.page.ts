@@ -150,6 +150,82 @@ import { StatePanelComponent } from '../../shared/ui/state-panel.component';
           </article>
         </section>
 
+        <section class="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+          <article class="cc-list-card p-5">
+            <div class="flex items-center justify-between gap-3">
+              <div>
+                <div class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--cc-text-soft)]">Active sessions</div>
+                <div class="mt-2 text-lg font-semibold text-[var(--cc-text)]">What Atlas is doing right now</div>
+              </div>
+              <cc-pill tone="info">{{ activeSessionCount() }} live</cc-pill>
+            </div>
+
+            @if (!openClaw.data()!.activeSessions.length) {
+              <cc-state-panel class="mt-5" kind="empty" title="No recent sessions" message="No OpenClaw sessions were active in the recent window."></cc-state-panel>
+            } @else {
+              <div class="mt-5 space-y-3">
+                @for (session of openClaw.data()!.activeSessions; track session.key) {
+                  <div class="cc-stat-surface p-4">
+                    <div class="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <div class="text-sm font-semibold text-[var(--cc-text)]">{{ session.name }}</div>
+                        <div class="mt-2 text-xs text-[var(--cc-text-soft)]">{{ session.agent }} · {{ session.model }}</div>
+                      </div>
+                      <div class="flex flex-wrap items-center gap-2">
+                        <cc-pill [tone]="session.active ? 'success' : 'warning'">{{ session.active ? 'active' : 'idle' }}</cc-pill>
+                        <cc-pill [tone]="sessionTypeTone(session.type)">{{ session.type }}</cc-pill>
+                      </div>
+                    </div>
+                    <dl class="mt-4 grid gap-3 text-sm text-[var(--cc-text-muted)] md:grid-cols-4">
+                      <div><dt class="text-[var(--cc-text-soft)]">Last seen</dt><dd class="mt-1 font-medium text-[var(--cc-text)]">{{ formatAge(session.ageMs) }}</dd></div>
+                      <div><dt class="text-[var(--cc-text-soft)]">Context</dt><dd class="mt-1 font-medium text-[var(--cc-text)]">{{ session.percentUsed == null ? '—' : session.percentUsed + '%' }}</dd></div>
+                      <div><dt class="text-[var(--cc-text-soft)]">Tokens</dt><dd class="mt-1 font-medium text-[var(--cc-text)]">{{ session.totalTokens }}</dd></div>
+                      <div><dt class="text-[var(--cc-text-soft)]">Trigger</dt><dd class="mt-1 truncate font-medium text-[var(--cc-text)]">{{ session.subject || session.label || '—' }}</dd></div>
+                    </dl>
+                  </div>
+                }
+              </div>
+            }
+          </article>
+
+          <article class="cc-list-card p-5">
+            <div class="flex items-center justify-between gap-3">
+              <div>
+                <div class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--cc-text-soft)]">Recent activity</div>
+                <div class="mt-2 text-lg font-semibold text-[var(--cc-text)]">Recent runs and spawned work</div>
+              </div>
+              <cc-pill tone="info">{{ openClaw.data()!.recentRuns.length }}</cc-pill>
+            </div>
+
+            @if (!openClaw.data()!.recentRuns.length) {
+              <cc-state-panel class="mt-5" kind="empty" title="No recent spawned work" message="Sub-agent and run activity will show up here once OpenClaw records it."></cc-state-panel>
+            } @else {
+              <div class="mt-5 space-y-3">
+                @for (run of openClaw.data()!.recentRuns; track run.key) {
+                  <div class="cc-stat-surface p-4">
+                    <div class="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <div class="text-sm font-semibold text-[var(--cc-text)]">{{ run.name }}</div>
+                        <div class="mt-2 text-xs text-[var(--cc-text-soft)]">{{ run.agent }} · {{ run.model }}</div>
+                      </div>
+                      <div class="flex flex-wrap items-center gap-2">
+                        <cc-pill [tone]="runStatusTone(run.status)">{{ run.status }}</cc-pill>
+                        <cc-pill [tone]="sessionTypeTone(run.type)">{{ run.type }}</cc-pill>
+                      </div>
+                    </div>
+                    <dl class="mt-4 grid gap-3 text-sm text-[var(--cc-text-muted)] md:grid-cols-4">
+                      <div><dt class="text-[var(--cc-text-soft)]">Finished</dt><dd class="mt-1 font-medium text-[var(--cc-text)]">{{ formatAge(run.ageMs) }}</dd></div>
+                      <div><dt class="text-[var(--cc-text-soft)]">Duration</dt><dd class="mt-1 font-medium text-[var(--cc-text)]">{{ formatDuration(run.durationSec) }}</dd></div>
+                      <div><dt class="text-[var(--cc-text-soft)]">Tokens</dt><dd class="mt-1 font-medium text-[var(--cc-text)]">{{ run.totalTokens }}</dd></div>
+                      <div><dt class="text-[var(--cc-text-soft)]">Cost</dt><dd class="mt-1 font-medium text-[var(--cc-text)]">{{ formatCost(run.estimatedCostUsd) }}</dd></div>
+                    </dl>
+                  </div>
+                }
+              </div>
+            }
+          </article>
+        </section>
+
         <section class="grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
           @for (agent of openClaw.data()!.agents?.agents || []; track agent.id) {
             <article class="cc-list-card p-5">
@@ -184,11 +260,12 @@ export class OpenClawPage {
     const current = this.currentVersion();
     return Boolean(latest && current && latest !== current);
   });
+  protected readonly activeSessionCount = computed(() => (this.openClaw.data()?.activeSessions ?? []).filter((session) => session.active).length);
   protected readonly meta = computed(() => {
     const gateway = this.openClaw.data()?.gateway?.reachable ? 'gateway reachable' : 'gateway down';
     const service = this.openClaw.data()?.gatewayService?.runtime?.status || 'unknown service';
-    const sessions = this.openClaw.data()?.agents?.totalSessions || 0;
-    return `${gateway} · ${service} · ${sessions} sessions`;
+    const sessions = this.activeSessionCount();
+    return `${gateway} · ${service} · ${sessions} live sessions`;
   });
 
   protected onHeaderAction(actionId: string): void {
@@ -224,6 +301,20 @@ export class OpenClawPage {
     return 'warning';
   }
 
+  protected sessionTypeTone(type?: string | null): 'success' | 'danger' | 'warning' | 'info' {
+    if (type === 'subagent' || type === 'run') return 'info';
+    if (type === 'group') return 'warning';
+    if (type === 'cron') return 'danger';
+    return 'success';
+  }
+
+  protected runStatusTone(status?: string | null): 'success' | 'danger' | 'warning' | 'info' {
+    if (status === 'completed') return 'success';
+    if (status === 'aborted') return 'danger';
+    if (status === 'active') return 'info';
+    return 'warning';
+  }
+
   protected taskStatus(): string {
     const failures = this.openClaw.data()?.tasks?.failures || 0;
     const warnings = this.openClaw.data()?.taskAudit?.warnings || 0;
@@ -249,6 +340,21 @@ export class OpenClawPage {
   protected formatMemory(bytes?: number | null): string {
     if (!bytes) return 'memory unavailable';
     return `${(bytes / 1024 / 1024).toFixed(1)} MB RSS`;
+  }
+
+  protected formatDuration(seconds?: number | null): string {
+    if (seconds == null) return '—';
+    if (seconds < 60) return `${seconds}s`;
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    if (minutes < 60) return `${minutes}m ${remainingSeconds}s`;
+    const hours = Math.floor(minutes / 60);
+    return `${hours}h ${minutes % 60}m`;
+  }
+
+  protected formatCost(value?: number | null): string {
+    if (value == null) return '—';
+    return `$${value.toFixed(4)}`;
   }
 
   private async copyLink(): Promise<void> {
