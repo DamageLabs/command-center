@@ -6,6 +6,7 @@ import { HomePage } from './features/home/home.page';
 import { InfraPage } from './features/infra/infra.page';
 import { IssueListPage } from './features/issues/issue-list.page';
 import { NotesPage } from './features/notes/notes.page';
+import { OpenClawPage } from './features/openclaw/openclaw.page';
 import { PrsPage } from './features/prs/prs.page';
 import { ReposPage } from './features/repos/repos.page';
 import { DonePage } from './features/tasks/done.page';
@@ -84,6 +85,11 @@ export const routes: Routes = [
     path: 'infra',
     component: InfraPage,
     title: 'Infrastructure',
+  },
+  {
+    path: 'openclaw',
+    component: OpenClawPage,
+    title: 'OpenClaw Runtime',
   },
   {
     path: 'analytics',

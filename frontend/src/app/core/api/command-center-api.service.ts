@@ -9,6 +9,7 @@ import {
   InfraResponse,
   IssuesResponse,
   NotesResponse,
+  OpenClawResponse,
   PrsResponse,
   RefreshResponse,
   ReposResponse,
@@ -54,6 +55,10 @@ export class CommandCenterApiService {
 
   getNotes(): Observable<NotesResponse> {
     return this.http.get<NotesResponse>('/api/notes');
+  }
+
+  getOpenClaw(): Observable<OpenClawResponse> {
+    return this.http.get<OpenClawResponse>('/api/openclaw');
   }
 
   refreshAll(): Observable<RefreshResponse> {

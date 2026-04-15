@@ -2,7 +2,7 @@
 
 require('dotenv').config();
 
-const { execSync } = require('child_process');
+const { execFileSync, execSync } = require('child_process');
 const path = require('path');
 const cron = require('node-cron');
 const ical = require('node-ical');
@@ -111,6 +111,7 @@ const SOURCE_CONFIG = {
   prs: { label: 'PRs', staleAfterMs: 15 * 60 * 1000 },
   analytics: { label: 'Analytics', staleAfterMs: 30 * 60 * 1000 },
   infra: { label: 'Infra', staleAfterMs: 5 * 60 * 1000 },
+  openclaw: { label: 'OpenClaw', staleAfterMs: 2 * 60 * 1000 },
 };
 
 let sourceState = Object.fromEntries(
@@ -609,6 +610,36 @@ function loadInfraProcesses() {
   }));
 }
 
+function fetchOpenClawRuntime() {
+  beginSource('openclaw');
+  try {
+    const raw = execFileSync('openclaw', ['status', '--json'], {
+      encoding: 'utf8',
+      timeout: 15000,
+      maxBuffer: 2 * 1024 * 1024,
+    });
+    const status = JSON.parse(raw);
+    const updatedAt = Date.now();
+    succeedSource('openclaw', updatedAt);
+    return {
+      version: status.gateway?.self?.version || null,
+      gateway: status.gateway || null,
+      gatewayService: status.gatewayService || null,
+      nodeService: status.nodeService || null,
+      agents: status.agents || null,
+      memoryPlugin: status.memoryPlugin || null,
+      updateAvailable: status.updateAvailable || null,
+      updateChannel: status.updateChannel || null,
+      updateInfo: status.doctor?.registry || null,
+      secretDiagnostics: status.secretDiagnostics || [],
+      updatedAt,
+    };
+  } catch (error) {
+    failSource('openclaw', error);
+    throw error;
+  }
+}
+
 const app = createApp({
   cache,
   sourceMeta,
@@ -623,6 +654,7 @@ const app = createApp({
   fetchStandup,
   fetchPRs,
   fetchAnalytics,
+  fetchOpenClawRuntime,
   closeIssue: ({ owner, repo, number }) => execSync(`gh issue close ${number} --repo ${owner}/${repo}`, { encoding: 'utf8' }),
   loadInfraProcesses,
   frontend: {
@@ -661,4 +693,5 @@ module.exports = {
   sourceMeta,
   sourceResponseStatus,
   loadInfraProcesses,
+  fetchOpenClawRuntime,
 };

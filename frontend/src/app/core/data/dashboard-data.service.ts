@@ -9,6 +9,7 @@ import {
   IssuesResponse,
   IssuesViewModel,
   NotesResponse,
+  OpenClawResponse,
   PrsResponse,
   ReposResponse,
   StandupResponse,
@@ -32,6 +33,19 @@ export class DashboardDataService {
   private standupResource?: DashboardResource<StandupResponse['standup']>;
   private analyticsResource?: DashboardResource<{ totals: AnalyticsResponse['totals']; sites: AnalyticsResponse['sites']; range: AnalyticsResponse['range']; updatedAt: AnalyticsResponse['updatedAt'] }>;
   private notesResource?: DashboardResource<{ dailyNote: NotesResponse['dailyNote']; decisions: NotesResponse['decisions'] }>;
+  private openClawResource?: DashboardResource<{
+    version: OpenClawResponse['version'];
+    gateway: OpenClawResponse['gateway'];
+    gatewayService: OpenClawResponse['gatewayService'];
+    nodeService: OpenClawResponse['nodeService'];
+    agents: OpenClawResponse['agents'];
+    memoryPlugin: OpenClawResponse['memoryPlugin'];
+    updateAvailable: OpenClawResponse['updateAvailable'];
+    updateChannel: OpenClawResponse['updateChannel'];
+    updateInfo: OpenClawResponse['updateInfo'];
+    secretDiagnostics: OpenClawResponse['secretDiagnostics'];
+    updatedAt: OpenClawResponse['updatedAt'];
+  }>;
 
   issues(): DashboardResource<IssuesViewModel> {
     return this.issuesResource ??= createDashboardResource({
@@ -126,6 +140,39 @@ export class DashboardDataService {
     });
   }
 
+  openClaw(): DashboardResource<{
+    version: OpenClawResponse['version'];
+    gateway: OpenClawResponse['gateway'];
+    gatewayService: OpenClawResponse['gatewayService'];
+    nodeService: OpenClawResponse['nodeService'];
+    agents: OpenClawResponse['agents'];
+    memoryPlugin: OpenClawResponse['memoryPlugin'];
+    updateAvailable: OpenClawResponse['updateAvailable'];
+    updateChannel: OpenClawResponse['updateChannel'];
+    updateInfo: OpenClawResponse['updateInfo'];
+    secretDiagnostics: OpenClawResponse['secretDiagnostics'];
+    updatedAt: OpenClawResponse['updatedAt'];
+  }> {
+    return this.openClawResource ??= createDashboardResource({
+      load: () => this.api.getOpenClaw(),
+      selectData: (response: OpenClawResponse) => ({
+        version: response.version,
+        gateway: response.gateway,
+        gatewayService: response.gatewayService,
+        nodeService: response.nodeService,
+        agents: response.agents,
+        memoryPlugin: response.memoryPlugin,
+        updateAvailable: response.updateAvailable,
+        updateChannel: response.updateChannel,
+        updateInfo: response.updateInfo,
+        secretDiagnostics: response.secretDiagnostics,
+        updatedAt: response.updatedAt,
+      }),
+      isEmpty: () => false,
+      intervalMs: 60_000,
+    });
+  }
+
   closeIssue(repoFull: string, number: number): void {
     const [owner, repo] = repoFull.split('/');
     if (!owner || !repo) return;
@@ -164,5 +211,6 @@ export class DashboardDataService {
     this.standupResource?.refresh();
     this.analyticsResource?.refresh();
     this.notesResource?.refresh();
+    this.openClawResource?.refresh();
   }
 }

@@ -69,6 +69,19 @@ function createTestApp({ cacheOverrides = {}, sourceOverrides = {}, infraError =
     fetchStandup: () => refreshCalls.push('standup'),
     fetchPRs: () => refreshCalls.push('prs'),
     fetchAnalytics: () => refreshCalls.push('analytics'),
+    fetchOpenClawRuntime: () => ({
+      version: '2026.4.12',
+      gateway: { mode: 'local', url: 'ws://127.0.0.1:39217', reachable: true, misconfigured: false },
+      gatewayService: { label: 'systemd', runtime: { status: 'running', state: 'active', pid: 2542 }, runtimeShort: 'running (pid 2542, state active)' },
+      nodeService: { label: 'systemd', installed: false, loaded: false, managedByOpenClaw: false, externallyManaged: false, runtime: { status: 'stopped', state: 'inactive' }, runtimeShort: 'stopped (state inactive)' },
+      agents: { defaultId: 'main', agents: [{ id: 'main', name: 'main', workspaceDir: '/tmp/workspace', bootstrapPending: false, sessionsPath: '/tmp/sessions.json', sessionsCount: 16 }], totalSessions: 16, bootstrapPendingCount: 0 },
+      memoryPlugin: { enabled: true, slot: 'memory-core' },
+      updateAvailable: false,
+      updateChannel: 'stable',
+      updateInfo: { latestVersion: '2026.4.14' },
+      secretDiagnostics: [],
+      updatedAt: 1713124800000,
+    }),
     closeIssue: async () => refreshCalls.push('closeIssue'),
     loadInfraProcesses: () => {
       if (infraError) throw infraError;
@@ -128,6 +141,11 @@ test('main API routes return smoke-level shapes', async () => {
       const analytics = await fetch(`${baseUrl}/api/analytics`).then(res => res.json());
       assert.equal(analytics.ok, true);
       assert.equal(analytics.totals.pageviews, 42);
+
+      const openClaw = await fetch(`${baseUrl}/api/openclaw`).then(res => res.json());
+      assert.equal(openClaw.ok, true);
+      assert.equal(openClaw.gateway.reachable, true);
+      assert.equal(openClaw.agents.totalSessions, 16);
     });
   } finally {
     cleanup();

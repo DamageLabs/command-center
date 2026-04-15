@@ -40,7 +40,7 @@ interface PinnedHomeItem {
       </div>
 
       <cc-card eyebrow="Today" title="command.center" [description]="tagline()" tone="highlight" [compact]="true">
-        <section class="grid gap-4 lg:grid-cols-5">
+        <section class="grid gap-4 lg:grid-cols-6">
           <button type="button" (click)="go('/issues/urgent')" class="cc-card-button p-5 text-left">
             <div class="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--cc-text-soft)]">Urgent</div>
             <div class="mt-3 text-3xl font-semibold text-rose-300">{{ issues.data()?.counts?.urgent ?? 0 }}</div>
@@ -85,6 +85,16 @@ interface PinnedHomeItem {
             } @else {
               <div class="mt-3 text-3xl font-semibold text-[var(--cc-text-soft)]">—</div>
               <div class="mt-2 text-sm text-[var(--cc-text-muted)]">monitoring unavailable</div>
+            }
+          </button>
+          <button type="button" (click)="go('/openclaw')" class="cc-card-button p-5 text-left">
+            <div class="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--cc-text-soft)]">OpenClaw</div>
+            @if (openClaw.hasData()) {
+              <div class="mt-3 text-3xl font-semibold" [class.text-emerald-300]="openClawGatewayReachable()" [class.text-amber-300]="!openClawGatewayReachable()">{{ openClawGatewayReachable() ? 'OK' : 'WARN' }}</div>
+              <div class="mt-2 text-sm text-[var(--cc-text-muted)]">{{ openClawSummary() }}</div>
+            } @else {
+              <div class="mt-3 text-3xl font-semibold text-[var(--cc-text-soft)]">—</div>
+              <div class="mt-2 text-sm text-[var(--cc-text-muted)]">runtime unavailable</div>
             }
           </button>
         </section>
@@ -346,6 +356,7 @@ export class HomePage {
   protected readonly notes = this.data.notes();
   protected readonly standup = this.data.standup();
   protected readonly infra = this.data.infra();
+  protected readonly openClaw = this.data.openClaw();
   protected readonly repos = this.data.repos();
   protected readonly refreshingAll = this.data.refreshingAll;
 
@@ -356,6 +367,14 @@ export class HomePage {
   protected readonly copiedPanel = signal<string | null>(null);
 
   protected readonly onlineServices = computed(() => (this.infra.data() ?? []).filter((process) => process.status === 'online').length);
+  protected readonly openClawGatewayReachable = computed(() => Boolean(this.openClaw.data()?.gateway?.reachable));
+  protected readonly openClawSummary = computed(() => {
+    const data = this.openClaw.data();
+    if (!data) return 'runtime unavailable';
+    const service = data.gatewayService?.runtime?.status || 'unknown service';
+    const sessions = data.agents?.totalSessions || 0;
+    return `${service} · ${sessions} sessions`;
+  });
   protected readonly upcomingEvents = computed(() => {
     return (this.calendar.data() ?? [])
       .filter((event) => new Date(event.start) > new Date())
