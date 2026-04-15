@@ -273,4 +273,4 @@ Requires the server to be running on port 4500. Screenshots are saved to `docs/s
 
 ## License
 
-MIT
+Apache License 2.0. See [LICENSE](./LICENSE).
