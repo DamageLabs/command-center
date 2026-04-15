@@ -101,40 +101,42 @@ interface PinnedHomeItem {
       </cc-card>
 
       <cc-card eyebrow="Reminders" title="Keep the little stuff visible" [compact]="true">
-        <div class="flex items-start justify-between gap-4">
-          <div>
-            <p class="text-sm text-[var(--cc-text-muted)]">Quick capture for things you do not want falling through the cracks.</p>
+        <div class="space-y-5">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <p class="text-sm text-[var(--cc-text-muted)]">Quick capture for things you do not want falling through the cracks.</p>
+            </div>
+            <button type="button" (click)="openReminderComposer()" class="cc-action-button">＋ Add</button>
           </div>
-          <button type="button" (click)="openReminderComposer()" class="cc-action-button">＋ Add</button>
-        </div>
 
-        @if (composerOpen()) {
-          <div class="cc-list-card mt-4 grid gap-3 p-4 md:grid-cols-[1fr_180px_auto_auto]">
-            <input [value]="reminderText()" (input)="reminderText.set($any($event.target).value)" (keydown)="onReminderKeydown($event)" class="cc-input rounded-xl px-4 py-3 text-sm" placeholder="What do you need to remember?" />
-            <input [value]="reminderDue() || ''" (input)="reminderDue.set($any($event.target).value || null)" type="date" class="cc-input rounded-xl px-4 py-3 text-sm" />
-            <button type="button" (click)="saveReminder()" class="cc-small-button cc-small-button-accent rounded-xl px-4 py-3 text-sm">{{ editingReminderId() ? 'Save' : 'Add' }}</button>
-            <button type="button" (click)="cancelReminderEdit()" class="cc-small-button rounded-xl px-4 py-3 text-sm">Cancel</button>
-          </div>
-        }
-
-        <div class="mt-4 space-y-3">
-          @if (!reminders.items().length) {
-            <cc-state-panel kind="empty" title="No reminders yet" message="Add one above, or press N while on Home to capture a quick reminder."></cc-state-panel>
-          } @else {
-            @for (reminder of reminders.items(); track reminder.id) {
-              <div class="cc-list-card flex items-center gap-3 px-4 py-3">
-                <button type="button" (click)="completeReminder(reminder.id)" class="h-5 w-5 rounded-full border border-[var(--cc-border)]"></button>
-                <div class="min-w-0 flex-1">
-                  <div class="truncate text-sm font-medium text-[var(--cc-text)]">{{ reminder.text }}</div>
-                  @if (reminder.due) {
-                    <div class="mt-1 text-xs text-[var(--cc-text-soft)]">📅 {{ reminder.due }}</div>
-                  }
-                </div>
-                <button type="button" (click)="editReminder(reminder)" class="cc-small-button">Edit</button>
-                <button type="button" (click)="dismissReminder(reminder.id)" class="cc-small-button cc-small-button-danger">Dismiss</button>
-              </div>
-            }
+          @if (composerOpen()) {
+            <div class="cc-list-card grid gap-3 p-4 md:grid-cols-[1fr_180px_auto_auto]">
+              <input [value]="reminderText()" (input)="reminderText.set($any($event.target).value)" (keydown)="onReminderKeydown($event)" class="cc-input rounded-xl px-4 py-3 text-sm" placeholder="What do you need to remember?" />
+              <input [value]="reminderDue() || ''" (input)="reminderDue.set($any($event.target).value || null)" type="date" class="cc-input rounded-xl px-4 py-3 text-sm" />
+              <button type="button" (click)="saveReminder()" class="cc-small-button cc-small-button-accent rounded-xl px-4 py-3 text-sm">{{ editingReminderId() ? 'Save' : 'Add' }}</button>
+              <button type="button" (click)="cancelReminderEdit()" class="cc-small-button rounded-xl px-4 py-3 text-sm">Cancel</button>
+            </div>
           }
+
+          <div class="space-y-3">
+            @if (!reminders.items().length) {
+              <cc-state-panel kind="empty" title="No reminders yet" message="Add one above, or press N while on Home to capture a quick reminder."></cc-state-panel>
+            } @else {
+              @for (reminder of reminders.items(); track reminder.id) {
+                <div class="cc-list-card flex items-center gap-3 px-4 py-3">
+                  <button type="button" (click)="completeReminder(reminder.id)" class="h-5 w-5 rounded-full border border-[var(--cc-border)]"></button>
+                  <div class="min-w-0 flex-1">
+                    <div class="truncate text-sm font-medium text-[var(--cc-text)]">{{ reminder.text }}</div>
+                    @if (reminder.due) {
+                      <div class="mt-1 text-xs text-[var(--cc-text-soft)]">📅 {{ reminder.due }}</div>
+                    }
+                  </div>
+                  <button type="button" (click)="editReminder(reminder)" class="cc-small-button">Edit</button>
+                  <button type="button" (click)="dismissReminder(reminder.id)" class="cc-small-button cc-small-button-danger">Dismiss</button>
+                </div>
+              }
+            }
+          </div>
         </div>
       </cc-card>
 
