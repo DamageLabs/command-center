@@ -18,7 +18,7 @@ export class StatusBadgeComponent {
       success: 'border-emerald-400/25 bg-emerald-500/10 text-emerald-100',
       warning: 'border-amber-400/25 bg-amber-500/10 text-amber-100',
       danger: 'border-[var(--cc-danger-border)] bg-[var(--cc-danger-surface)] text-[var(--cc-danger-text)]',
-      info: 'border-sky-400/25 bg-sky-500/10 text-sky-100',
+      info: 'border-[var(--cc-info-border)] bg-[var(--cc-info-surface)] text-[var(--cc-info-text)]',
     } as const;
 
     return `${base} ${tones[this.tone()]}`;
