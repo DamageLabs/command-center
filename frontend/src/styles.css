@@ -309,3 +309,37 @@ code {
   background: rgba(255, 255, 255, 0.08);
   color: var(--cc-text-soft);
 }
+
+.cc-panel-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.cc-panel-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border-radius: 9999px;
+  border: 1px solid var(--cc-border);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 0.45rem 0.75rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cc-text-soft);
+  transition: all 180ms ease;
+}
+
+.cc-panel-action:hover {
+  border-color: rgba(99, 102, 241, 0.24);
+  color: var(--cc-text);
+}
+
+.cc-panel-action-accent {
+  border-color: rgba(99, 102, 241, 0.24);
+  background: rgba(99, 102, 241, 0.14);
+  color: #dbeafe;
+}
