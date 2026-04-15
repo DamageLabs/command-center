@@ -3,10 +3,10 @@ import { Router } from '@angular/router';
 
 import { DashboardDataService } from '../../core/data/dashboard-data.service';
 import { ThemeService } from '../../core/theme/theme.service';
-import { DailyNote, DecisionNote, IssueItem, PullRequestItem, RepoSummary, StandupSummary } from '../../models/api';
+import { CalendarEvent, DailyNote, DecisionNote, IssueItem, PullRequestItem, RepoSummary, StandupSummary, TaskItem } from '../../models/api';
 import { NavItem } from '../models/nav-item';
 
-type CommandGroup = 'Recent' | 'Actions' | 'Views' | 'Notes' | 'Repos' | 'Issues' | 'PRs';
+type CommandGroup = 'Recent' | 'Actions' | 'Views' | 'Notes' | 'Tasks' | 'Events' | 'Repos' | 'Issues' | 'PRs';
 
 interface CommandPaletteItem {
   id: string;
@@ -263,6 +263,8 @@ export class CommandPaletteComponent {
   });
 
   private readonly noteCommands = computed<CommandPaletteItem[]>(() => this.noteItems(this.data.notes().data()?.dailyNote ?? null, this.data.notes().data()?.decisions ?? [], this.data.standup().data()));
+  private readonly taskCommands = computed<CommandPaletteItem[]>(() => this.taskItems(this.data.tasks().data()?.open ?? []));
+  private readonly eventCommands = computed<CommandPaletteItem[]>(() => this.eventItems(this.data.calendar().data() ?? []));
   private readonly repoCommands = computed<CommandPaletteItem[]>(() => this.repoItems(this.data.repos().data() ?? []));
   private readonly issueCommands = computed<CommandPaletteItem[]>(() => this.issueItems(this.allIssues()));
   private readonly prCommands = computed<CommandPaletteItem[]>(() => this.prItems(this.data.prs().data() ?? []));
@@ -270,6 +272,8 @@ export class CommandPaletteComponent {
     ...this.actionCommands(),
     ...this.navCommands(),
     ...this.noteCommands(),
+    ...this.taskCommands(),
+    ...this.eventCommands(),
     ...this.repoCommands(),
     ...this.issueCommands(),
     ...this.prCommands(),
@@ -300,7 +304,7 @@ export class CommandPaletteComponent {
   });
 
   protected readonly groupedResults = computed<CommandSection[]>(() => {
-    const groups: CommandGroup[] = ['Recent', 'Actions', 'Views', 'Notes', 'Repos', 'Issues', 'PRs'];
+    const groups: CommandGroup[] = ['Recent', 'Actions', 'Views', 'Notes', 'Tasks', 'Events', 'Repos', 'Issues', 'PRs'];
     return groups
       .map((group) => ({ group, items: this.flatResults().filter((item) => item.group === group) }))
       .filter((section) => section.items.length > 0);
@@ -494,6 +498,42 @@ export class CommandPaletteComponent {
     return items;
   }
 
+  private taskItems(tasks: TaskItem[]): CommandPaletteItem[] {
+    return tasks.slice(0, 8).map((task) => ({
+      id: `task:${task.title}:${task.source}`,
+      group: 'Tasks',
+      title: task.title,
+      subtitle: `${task.source}${task.section ? ` · ${task.section}` : ''}${task.due ? ` · due ${task.due}` : ''}`,
+      keywords: `${task.title} ${task.source} ${task.section || ''} ${task.due || ''} task open`.toLowerCase(),
+      icon: '✓',
+      badge: task.due ? 'Due' : 'Task',
+      emptyRank: task.due ? 215 : 205,
+      run: () => {
+        void this.router.navigateByUrl('/tasks');
+      },
+    }));
+  }
+
+  private eventItems(events: CalendarEvent[]): CommandPaletteItem[] {
+    const now = Date.now();
+    return events
+      .filter((event) => new Date(event.start).getTime() >= now)
+      .slice(0, 8)
+      .map((event) => ({
+        id: `event:${event.start}:${event.title}`,
+        group: 'Events',
+        title: event.title,
+        subtitle: `${this.eventDateLabel(event)} · ${this.eventTimeLabel(event)} · ${event.calendar}`,
+        keywords: `${event.title} ${event.calendar} ${event.location || ''} event calendar ${event.start}`.toLowerCase(),
+        icon: '◷',
+        badge: event.allDay ? 'All day' : 'Upcoming',
+        emptyRank: 210,
+        run: () => {
+          void this.router.navigateByUrl('/calendar');
+        },
+      }));
+  }
+
   private repoItems(repos: RepoSummary[]): CommandPaletteItem[] {
     return repos.map((repo) => ({
       id: `repo:${repo.repoFull}`,
@@ -524,6 +564,15 @@ export class CommandPaletteComponent {
         if (typeof window !== 'undefined') window.open(issue.url, '_blank', 'noopener');
       },
     }));
+  }
+
+  private eventDateLabel(event: CalendarEvent): string {
+    return new Date(event.start).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+
+  private eventTimeLabel(event: CalendarEvent): string {
+    if (event.allDay) return 'all day';
+    return new Date(event.start).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
   }
 
   private prItems(prs: PullRequestItem[]): CommandPaletteItem[] {
