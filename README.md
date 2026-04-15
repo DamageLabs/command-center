@@ -1,6 +1,6 @@
 # Command Center
 
-A personal command center dashboard. Aggregates GitHub issues and PRs, Google Calendar, Obsidian tasks and notes, daily standups, and PM2 infrastructure status into a single tabbed UI — running locally at `https://command.test`.
+A personal command center dashboard. Aggregates GitHub issues and PRs, Google Calendar, Obsidian tasks and notes, daily standups, and local infrastructure status into a single tabbed UI — running locally at `https://command.test`.
 
 ## Screenshots
 
@@ -47,7 +47,7 @@ A personal command center dashboard. Aggregates GitHub issues and PRs, Google Ca
 
 - **Backend:** Node.js + Express
 - **Frontend:** Angular + Tailwind
-- **Process manager:** PM2
+- **Process manager:** systemd user services for durable local runtime on Linux, PM2 optional for other workflows
 - **Data sources:** `gh` CLI · Google Calendar iCal · Obsidian markdown · PM2 `jlist` · Umami
 
 ---
@@ -60,7 +60,7 @@ A personal command center dashboard. Aggregates GitHub issues and PRs, Google Ca
 |------|---------|
 | Node.js 22+ | [nodejs.org](https://nodejs.org) or `nodenv install 22.x` |
 | `gh` CLI | `brew install gh` then `gh auth login` |
-| PM2 | `npm install -g pm2` |
+| PM2 (optional) | `npm install -g pm2` if you want PM2-managed workflows or live PM2 infra data |
 
 ### 2. Clone and install
 
@@ -160,6 +160,11 @@ npm run dev
 npm run dev:api   # Express API on :4500
 npm run dev:web   # Angular dev server on :4200, proxying /api to :4500
 
+# Durable local runner on Linux via systemd --user
+npm run dev:durable:start
+npm run dev:durable:status
+npm run dev:durable:logs -- -f
+
 # Build the shipped Angular UI
 npm run build:web
 
@@ -169,13 +174,20 @@ npm run check
 # Serve the built Angular UI through Express
 npm start
 
-# Production (PM2)
+# PM2 remains optional for PM2-managed workflows
 pm2 start ecosystem.config.cjs
 pm2 save
 pm2 startup  # auto-start on reboot
 ```
 
 Runs on **http://localhost:4500**.
+
+#### Durable local runtime notes
+
+- `npm run dev` is still fine for interactive work, but it has proven brittle on Spark for longer-lived local sessions
+- `npm run dev:durable:start` installs and starts user-level systemd services for the API and web processes, reclaiming ports `4500` and `4200` from stray old dev processes if needed
+- `npm run dev:durable:status` and `npm run dev:durable:logs -- -f` are the supported way to inspect or tail the durable local runner
+- see `docs/local-runtime.md` for the full workflow
 
 #### Angular runtime notes
 
@@ -184,6 +196,7 @@ Runs on **http://localhost:4500**.
 - `npm start` now serves the built Angular frontend from `frontend/dist/frontend/browser`
 - if the Angular dist is missing, Express returns a helpful message telling you to run `npm run build:web` or `npm run dev`
 - the legacy single-file frontend has been archived under `archive/legacy-static-frontend/`
+- the Infra view may still degrade when PM2 is not installed, because that panel currently reads PM2 state
 
 ### 5. Local HTTPS with Caddy (optional but recommended)
 
