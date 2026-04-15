@@ -20,6 +20,12 @@
   --cc-info-border: rgba(56, 189, 248, 0.28);
   --cc-info-surface: rgba(14, 165, 233, 0.12);
   --cc-info-text: #e0f2fe;
+  --cc-success-border: rgba(52, 211, 153, 0.34);
+  --cc-success-surface: rgba(16, 185, 129, 0.16);
+  --cc-success-text: #ecfdf5;
+  --cc-warning-border: rgba(251, 191, 36, 0.34);
+  --cc-warning-surface: rgba(245, 158, 11, 0.16);
+  --cc-warning-text: #fffbeb;
   --cc-danger-border: rgba(251, 113, 133, 0.28);
   --cc-danger-surface: rgba(244, 63, 94, 0.12);
   --cc-danger-text: #ffe4e6;
@@ -51,6 +57,12 @@ html.light {
   --cc-info-border: rgba(56, 189, 248, 0.34);
   --cc-info-surface: rgba(14, 165, 233, 0.12);
   --cc-info-text: #0c4a6e;
+  --cc-success-border: rgba(16, 185, 129, 0.42);
+  --cc-success-surface: rgba(16, 185, 129, 0.18);
+  --cc-success-text: #065f46;
+  --cc-warning-border: rgba(245, 158, 11, 0.42);
+  --cc-warning-surface: rgba(245, 158, 11, 0.18);
+  --cc-warning-text: #9a3412;
   --cc-danger-border: rgba(251, 113, 133, 0.34);
   --cc-danger-surface: rgba(244, 63, 94, 0.12);
   --cc-danger-text: #881337;
@@ -361,9 +373,9 @@ code {
 }
 
 .cc-panel-action-accent {
-  border-color: rgba(99, 102, 241, 0.24);
-  background: rgba(99, 102, 241, 0.14);
-  color: #dbeafe;
+  border-color: var(--cc-accent-border);
+  background: var(--cc-accent-surface);
+  color: var(--cc-accent-text);
 }
 
 .cc-command-palette-backdrop {

@@ -209,16 +209,16 @@ export class PrsPage {
 
   protected reviewBadgeClass(pr: PullRequestItem): string {
     if (pr.reviewDecision === 'CHANGES_REQUESTED') return 'cc-label-pill border-[var(--cc-danger-border)] bg-[var(--cc-danger-surface)] text-[var(--cc-danger-text)]';
-    if (pr.reviewDecision === 'APPROVED') return 'cc-label-pill border-emerald-400/25 bg-emerald-500/10 text-emerald-100';
+    if (pr.reviewDecision === 'APPROVED') return 'cc-label-pill border-[var(--cc-success-border)] bg-[var(--cc-success-surface)] text-[var(--cc-success-text)]';
     if (pr.isDraft) return 'cc-label-pill border-white/10 bg-white/5 text-[var(--cc-text-muted)]';
     return 'cc-label-pill border-[var(--cc-info-border)] bg-[var(--cc-info-surface)] text-[var(--cc-info-text)]';
   }
 
   protected attentionBadgeClass(pr: PullRequestItem): string {
     if (pr.reviewDecision === 'CHANGES_REQUESTED') return 'cc-label-pill border-[var(--cc-danger-border)] bg-[var(--cc-danger-surface)] text-[var(--cc-danger-text)]';
-    if (pr.reviewDecision === 'APPROVED') return 'cc-label-pill border-emerald-400/25 bg-emerald-500/10 text-emerald-100';
+    if (pr.reviewDecision === 'APPROVED') return 'cc-label-pill border-[var(--cc-success-border)] bg-[var(--cc-success-surface)] text-[var(--cc-success-text)]';
     if (pr.isDraft) return 'cc-label-pill border-white/10 bg-white/5 text-[var(--cc-text-muted)]';
-    return 'cc-label-pill border-amber-400/25 bg-amber-500/10 text-amber-100';
+    return 'cc-label-pill border-[var(--cc-warning-border)] bg-[var(--cc-warning-surface)] text-[var(--cc-warning-text)]';
   }
 
   protected prAccent(pr: PullRequestItem): string {

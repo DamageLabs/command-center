@@ -91,7 +91,7 @@ type IssueSection = {
                               <span class="cc-owner-chip">+{{ issue.assignees.length - 3 }}</span>
                             }
                           } @else {
-                            <span class="cc-owner-chip border-amber-400/25 bg-amber-500/10 text-amber-100">Needs owner</span>
+                            <span class="cc-owner-chip border-[var(--cc-warning-border)] bg-[var(--cc-warning-surface)] text-[var(--cc-warning-text)]">Needs owner</span>
                           }
                         </div>
                       </div>
@@ -154,7 +154,7 @@ type IssueSection = {
                               <span class="cc-owner-chip">+{{ issue.assignees.length - 3 }}</span>
                             }
                           } @else {
-                            <span class="cc-owner-chip border-amber-400/25 bg-amber-500/10 text-amber-100">Needs owner</span>
+                            <span class="cc-owner-chip border-[var(--cc-warning-border)] bg-[var(--cc-warning-surface)] text-[var(--cc-warning-text)]">Needs owner</span>
                           }
                         </div>
                       </div>
