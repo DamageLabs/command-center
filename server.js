@@ -631,6 +631,160 @@ function readProcessSnapshot(pid) {
   }
 }
 
+const OPENCLAW_AGENTS_DIR = path.join(process.env.HOME || '', '.openclaw', 'agents');
+const OPENCLAW_ACTIVE_WINDOW_MS = 30 * 60 * 1000;
+const OPENCLAW_RECENT_SESSION_MS = 24 * 60 * 60 * 1000;
+const OPENCLAW_RECENT_ACTIVITY_MS = 7 * 24 * 60 * 60 * 1000;
+
+function readJsonFileSafe(filePath) {
+  return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+}
+
+function openClawSessionType(key, entry = {}) {
+  if (key.includes(':run:')) return 'run';
+  if (key.includes('subagent:')) return 'subagent';
+  if (key.includes('cron:')) return 'cron';
+  if (key.includes(':channel:') || entry.chatType === 'group') return 'group';
+  if (key.includes(':direct:') || entry.chatType === 'direct') return 'direct';
+  if (key.endsWith(':main')) return 'main';
+  return entry.chatType || 'other';
+}
+
+function openClawSessionName(key, entry = {}) {
+  if (entry.label) return String(entry.label).slice(0, 80);
+  if (entry.subject) return String(entry.subject).slice(0, 80);
+  if (key.endsWith(':main')) return 'Main session';
+  if (key.includes(':discord:direct:')) return `Discord DM · ${key.split(':').at(-1)}`;
+  if (key.includes(':discord:channel:')) return `Discord channel · ${key.split(':').at(-1)}`;
+  const originLabel = entry.origin?.label;
+  const raw = originLabel || key;
+  return String(raw).replace(/^agent:[^:]+:/, '').slice(0, 80);
+}
+
+function openClawSessionModel(entry = {}) {
+  if (entry.providerOverride && entry.modelOverride) return `${entry.providerOverride}/${entry.modelOverride}`;
+  if (entry.modelProvider && entry.model && typeof entry.model === 'string' && !entry.model.includes('/')) return `${entry.modelProvider}/${entry.model}`;
+  return entry.model || 'unknown';
+}
+
+function openClawSessionPercentUsed(entry = {}) {
+  const totalTokens = Number(entry.totalTokens || 0);
+  const contextTokens = Number(entry.contextTokens || 0);
+  if (!totalTokens || !contextTokens) return null;
+  return Math.min(100, Math.round((totalTokens / contextTokens) * 1000) / 10);
+}
+
+function readSessionDurationSec(sessionFile, entry = {}) {
+  const runtimeMs = Number(entry.runtimeMs || 0);
+  if (runtimeMs > 0) return Math.round(runtimeMs / 1000);
+
+  const startedAt = Number(entry.startedAt || 0);
+  const endedAt = Number(entry.endedAt || 0);
+  if (startedAt > 0 && endedAt >= startedAt) {
+    return Math.round((endedAt - startedAt) / 1000);
+  }
+
+  if (!sessionFile || !fs.existsSync(sessionFile) || sessionFile.endsWith('.lock')) return null;
+
+  try {
+    const lines = fs.readFileSync(sessionFile, 'utf8').split('\n').filter(Boolean);
+    let first = null;
+    let last = null;
+
+    for (const line of lines) {
+      try {
+        const parsed = JSON.parse(line);
+        if (!parsed?.timestamp) continue;
+        const ts = Date.parse(parsed.timestamp);
+        if (Number.isNaN(ts)) continue;
+        if (first === null) first = ts;
+        last = ts;
+      } catch {
+        // ignore malformed lines
+      }
+    }
+
+    if (first === null || last === null || last < first) return null;
+    return Math.max(0, Math.round((last - first) / 1000));
+  } catch {
+    return null;
+  }
+}
+
+function collectOpenClawActivity() {
+  const activeSessions = [];
+  const recentRuns = [];
+  const now = Date.now();
+
+  if (!OPENCLAW_AGENTS_DIR || !fs.existsSync(OPENCLAW_AGENTS_DIR)) {
+    return { activeSessions, recentRuns };
+  }
+
+  for (const agentName of fs.readdirSync(OPENCLAW_AGENTS_DIR)) {
+    const sessionsDir = path.join(OPENCLAW_AGENTS_DIR, agentName, 'sessions');
+    const storePath = path.join(sessionsDir, 'sessions.json');
+    if (!fs.existsSync(storePath)) continue;
+
+    let store;
+    try {
+      store = readJsonFileSafe(storePath);
+    } catch {
+      continue;
+    }
+
+    for (const [key, rawEntry] of Object.entries(store)) {
+      const entry = rawEntry || {};
+      const sessionId = entry.sessionId;
+      const updatedAt = Number(entry.updatedAt || 0);
+      if (!sessionId || !updatedAt) continue;
+
+      const type = openClawSessionType(key, entry);
+      const ageMs = Math.max(0, now - updatedAt);
+      const sessionFile = entry.sessionFile || path.join(sessionsDir, `${sessionId}.jsonl`);
+      const sessionSummary = {
+        key,
+        sessionId,
+        agent: agentName,
+        type,
+        name: openClawSessionName(key, entry),
+        model: openClawSessionModel(entry),
+        updatedAt,
+        ageMs,
+        active: ageMs <= OPENCLAW_ACTIVE_WINDOW_MS,
+        percentUsed: openClawSessionPercentUsed(entry),
+        totalTokens: Number(entry.totalTokens || 0),
+        contextTokens: Number(entry.contextTokens || 0) || null,
+        estimatedCostUsd: entry.estimatedCostUsd ?? null,
+        chatType: entry.chatType || null,
+        label: entry.label || null,
+        subject: entry.subject || null,
+        spawnedBy: entry.spawnedBy || null,
+        abortedLastRun: Boolean(entry.abortedLastRun),
+      };
+
+      if (!key.includes(':run:') && ageMs <= OPENCLAW_RECENT_SESSION_MS) {
+        activeSessions.push(sessionSummary);
+      }
+
+      if ((key.includes(':run:') || type === 'subagent') && ageMs <= OPENCLAW_RECENT_ACTIVITY_MS) {
+        recentRuns.push({
+          ...sessionSummary,
+          durationSec: readSessionDurationSec(sessionFile, entry),
+          status: sessionSummary.abortedLastRun ? 'aborted' : sessionSummary.active ? 'active' : 'completed',
+        });
+      }
+    }
+  }
+
+  activeSessions.sort((a, b) => b.updatedAt - a.updatedAt);
+  recentRuns.sort((a, b) => b.updatedAt - a.updatedAt);
+
+  return {
+    activeSessions: activeSessions.slice(0, 20),
+    recentRuns: recentRuns.slice(0, 20),
+  };
+}
+
 function fetchOpenClawRuntime() {
   beginSource('openclaw');
   try {
@@ -643,6 +797,7 @@ function fetchOpenClawRuntime() {
     const updatedAt = Date.now();
     const gatewayPid = status.gatewayService?.runtime?.pid;
     const gatewayProcess = readProcessSnapshot(gatewayPid);
+    const activity = collectOpenClawActivity();
 
     succeedSource('openclaw', updatedAt);
     return {
@@ -662,6 +817,8 @@ function fetchOpenClawRuntime() {
       updateChannel: status.updateChannel || null,
       updateInfo: status.update?.registry || null,
       secretDiagnostics: status.secretDiagnostics || [],
+      activeSessions: activity.activeSessions,
+      recentRuns: activity.recentRuns,
       updatedAt,
     };
   } catch (error) {

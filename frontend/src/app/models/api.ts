@@ -301,6 +301,32 @@ export interface OpenClawTaskAudit {
   byCode?: Record<string, number>;
 }
 
+export interface OpenClawSessionSummary {
+  key: string;
+  sessionId: string;
+  agent: string;
+  type: string;
+  name: string;
+  model: string;
+  updatedAt: number;
+  ageMs: number;
+  active: boolean;
+  percentUsed: number | null;
+  totalTokens: number;
+  contextTokens: number | null;
+  estimatedCostUsd: number | null;
+  chatType?: string | null;
+  label?: string | null;
+  subject?: string | null;
+  spawnedBy?: string | null;
+  abortedLastRun: boolean;
+}
+
+export interface OpenClawRunSummary extends OpenClawSessionSummary {
+  durationSec: number | null;
+  status: string;
+}
+
 export interface OpenClawResponse extends ApiEnvelope {
   version: string | null;
   gateway: OpenClawGateway | null;
@@ -314,6 +340,8 @@ export interface OpenClawResponse extends ApiEnvelope {
   tasks?: OpenClawTasksSummary | null;
   taskAudit?: OpenClawTaskAudit | null;
   channelSummary?: string[];
+  activeSessions: OpenClawSessionSummary[];
+  recentRuns: OpenClawRunSummary[];
   updateAvailable?: boolean | null;
   updateChannel?: string | null;
   updateInfo?: { latestVersion?: string | null } | null;
