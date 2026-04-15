@@ -78,6 +78,9 @@ function createTestApp({ cacheOverrides = {}, sourceOverrides = {}, infraError =
       memoryPlugin: { enabled: true, slot: 'memory-core' },
       activeSessions: [{ key: 'agent:main:discord:direct:123', sessionId: 'sid-1', agent: 'main', type: 'direct', name: 'Tony DM', model: 'gpt-5.4', updatedAt: 1713124800000, ageMs: 60000, active: true, percentUsed: 12, totalTokens: 3200, contextTokens: 272000, estimatedCostUsd: 0.01, chatType: 'direct', label: 'Tony DM', subject: null, spawnedBy: null, abortedLastRun: false }],
       recentRuns: [{ key: 'agent:main:cron:test:run:sid-2', sessionId: 'sid-2', agent: 'main', type: 'run', name: 'Daily Standup', model: 'gpt-5.4', updatedAt: 1713124800000, ageMs: 120000, active: false, percentUsed: 8, totalTokens: 2800, contextTokens: 272000, estimatedCostUsd: 0.02, chatType: 'direct', label: 'Daily Standup', subject: null, spawnedBy: null, abortedLastRun: false, durationSec: 45, status: 'completed' }],
+      logsTail: [{ timestamp: 1713124800000, seenAt: '2026-04-15T12:00:00Z', level: 'error', source: 'tools', message: '[tools] read failed: ENOENT' }],
+      errorFeed: [{ signature: 'tools|enoent', source: 'tools', severity: 'error', count: 2, firstSeen: 1713124700000, lastSeen: 1713124800000, sampleMessage: '[tools] read failed: ENOENT', lastOccurrences: [{ timestamp: 1713124800000, source: 'tools', level: 'error', message: '[tools] read failed: ENOENT' }] }],
+      logsError: null,
       updateAvailable: false,
       updateChannel: 'stable',
       updateInfo: { latestVersion: '2026.4.14' },
@@ -150,6 +153,8 @@ test('main API routes return smoke-level shapes', async () => {
       assert.equal(openClaw.agents.totalSessions, 16);
       assert.equal(openClaw.activeSessions.length, 1);
       assert.equal(openClaw.recentRuns.length, 1);
+      assert.equal(openClaw.logsTail.length, 1);
+      assert.equal(openClaw.errorFeed.length, 1);
     });
   } finally {
     cleanup();

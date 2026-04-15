@@ -632,9 +632,24 @@ function readProcessSnapshot(pid) {
 }
 
 const OPENCLAW_AGENTS_DIR = path.join(process.env.HOME || '', '.openclaw', 'agents');
+const OPENCLAW_CRON_RUNS_DIR = path.join(process.env.HOME || '', '.openclaw', 'cron', 'runs');
 const OPENCLAW_ACTIVE_WINDOW_MS = 30 * 60 * 1000;
 const OPENCLAW_RECENT_SESSION_MS = 24 * 60 * 60 * 1000;
 const OPENCLAW_RECENT_ACTIVITY_MS = 7 * 24 * 60 * 60 * 1000;
+const OPENCLAW_LOG_TAIL_LIMIT = 80;
+const OPENCLAW_LOG_MAX_BYTES = 180000;
+const OPENCLAW_LOG_TIMEOUT_MS = 10000;
+const OPENCLAW_ERROR_FEED_LIMIT = 12;
+const OPENCLAW_ERROR_OCCURRENCES_LIMIT = 3;
+const OPENCLAW_ERROR_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+const OPENCLAW_UUID_RE = /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi;
+const OPENCLAW_ID_TOKEN_RE = /\b(?:id|session|task|job|trace|request|pid|diagId|sessionKey|lane)[:=]?\s*[^\s,]+/gi;
+const OPENCLAW_URL_RE = /\b(?:ws|wss|https?):\/\/\S+/gi;
+const OPENCLAW_PATH_RE = /\/(?:home|tmp)\/[^\s]+/g;
+const OPENCLAW_AGENT_KEY_RE = /agent:[^\s]+/gi;
+const OPENCLAW_NUMERIC_RE = /\b\d+\b/g;
+const OPENCLAW_TIMESTAMP_RE = /\b\d{4}-\d{2}-\d{2}[t\s]\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:z|[+\-]\d{2}:\d{2})?\b/gi;
 
 function readJsonFileSafe(filePath) {
   return JSON.parse(fs.readFileSync(filePath, 'utf8'));
@@ -785,6 +800,192 @@ function collectOpenClawActivity() {
   };
 }
 
+function cleanOpenClawLogMessage(message, maxLength = 320) {
+  if (!message) return '';
+
+  let cleaned = String(message)
+    .replace(/^\{[^}]+\}\s*/, '')
+    .replace(/\s+/g, ' ')
+    .replace(/\sraw_params=.*$/i, ' raw_params=<omitted>')
+    .replace(/\saggregated=.*$/i, ' aggregated=<omitted>')
+    .trim();
+
+  if (cleaned.length > maxLength) {
+    cleaned = `${cleaned.slice(0, maxLength - 1)}…`;
+  }
+
+  return cleaned;
+}
+
+function normalizeOpenClawErrorSignature(message) {
+  return cleanOpenClawLogMessage(message, 500)
+    .toLowerCase()
+    .replace(OPENCLAW_TIMESTAMP_RE, '<ts>')
+    .replace(OPENCLAW_UUID_RE, '<uuid>')
+    .replace(OPENCLAW_ID_TOKEN_RE, '<id>')
+    .replace(OPENCLAW_URL_RE, '<url>')
+    .replace(OPENCLAW_PATH_RE, '<path>')
+    .replace(OPENCLAW_AGENT_KEY_RE, 'agent:<session>')
+    .replace(OPENCLAW_NUMERIC_RE, '<n>')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function openClawLogSource(entry = {}) {
+  if (entry.subsystem) return String(entry.subsystem);
+
+  const message = String(entry.message || '');
+  const prefixMatch = message.match(/^\[([^\]]+)\]/);
+  if (prefixMatch) return prefixMatch[1];
+  if (/lane wait exceeded/i.test(message)) return 'diagnostic';
+  return 'gateway';
+}
+
+function readOpenClawLogTail() {
+  const raw = execFileSync('openclaw', [
+    'logs',
+    '--json',
+    '--limit',
+    String(OPENCLAW_LOG_TAIL_LIMIT),
+    '--max-bytes',
+    String(OPENCLAW_LOG_MAX_BYTES),
+    '--timeout',
+    String(OPENCLAW_LOG_TIMEOUT_MS),
+  ], {
+    encoding: 'utf8',
+    timeout: OPENCLAW_LOG_TIMEOUT_MS + 5000,
+    maxBuffer: 4 * 1024 * 1024,
+  });
+
+  return raw
+    .split('\n')
+    .map(line => line.trim())
+    .filter(Boolean)
+    .map(line => {
+      try {
+        return JSON.parse(line);
+      } catch {
+        return null;
+      }
+    })
+    .filter(entry => entry && entry.type === 'log')
+    .map(entry => {
+      const timestamp = Date.parse(entry.time || '') || Date.now();
+      return {
+        timestamp,
+        seenAt: entry.time || new Date(timestamp).toISOString(),
+        level: String(entry.level || 'info').toLowerCase(),
+        source: openClawLogSource(entry),
+        message: cleanOpenClawLogMessage(entry.message || entry.raw || ''),
+      };
+    })
+    .filter(entry => entry.message)
+    .sort((a, b) => a.timestamp - b.timestamp)
+    .slice(-OPENCLAW_LOG_TAIL_LIMIT);
+}
+
+function readRecentOpenClawCronErrors() {
+  if (!OPENCLAW_CRON_RUNS_DIR || !fs.existsSync(OPENCLAW_CRON_RUNS_DIR)) {
+    return [];
+  }
+
+  const threshold = Date.now() - OPENCLAW_ERROR_WINDOW_MS;
+  const files = fs.readdirSync(OPENCLAW_CRON_RUNS_DIR)
+    .filter(name => name.endsWith('.jsonl'))
+    .map(name => {
+      const fullPath = path.join(OPENCLAW_CRON_RUNS_DIR, name);
+      const stats = fs.statSync(fullPath);
+      return { fullPath, mtimeMs: stats.mtimeMs };
+    })
+    .sort((a, b) => b.mtimeMs - a.mtimeMs)
+    .slice(0, 20);
+
+  const events = [];
+
+  for (const file of files) {
+    const lines = fs.readFileSync(file.fullPath, 'utf8').split('\n').filter(Boolean);
+    for (const line of lines) {
+      try {
+        const entry = JSON.parse(line);
+        const timestamp = Number(entry.ts || 0);
+        if (!timestamp || timestamp < threshold) continue;
+
+        const level = entry.status === 'error' ? 'error' : entry.status === 'warn' ? 'warn' : null;
+        if (!level) continue;
+
+        const message = cleanOpenClawLogMessage(entry.error || entry.summary || entry.message || entry.action || 'cron runtime error');
+        if (!message) continue;
+
+        events.push({
+          timestamp,
+          seenAt: new Date(timestamp).toISOString(),
+          level,
+          source: 'cron',
+          message,
+        });
+      } catch {
+        // ignore malformed lines
+      }
+    }
+  }
+
+  return events
+    .sort((a, b) => a.timestamp - b.timestamp)
+    .slice(-OPENCLAW_LOG_TAIL_LIMIT);
+}
+
+function buildOpenClawErrorFeed(...collections) {
+  const threshold = Date.now() - OPENCLAW_ERROR_WINDOW_MS;
+  const groups = new Map();
+
+  for (const collection of collections) {
+    for (const entry of collection || []) {
+      if (!entry || !entry.message || (entry.level !== 'warn' && entry.level !== 'error')) continue;
+      if (entry.timestamp && entry.timestamp < threshold) continue;
+
+      const signature = `${entry.source}|${normalizeOpenClawErrorSignature(entry.message)}`;
+      if (!signature) continue;
+
+      const existing = groups.get(signature) || {
+        signature,
+        source: entry.source,
+        severity: entry.level,
+        count: 0,
+        firstSeen: entry.timestamp,
+        lastSeen: entry.timestamp,
+        sampleMessage: entry.message,
+        lastOccurrences: [],
+      };
+
+      existing.count += 1;
+      existing.firstSeen = Math.min(existing.firstSeen, entry.timestamp);
+      existing.lastSeen = Math.max(existing.lastSeen, entry.timestamp);
+      if (existing.severity !== 'error' && entry.level === 'error') {
+        existing.severity = 'error';
+      }
+      existing.lastOccurrences.push({
+        timestamp: entry.timestamp,
+        source: entry.source,
+        level: entry.level,
+        message: entry.message,
+      });
+      existing.lastOccurrences = existing.lastOccurrences
+        .sort((a, b) => a.timestamp - b.timestamp)
+        .slice(-OPENCLAW_ERROR_OCCURRENCES_LIMIT);
+
+      groups.set(signature, existing);
+    }
+  }
+
+  return [...groups.values()]
+    .sort((a, b) => {
+      if (b.count !== a.count) return b.count - a.count;
+      if (a.severity !== b.severity) return a.severity === 'error' ? -1 : 1;
+      return b.lastSeen - a.lastSeen;
+    })
+    .slice(0, OPENCLAW_ERROR_FEED_LIMIT);
+}
+
 function fetchOpenClawRuntime() {
   beginSource('openclaw');
   try {
@@ -798,6 +999,23 @@ function fetchOpenClawRuntime() {
     const gatewayPid = status.gatewayService?.runtime?.pid;
     const gatewayProcess = readProcessSnapshot(gatewayPid);
     const activity = collectOpenClawActivity();
+    let logsTail = [];
+    let errorFeed = [];
+    let logsError = null;
+
+    try {
+      const runtimeLogs = readOpenClawLogTail();
+      const cronErrors = readRecentOpenClawCronErrors();
+      logsTail = runtimeLogs;
+      errorFeed = buildOpenClawErrorFeed(runtimeLogs, cronErrors);
+    } catch (error) {
+      logsError = error.message;
+      try {
+        errorFeed = buildOpenClawErrorFeed(readRecentOpenClawCronErrors());
+      } catch {
+        errorFeed = [];
+      }
+    }
 
     succeedSource('openclaw', updatedAt);
     return {
@@ -819,6 +1037,9 @@ function fetchOpenClawRuntime() {
       secretDiagnostics: status.secretDiagnostics || [],
       activeSessions: activity.activeSessions,
       recentRuns: activity.recentRuns,
+      logsTail,
+      errorFeed,
+      logsError,
       updatedAt,
     };
   } catch (error) {
