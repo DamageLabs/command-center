@@ -6,7 +6,7 @@ import { ThemeService } from '../../core/theme/theme.service';
 import { IssueItem, PullRequestItem, RepoSummary } from '../../models/api';
 import { NavItem } from '../models/nav-item';
 
-type CommandGroup = 'Actions' | 'Views' | 'Repos' | 'Issues' | 'PRs';
+type CommandGroup = 'Recent' | 'Actions' | 'Views' | 'Repos' | 'Issues' | 'PRs';
 
 interface CommandPaletteItem {
   id: string;
@@ -24,6 +24,9 @@ interface CommandSection {
   group: CommandGroup;
   items: CommandPaletteItem[];
 }
+
+const RECENT_COMMANDS_KEY = 'command-center-recent-commands';
+const RECENT_COMMANDS_LIMIT = 6;
 
 @Component({
   selector: 'cc-command-palette',
@@ -109,6 +112,7 @@ export class CommandPaletteComponent {
 
   protected readonly query = signal('');
   protected readonly activeIndex = signal(0);
+  private readonly recentIds = signal<string[]>(this.readRecentIds());
 
   private readonly navCommands = computed<CommandPaletteItem[]>(() => this.navItems().map((item, index) => ({
     id: `view:${item.path}`,
@@ -261,16 +265,29 @@ export class CommandPaletteComponent {
   private readonly repoCommands = computed<CommandPaletteItem[]>(() => this.repoItems(this.data.repos().data() ?? []));
   private readonly issueCommands = computed<CommandPaletteItem[]>(() => this.issueItems(this.allIssues()));
   private readonly prCommands = computed<CommandPaletteItem[]>(() => this.prItems(this.data.prs().data() ?? []));
+  private readonly allCommands = computed<CommandPaletteItem[]>(() => [
+    ...this.actionCommands(),
+    ...this.navCommands(),
+    ...this.repoCommands(),
+    ...this.issueCommands(),
+    ...this.prCommands(),
+  ]);
+  private readonly recentCommands = computed<CommandPaletteItem[]>(() => {
+    const byId = new Map(this.allCommands().map((item) => [item.id, item]));
+    return this.recentIds()
+      .map((id) => byId.get(id))
+      .filter(Boolean)
+      .map((item) => ({
+        ...item!,
+        group: 'Recent' as const,
+        badge: item!.badge || 'Recent',
+        emptyRank: 800,
+      }));
+  });
 
   protected readonly flatResults = computed<CommandPaletteItem[]>(() => {
     const q = this.query().trim().toLowerCase();
-    const items = [
-      ...this.actionCommands(),
-      ...this.navCommands(),
-      ...this.repoCommands(),
-      ...this.issueCommands(),
-      ...this.prCommands(),
-    ];
+    const items = q ? this.allCommands() : [...this.recentCommands(), ...this.allCommands()];
 
     return items
       .map((item) => ({ item, score: this.scoreItem(item, q) }))
@@ -281,7 +298,7 @@ export class CommandPaletteComponent {
   });
 
   protected readonly groupedResults = computed<CommandSection[]>(() => {
-    const groups: CommandGroup[] = ['Actions', 'Views', 'Repos', 'Issues', 'PRs'];
+    const groups: CommandGroup[] = ['Recent', 'Actions', 'Views', 'Repos', 'Issues', 'PRs'];
     return groups
       .map((group) => ({ group, items: this.flatResults().filter((item) => item.group === group) }))
       .filter((section) => section.items.length > 0);
@@ -342,6 +359,7 @@ export class CommandPaletteComponent {
   }
 
   protected select(item: CommandPaletteItem): void {
+    this.rememberCommand(item.id);
     item.run();
     this.close();
   }
@@ -374,7 +392,30 @@ export class CommandPaletteComponent {
     }
 
     if (haystack.includes(query)) score += 30;
+    if (this.recentIds().includes(item.id)) score += 24;
     return score + item.emptyRank / 10;
+  }
+
+  private readRecentIds(): string[] {
+    if (typeof window === 'undefined') return [];
+    try {
+      const raw = window.localStorage.getItem(RECENT_COMMANDS_KEY);
+      const parsed = JSON.parse(raw || '[]');
+      return Array.isArray(parsed) ? parsed.filter((value) => typeof value === 'string').slice(0, RECENT_COMMANDS_LIMIT) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  private rememberCommand(id: string): void {
+    const next = [id, ...this.recentIds().filter((value) => value !== id)].slice(0, RECENT_COMMANDS_LIMIT);
+    this.recentIds.set(next);
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.setItem(RECENT_COMMANDS_KEY, JSON.stringify(next));
+    } catch {
+      // ignore localStorage failures
+    }
   }
 
   private bestMatch(items: CommandPaletteItem[], query: string): CommandPaletteItem | null {
