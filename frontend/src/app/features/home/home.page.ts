@@ -12,6 +12,7 @@ import { CardComponent } from '../../shared/ui/card.component';
 import { PanelActionsComponent } from '../../shared/ui/panel-actions.component';
 import { PillComponent } from '../../shared/ui/pill.component';
 import { StatePanelComponent } from '../../shared/ui/state-panel.component';
+import { TrendBarsComponent } from '../../shared/ui/trend-bars.component';
 
 interface PinnedHomeItem {
   type: 'Issue' | 'PR' | 'Task' | 'Event' | 'Repo';
@@ -24,7 +25,7 @@ interface PinnedHomeItem {
 
 @Component({
   selector: 'app-home-page',
-  imports: [ViewShellComponent, CardComponent, PanelActionsComponent, PillComponent, StatePanelComponent],
+  imports: [ViewShellComponent, CardComponent, PanelActionsComponent, PillComponent, StatePanelComponent, TrendBarsComponent],
   template: `
     <app-view-shell
       eyebrow="Overview"
@@ -43,21 +44,37 @@ interface PinnedHomeItem {
           <button type="button" (click)="go('/issues/urgent')" class="cc-card-button p-5 text-left">
             <div class="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--cc-text-soft)]">Urgent</div>
             <div class="mt-3 text-3xl font-semibold text-rose-300">{{ issues.data()?.counts?.urgent ?? 0 }}</div>
+            <div class="mt-3 flex items-end gap-3">
+              <cc-trend-bars [values]="urgentIssueTrend()" tone="rose"></cc-trend-bars>
+              <div class="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--cc-text-soft)]">7d new issues</div>
+            </div>
             <div class="mt-2 text-sm text-[var(--cc-text-muted)]">bugs and critical work</div>
           </button>
           <button type="button" (click)="go('/issues/active')" class="cc-card-button p-5 text-left">
             <div class="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--cc-text-soft)]">Active</div>
             <div class="mt-3 text-3xl font-semibold text-amber-300">{{ issues.data()?.counts?.active ?? 0 }}</div>
+            <div class="mt-3 flex items-end gap-3">
+              <cc-trend-bars [values]="activeIssueTrend()" tone="amber"></cc-trend-bars>
+              <div class="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--cc-text-soft)]">7d new issues</div>
+            </div>
             <div class="mt-2 text-sm text-[var(--cc-text-muted)]">in-progress issues</div>
           </button>
           <button type="button" (click)="go('/issues/backlog')" class="cc-card-button p-5 text-left">
             <div class="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--cc-text-soft)]">Backlog</div>
             <div class="mt-3 text-3xl font-semibold text-slate-300">{{ issues.data()?.counts?.deferred ?? 0 }}</div>
+            <div class="mt-3 flex items-end gap-3">
+              <cc-trend-bars [values]="backlogIssueTrend()" tone="slate"></cc-trend-bars>
+              <div class="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--cc-text-soft)]">7d new issues</div>
+            </div>
             <div class="mt-2 text-sm text-[var(--cc-text-muted)]">{{ issues.data()?.total ?? 0 }} total open</div>
           </button>
           <button type="button" (click)="go('/tasks')" class="cc-card-button p-5 text-left">
             <div class="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--cc-text-soft)]">Tasks</div>
             <div class="mt-3 text-3xl font-semibold text-fuchsia-300">{{ tasks.data()?.open?.length ?? 0 }}</div>
+            <div class="mt-3 flex items-end gap-3">
+              <cc-trend-bars [values]="taskCompletionTrend()" tone="fuchsia"></cc-trend-bars>
+              <div class="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--cc-text-soft)]">7d completions</div>
+            </div>
             <div class="mt-2 text-sm text-[var(--cc-text-muted)]">open in Obsidian</div>
           </button>
           <button type="button" (click)="go('/infra')" class="cc-card-button p-5 text-left">
@@ -355,6 +372,10 @@ export class HomePage {
     return [...pinned, ...recent].slice(0, 6);
   });
   protected readonly homeTasks = computed(() => (this.tasks.data()?.open ?? []).slice(0, 4));
+  protected readonly urgentIssueTrend = computed(() => this.dailyCountTrend((this.issues.data()?.urgent ?? []).map((issue) => issue.createdAt)));
+  protected readonly activeIssueTrend = computed(() => this.dailyCountTrend((this.issues.data()?.active ?? []).map((issue) => issue.createdAt)));
+  protected readonly backlogIssueTrend = computed(() => this.dailyCountTrend((this.issues.data()?.deferred ?? []).map((issue) => issue.createdAt)));
+  protected readonly taskCompletionTrend = computed(() => this.dailyCountTrend((this.tasks.data()?.completed ?? []).map((task) => task.completedAt).filter(Boolean) as string[]));
   protected readonly hiddenSections = computed(() => this.homeLayout.layout().hidden);
   protected readonly pinnedHomeItems = computed<PinnedHomeItem[]>(() => {
     const items: PinnedHomeItem[] = [];
@@ -475,6 +496,23 @@ export class HomePage {
 
   protected go(path: string): void {
     this.router.navigateByUrl(path);
+  }
+
+  private dailyCountTrend(values: string[], days = 7): number[] {
+    const buckets = Array.from({ length: days }, () => 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    for (const value of values) {
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) continue;
+      date.setHours(0, 0, 0, 0);
+      const diff = Math.floor((today.getTime() - date.getTime()) / 86400000);
+      if (diff < 0 || diff >= days) continue;
+      buckets[days - diff - 1] += 1;
+    }
+
+    return buckets;
   }
 
   protected sectionLabel(sectionId: string): string {
