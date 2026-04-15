@@ -2,15 +2,17 @@ import { Component, computed, inject } from '@angular/core';
 
 import { DashboardDataService } from '../../core/data/dashboard-data.service';
 import { ViewShellComponent } from '../../layout/view-shell.component';
+import { STANDARD_PANEL_ACTIONS } from '../../shared/models/panel-action';
+import { PanelActionsComponent } from '../../shared/ui/panel-actions.component';
 import { StatePanelComponent } from '../../shared/ui/state-panel.component';
 
 @Component({
   selector: 'app-analytics-page',
-  imports: [ViewShellComponent, StatePanelComponent],
+  imports: [ViewShellComponent, PanelActionsComponent, StatePanelComponent],
   template: `
     <app-view-shell eyebrow="Analytics" title="Analytics" subtitle="Traffic summary and site-level metrics." [meta]="meta()">
       <div view-actions class="flex flex-wrap items-center gap-3">
-        <button type="button" (click)="analytics.refresh()" class="cc-action-button">Refresh</button>
+        <cc-panel-actions [actions]="headerActions" (actionSelected)="onHeaderAction($event)"></cc-panel-actions>
       </div>
 
       @if (analytics.isLoading()) {
@@ -69,6 +71,7 @@ export class AnalyticsPage {
   private readonly data = inject(DashboardDataService);
 
   protected readonly analytics = this.data.analytics();
+  protected readonly headerActions = STANDARD_PANEL_ACTIONS;
   protected readonly averageBounce = computed(() => {
     const totals = this.analytics.data()?.totals;
     if (!totals || totals.visits === 0) return 0;
@@ -79,6 +82,22 @@ export class AnalyticsPage {
     const summary = `Last 30 days · ${count} properties`;
     return this.analytics.source()?.status ? `${summary} · ${this.analytics.source()!.status}` : summary;
   });
+
+  protected onHeaderAction(actionId: string): void {
+    if (actionId === 'refresh') {
+      this.analytics.refresh();
+      return;
+    }
+
+    if (actionId === 'copy') {
+      void this.copyLink();
+    }
+  }
+
+  private async copyLink(): Promise<void> {
+    if (typeof window === 'undefined' || !navigator?.clipboard) return;
+    await navigator.clipboard.writeText(window.location.href);
+  }
 
   protected shareOfPageviews(pageviews: number): number {
     const total = this.analytics.data()?.totals.pageviews ?? 0;

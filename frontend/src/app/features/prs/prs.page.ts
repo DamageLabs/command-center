@@ -4,6 +4,8 @@ import { DashboardDataService } from '../../core/data/dashboard-data.service';
 import { PinService } from '../../core/state/pin.service';
 import { PullRequestItem } from '../../models/api';
 import { ViewShellComponent } from '../../layout/view-shell.component';
+import { STANDARD_PANEL_ACTIONS } from '../../shared/models/panel-action';
+import { PanelActionsComponent } from '../../shared/ui/panel-actions.component';
 import { StatePanelComponent } from '../../shared/ui/state-panel.component';
 
 type PrSection = {
@@ -15,11 +17,11 @@ type PrSection = {
 
 @Component({
   selector: 'app-prs-page',
-  imports: [ViewShellComponent, StatePanelComponent],
+  imports: [ViewShellComponent, PanelActionsComponent, StatePanelComponent],
   template: `
     <app-view-shell eyebrow="Review" title="Pull Requests" subtitle="Open pull requests with stronger action cues, ownership, and scanability." [meta]="meta()">
       <div view-actions class="flex flex-wrap items-center gap-3">
-        <button type="button" (click)="prs.refresh()" class="cc-action-button">Refresh</button>
+        <cc-panel-actions [actions]="headerActions" (actionSelected)="onHeaderAction($event)"></cc-panel-actions>
         <input [value]="searchText()" (input)="searchText.set($any($event.target).value)" class="cc-input min-w-64 px-4 py-2 text-sm" placeholder="Search PRs…" />
       </div>
 
@@ -129,6 +131,7 @@ export class PrsPage {
 
   protected readonly prs = this.data.prs();
   protected readonly searchText = signal('');
+  protected readonly headerActions = STANDARD_PANEL_ACTIONS;
 
   protected readonly allItems = computed(() => this.prs.data() ?? []);
   protected readonly filteredItems = computed(() => {
@@ -160,6 +163,17 @@ export class PrsPage {
 
   protected togglePinned(pr: PullRequestItem): void {
     this.pins.toggle('pr', this.prKey(pr));
+  }
+
+  protected onHeaderAction(actionId: string): void {
+    if (actionId === 'refresh') {
+      this.prs.refresh();
+      return;
+    }
+
+    if (actionId === 'copy') {
+      void this.copyLink();
+    }
   }
 
   protected canUseGitHubAvatar(login?: string | null): boolean {
@@ -212,6 +226,11 @@ export class PrsPage {
     if (pr.reviewDecision === 'APPROVED') return 'rgba(52, 211, 153, 0.8)';
     if (pr.isDraft) return 'rgba(148, 163, 184, 0.5)';
     return 'rgba(56, 189, 248, 0.8)';
+  }
+
+  private async copyLink(): Promise<void> {
+    if (typeof window === 'undefined' || !navigator?.clipboard) return;
+    await navigator.clipboard.writeText(window.location.href);
   }
 
   protected timeAgo(iso: string): string {

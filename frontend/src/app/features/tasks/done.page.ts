@@ -2,15 +2,17 @@ import { Component, computed, inject, signal } from '@angular/core';
 
 import { DashboardDataService } from '../../core/data/dashboard-data.service';
 import { ViewShellComponent } from '../../layout/view-shell.component';
+import { STANDARD_PANEL_ACTIONS } from '../../shared/models/panel-action';
+import { PanelActionsComponent } from '../../shared/ui/panel-actions.component';
 import { StatePanelComponent } from '../../shared/ui/state-panel.component';
 
 @Component({
   selector: 'app-done-page',
-  imports: [ViewShellComponent, StatePanelComponent],
+  imports: [ViewShellComponent, PanelActionsComponent, StatePanelComponent],
   template: `
     <app-view-shell eyebrow="Tasks" title="Completed Tasks" subtitle="Recently completed tasks from Obsidian." [meta]="meta()">
       <div view-actions class="flex flex-wrap items-center gap-3">
-        <button type="button" (click)="tasks.refresh()" class="cc-action-button">Refresh</button>
+        <cc-panel-actions [actions]="headerActions" (actionSelected)="onHeaderAction($event)"></cc-panel-actions>
         <input [value]="searchText()" (input)="searchText.set($any($event.target).value)" class="cc-input min-w-64 px-4 py-2 text-sm" placeholder="Search completed tasks…" />
       </div>
 
@@ -47,6 +49,7 @@ export class DonePage {
 
   protected readonly tasks = this.data.tasks();
   protected readonly searchText = signal('');
+  protected readonly headerActions = STANDARD_PANEL_ACTIONS;
   protected readonly allItems = computed(() => this.tasks.data()?.completed ?? []);
   protected readonly filteredItems = computed(() => {
     const q = this.searchText().trim().toLowerCase();
@@ -62,6 +65,22 @@ export class DonePage {
     const summary = `${this.filteredItems().length} completed task${this.filteredItems().length === 1 ? '' : 's'}`;
     return source?.status ? `${summary} · ${source.status}` : summary;
   });
+
+  protected onHeaderAction(actionId: string): void {
+    if (actionId === 'refresh') {
+      this.tasks.refresh();
+      return;
+    }
+
+    if (actionId === 'copy') {
+      void this.copyLink();
+    }
+  }
+
+  private async copyLink(): Promise<void> {
+    if (typeof window === 'undefined' || !navigator?.clipboard) return;
+    await navigator.clipboard.writeText(window.location.href);
+  }
 
   protected taskKey(task: { title: string }): string {
     return encodeURIComponent(task.title).substring(0, 80);

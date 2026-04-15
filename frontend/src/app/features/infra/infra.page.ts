@@ -2,16 +2,18 @@ import { Component, computed, inject } from '@angular/core';
 
 import { DashboardDataService } from '../../core/data/dashboard-data.service';
 import { ViewShellComponent } from '../../layout/view-shell.component';
+import { STANDARD_PANEL_ACTIONS } from '../../shared/models/panel-action';
 import { PillComponent } from '../../shared/ui/pill.component';
+import { PanelActionsComponent } from '../../shared/ui/panel-actions.component';
 import { StatePanelComponent } from '../../shared/ui/state-panel.component';
 
 @Component({
   selector: 'app-infra-page',
-  imports: [ViewShellComponent, PillComponent, StatePanelComponent],
+  imports: [ViewShellComponent, PillComponent, PanelActionsComponent, StatePanelComponent],
   template: `
     <app-view-shell eyebrow="Infrastructure" title="Infrastructure" subtitle="Process status, uptime, restarts, and degraded-state handling." [meta]="meta()">
       <div view-actions class="flex flex-wrap items-center gap-3">
-        <button type="button" (click)="infra.refresh()" class="cc-action-button">Refresh</button>
+        <cc-panel-actions [actions]="headerActions" (actionSelected)="onHeaderAction($event)"></cc-panel-actions>
       </div>
 
       @if (infra.isLoading()) {
@@ -55,6 +57,7 @@ export class InfraPage {
   private readonly data = inject(DashboardDataService);
 
   protected readonly infra = this.data.infra();
+  protected readonly headerActions = STANDARD_PANEL_ACTIONS;
   protected readonly onlineCount = computed(() => (this.infra.data() ?? []).filter((process) => process.status === 'online').length);
   protected readonly downCount = computed(() => (this.infra.data() ?? []).filter((process) => process.status !== 'online').length);
   protected readonly restartCount = computed(() => (this.infra.data() ?? []).reduce((sum, process) => sum + (process.restarts || 0), 0));
@@ -62,6 +65,22 @@ export class InfraPage {
     const summary = `${this.onlineCount()} online · ${this.downCount()} down · ${this.restartCount()} restarts`;
     return this.infra.source()?.status ? `${summary} · ${this.infra.source()!.status}` : summary;
   });
+
+  protected onHeaderAction(actionId: string): void {
+    if (actionId === 'refresh') {
+      this.infra.refresh();
+      return;
+    }
+
+    if (actionId === 'copy') {
+      void this.copyLink();
+    }
+  }
+
+  private async copyLink(): Promise<void> {
+    if (typeof window === 'undefined' || !navigator?.clipboard) return;
+    await navigator.clipboard.writeText(window.location.href);
+  }
 
   protected formatUptime(ms: number | null): string {
     if (!ms) return '—';
