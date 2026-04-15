@@ -3,10 +3,10 @@ import { Router } from '@angular/router';
 
 import { DashboardDataService } from '../../core/data/dashboard-data.service';
 import { ThemeService } from '../../core/theme/theme.service';
-import { IssueItem, PullRequestItem, RepoSummary } from '../../models/api';
+import { DailyNote, DecisionNote, IssueItem, PullRequestItem, RepoSummary, StandupSummary } from '../../models/api';
 import { NavItem } from '../models/nav-item';
 
-type CommandGroup = 'Recent' | 'Actions' | 'Views' | 'Repos' | 'Issues' | 'PRs';
+type CommandGroup = 'Recent' | 'Actions' | 'Views' | 'Notes' | 'Repos' | 'Issues' | 'PRs';
 
 interface CommandPaletteItem {
   id: string;
@@ -262,12 +262,14 @@ export class CommandPaletteComponent {
     return actions;
   });
 
+  private readonly noteCommands = computed<CommandPaletteItem[]>(() => this.noteItems(this.data.notes().data()?.dailyNote ?? null, this.data.notes().data()?.decisions ?? [], this.data.standup().data()));
   private readonly repoCommands = computed<CommandPaletteItem[]>(() => this.repoItems(this.data.repos().data() ?? []));
   private readonly issueCommands = computed<CommandPaletteItem[]>(() => this.issueItems(this.allIssues()));
   private readonly prCommands = computed<CommandPaletteItem[]>(() => this.prItems(this.data.prs().data() ?? []));
   private readonly allCommands = computed<CommandPaletteItem[]>(() => [
     ...this.actionCommands(),
     ...this.navCommands(),
+    ...this.noteCommands(),
     ...this.repoCommands(),
     ...this.issueCommands(),
     ...this.prCommands(),
@@ -298,7 +300,7 @@ export class CommandPaletteComponent {
   });
 
   protected readonly groupedResults = computed<CommandSection[]>(() => {
-    const groups: CommandGroup[] = ['Recent', 'Actions', 'Views', 'Repos', 'Issues', 'PRs'];
+    const groups: CommandGroup[] = ['Recent', 'Actions', 'Views', 'Notes', 'Repos', 'Issues', 'PRs'];
     return groups
       .map((group) => ({ group, items: this.flatResults().filter((item) => item.group === group) }))
       .filter((section) => section.items.length > 0);
@@ -436,6 +438,60 @@ export class CommandPaletteComponent {
   private async copyToClipboard(value: string): Promise<void> {
     if (!value || typeof window === 'undefined' || !navigator?.clipboard) return;
     await navigator.clipboard.writeText(value);
+  }
+
+  private noteItems(dailyNote: DailyNote | null, decisions: DecisionNote[], standup: StandupSummary | null): CommandPaletteItem[] {
+    const items: CommandPaletteItem[] = [];
+
+    if (dailyNote) {
+      items.push({
+        id: `note:daily:${dailyNote.date}`,
+        group: 'Notes',
+        title: dailyNote.isToday ? 'Daily note (today)' : `Daily note · ${dailyNote.date}`,
+        subtitle: dailyNote.preview || dailyNote.date,
+        keywords: `${dailyNote.date} daily note journal today ${dailyNote.preview}`.toLowerCase(),
+        icon: '✎',
+        badge: dailyNote.isToday ? 'Today' : 'Daily',
+        emptyRank: dailyNote.isToday ? 260 : 230,
+        run: () => {
+          void this.router.navigateByUrl('/notes');
+        },
+      });
+    }
+
+    for (const decision of decisions.slice(0, 6)) {
+      items.push({
+        id: `note:decision:${decision.title}`,
+        group: 'Notes',
+        title: decision.title,
+        subtitle: `${decision.date}${decision.status ? ` · ${decision.status}` : ''}`,
+        keywords: `${decision.title} ${decision.date} decision note ${decision.status || ''} ${decision.preview}`.toLowerCase(),
+        icon: '◆',
+        badge: decision.status || 'Decision',
+        emptyRank: 220,
+        run: () => {
+          void this.router.navigateByUrl('/notes');
+        },
+      });
+    }
+
+    if (standup) {
+      items.push({
+        id: `note:standup:${standup.date}`,
+        group: 'Notes',
+        title: standup.title,
+        subtitle: `${standup.sections.length} repo section${standup.sections.length === 1 ? '' : 's'}`,
+        keywords: `${standup.title} ${standup.date} standup status ${standup.sections.map((section) => section.repo).join(' ')}`.toLowerCase(),
+        icon: '☰',
+        badge: standup.isToday ? 'Today' : 'Standup',
+        emptyRank: standup.isToday ? 250 : 225,
+        run: () => {
+          void this.router.navigateByUrl('/notes');
+        },
+      });
+    }
+
+    return items;
   }
 
   private repoItems(repos: RepoSummary[]): CommandPaletteItem[] {
