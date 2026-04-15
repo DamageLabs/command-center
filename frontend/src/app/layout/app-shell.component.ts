@@ -1,6 +1,7 @@
-import { Component, HostListener, input, signal } from '@angular/core';
+import { Component, HostListener, inject, input, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 
+import { ThemeService } from '../core/theme/theme.service';
 import { NavItem } from '../shared/models/nav-item';
 import { CommandPaletteComponent } from '../shared/ui/command-palette.component';
 import { ThemeToggleComponent } from './theme-toggle.component';
@@ -12,14 +13,12 @@ import { ThemeToggleComponent } from './theme-toggle.component';
     <div class="min-h-screen cc-app-bg text-[var(--cc-text)]">
       <div class="mx-auto min-h-screen max-w-[1680px] xl:grid xl:grid-cols-[280px_minmax(0,1fr)] xl:gap-6 xl:px-6 xl:py-6">
         <aside class="cc-shell-sidebar border-b border-[var(--cc-border)] px-4 py-4 sm:px-6 xl:sticky xl:top-6 xl:h-[calc(100vh-3rem)] xl:rounded-[28px] xl:border xl:px-5 xl:py-5">
-          <div class="flex items-center gap-4">
-            <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 via-sky-500 to-cyan-400 text-lg font-black text-white shadow-lg shadow-indigo-500/20">
-              C
-            </div>
-            <div class="min-w-0">
-              <div class="truncate text-xs font-semibold uppercase tracking-[0.3em] text-[var(--cc-text-soft)]">command.center</div>
-              <div class="mt-1 truncate text-lg font-semibold tracking-tight text-[var(--cc-text)]">Operations cockpit</div>
-            </div>
+          <div>
+            @if (theme.theme() === 'dark') {
+              <img src="brand/command-center-logo-dark-preview.png" alt="COMMAND CENTER" class="block h-auto w-full object-contain" />
+            } @else {
+              <img src="brand/command-center-logo-preview.png" alt="COMMAND CENTER" class="block h-auto w-full object-contain" />
+            }
           </div>
 
           <button type="button" class="mt-6 w-full rounded-2xl border border-[var(--cc-border)] bg-white/5 px-4 py-4 text-left text-sm text-[var(--cc-text-muted)] transition hover:border-sky-400/40 hover:text-[var(--cc-text)]" (click)="openPalette()">
@@ -58,6 +57,7 @@ import { ThemeToggleComponent } from './theme-toggle.component';
 })
 export class AppShellComponent {
   readonly navItems = input.required<NavItem[]>();
+  protected readonly theme = inject(ThemeService);
   protected readonly paletteOpen = signal(false);
 
   @HostListener('document:keydown', ['$event'])
