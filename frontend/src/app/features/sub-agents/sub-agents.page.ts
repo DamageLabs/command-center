@@ -36,7 +36,7 @@ interface SubAgentRuntimeStatus {
           @for (agent of agents(); track agent.id) {
             @let runtime = runtimeStatus(agent);
             <button type="button" (click)="selectAgent(agent.id)" class="cc-list-card p-5 text-left transition-transform" [style.border-color]="selectedAgentId() === agent.id ? 'var(--cc-accent-border)' : null" [style.box-shadow]="selectedAgentId() === agent.id ? '0 0 0 1px var(--cc-accent-border), var(--cc-shadow-md)' : null">
-              <img [src]="agent.portraitPath" [alt]="agent.name + ' portrait'" class="h-52 w-full rounded-[20px] border border-[var(--cc-border)] object-cover" />
+              <img [src]="agent.portraitPath" [alt]="agent.name + ' portrait'" class="w-full rounded-[20px] border border-[var(--cc-border)]" />
               <div class="mt-4 flex items-start justify-between gap-3">
                 <div>
                   <div class="text-lg font-semibold text-[var(--cc-text)]">{{ agent.name }}</div>
@@ -55,7 +55,7 @@ interface SubAgentRuntimeStatus {
         <article class="cc-list-card p-5">
           @if (selectedAgent(); as agent) {
             @let runtime = selectedRuntime();
-            <img [src]="agent.portraitPath" [alt]="agent.name + ' portrait'" class="h-60 w-full rounded-[24px] border border-[var(--cc-border)] object-cover" />
+            <img [src]="agent.portraitPath" [alt]="agent.name + ' portrait'" class="w-full rounded-[24px] border border-[var(--cc-border)]" />
             <div class="mt-5 flex items-start justify-between gap-3">
               <div>
                 <div class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--cc-text-soft)]">Sub-agent</div>
