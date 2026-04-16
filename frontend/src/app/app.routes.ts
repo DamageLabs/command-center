@@ -9,6 +9,7 @@ import { NotesPage } from './features/notes/notes.page';
 import { OpenClawPage } from './features/openclaw/openclaw.page';
 import { PrsPage } from './features/prs/prs.page';
 import { ReposPage } from './features/repos/repos.page';
+import { SubAgentsPage } from './features/sub-agents/sub-agents.page';
 import { DonePage } from './features/tasks/done.page';
 import { TasksPage } from './features/tasks/tasks.page';
 
@@ -90,6 +91,11 @@ export const routes: Routes = [
     path: 'openclaw',
     component: OpenClawPage,
     title: 'OpenClaw Runtime',
+  },
+  {
+    path: 'sub-agents',
+    component: SubAgentsPage,
+    title: 'Atlas Sub-agents',
   },
   {
     path: 'analytics',
