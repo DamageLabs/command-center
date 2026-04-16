@@ -345,6 +345,12 @@ export interface OpenClawUsageModel extends OpenClawUsageTotals {
   lastSeenAt: number | null;
 }
 
+export interface OpenClawUsageAgent extends OpenClawUsageTotals {
+  agent: string;
+  lastSeenAt: number | null;
+  models: OpenClawUsageModel[];
+}
+
 export interface OpenClawUsageDay extends OpenClawUsageTotals {
   date: string;
 }
@@ -355,6 +361,7 @@ export interface OpenClawUsageWindow extends OpenClawUsageTotals {
   startAt: number | null;
   endAt: number;
   models: OpenClawUsageModel[];
+  agents: OpenClawUsageAgent[];
   daily: OpenClawUsageDay[];
 }
 

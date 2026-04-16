@@ -794,11 +794,12 @@ function createOpenClawUsageAccumulator(key, label, startAt, endAt) {
     cacheWriteTokens: 0,
     totalTokens: 0,
     models: new Map(),
+    agents: new Map(),
     daily: new Map(),
   };
 }
 
-function addOpenClawUsageToAccumulator(bucket, event, modelKey) {
+function addOpenClawUsageToAccumulator(bucket, event, modelKey, agentKey) {
   bucket.calls += 1;
   bucket.inputTokens += event.inputTokens;
   bucket.outputTokens += event.outputTokens;
@@ -811,35 +812,96 @@ function addOpenClawUsageToAccumulator(bucket, event, modelKey) {
     bucket.totalCostUsd += event.totalCostUsd;
   }
 
-  if (!modelKey) return;
+  if (modelKey) {
+    const existingModel = bucket.models.get(modelKey) || {
+      model: modelKey,
+      calls: 0,
+      costAvailableCalls: 0,
+      totalCostUsd: 0,
+      inputTokens: 0,
+      outputTokens: 0,
+      cacheReadTokens: 0,
+      cacheWriteTokens: 0,
+      totalTokens: 0,
+      lastSeenAt: null,
+    };
 
-  const existingModel = bucket.models.get(modelKey) || {
-    model: modelKey,
-    calls: 0,
-    costAvailableCalls: 0,
-    totalCostUsd: 0,
-    inputTokens: 0,
-    outputTokens: 0,
-    cacheReadTokens: 0,
-    cacheWriteTokens: 0,
-    totalTokens: 0,
-    lastSeenAt: null,
-  };
+    existingModel.calls += 1;
+    existingModel.inputTokens += event.inputTokens;
+    existingModel.outputTokens += event.outputTokens;
+    existingModel.cacheReadTokens += event.cacheReadTokens;
+    existingModel.cacheWriteTokens += event.cacheWriteTokens;
+    existingModel.totalTokens += event.totalTokens;
+    existingModel.lastSeenAt = existingModel.lastSeenAt === null ? event.timestamp : Math.max(existingModel.lastSeenAt, event.timestamp);
 
-  existingModel.calls += 1;
-  existingModel.inputTokens += event.inputTokens;
-  existingModel.outputTokens += event.outputTokens;
-  existingModel.cacheReadTokens += event.cacheReadTokens;
-  existingModel.cacheWriteTokens += event.cacheWriteTokens;
-  existingModel.totalTokens += event.totalTokens;
-  existingModel.lastSeenAt = existingModel.lastSeenAt === null ? event.timestamp : Math.max(existingModel.lastSeenAt, event.timestamp);
+    if (event.totalCostUsd !== null) {
+      existingModel.costAvailableCalls += 1;
+      existingModel.totalCostUsd += event.totalCostUsd;
+    }
 
-  if (event.totalCostUsd !== null) {
-    existingModel.costAvailableCalls += 1;
-    existingModel.totalCostUsd += event.totalCostUsd;
+    bucket.models.set(modelKey, existingModel);
   }
 
-  bucket.models.set(modelKey, existingModel);
+  if (agentKey) {
+    const existingAgent = bucket.agents.get(agentKey) || {
+      agent: agentKey,
+      calls: 0,
+      costAvailableCalls: 0,
+      totalCostUsd: 0,
+      inputTokens: 0,
+      outputTokens: 0,
+      cacheReadTokens: 0,
+      cacheWriteTokens: 0,
+      totalTokens: 0,
+      lastSeenAt: null,
+      models: new Map(),
+    };
+
+    existingAgent.calls += 1;
+    existingAgent.inputTokens += event.inputTokens;
+    existingAgent.outputTokens += event.outputTokens;
+    existingAgent.cacheReadTokens += event.cacheReadTokens;
+    existingAgent.cacheWriteTokens += event.cacheWriteTokens;
+    existingAgent.totalTokens += event.totalTokens;
+    existingAgent.lastSeenAt = existingAgent.lastSeenAt === null ? event.timestamp : Math.max(existingAgent.lastSeenAt, event.timestamp);
+
+    if (event.totalCostUsd !== null) {
+      existingAgent.costAvailableCalls += 1;
+      existingAgent.totalCostUsd += event.totalCostUsd;
+    }
+
+    if (modelKey) {
+      const existingAgentModel = existingAgent.models.get(modelKey) || {
+        model: modelKey,
+        calls: 0,
+        costAvailableCalls: 0,
+        totalCostUsd: 0,
+        inputTokens: 0,
+        outputTokens: 0,
+        cacheReadTokens: 0,
+        cacheWriteTokens: 0,
+        totalTokens: 0,
+        lastSeenAt: null,
+      };
+
+      existingAgentModel.calls += 1;
+      existingAgentModel.inputTokens += event.inputTokens;
+      existingAgentModel.outputTokens += event.outputTokens;
+      existingAgentModel.cacheReadTokens += event.cacheReadTokens;
+      existingAgentModel.cacheWriteTokens += event.cacheWriteTokens;
+      existingAgentModel.totalTokens += event.totalTokens;
+      existingAgentModel.lastSeenAt = existingAgentModel.lastSeenAt === null ? event.timestamp : Math.max(existingAgentModel.lastSeenAt, event.timestamp);
+
+      if (event.totalCostUsd !== null) {
+        existingAgentModel.costAvailableCalls += 1;
+        existingAgentModel.totalCostUsd += event.totalCostUsd;
+      }
+
+      existingAgent.models.set(modelKey, existingAgentModel);
+    }
+
+    bucket.agents.set(agentKey, existingAgent);
+  }
 
   const dayKey = openClawUsageDateKey(event.timestamp);
   const existingDay = bucket.daily.get(dayKey) || {
@@ -883,6 +945,31 @@ function finalizeOpenClawUsageAccumulator(bucket) {
       return a.model.localeCompare(b.model);
     });
 
+  const agents = [...bucket.agents.values()]
+    .map(agent => ({
+      ...agent,
+      totalCostUsd: agent.costAvailableCalls ? Number(agent.totalCostUsd.toFixed(6)) : null,
+      models: [...agent.models.values()]
+        .map(model => ({
+          ...model,
+          totalCostUsd: model.costAvailableCalls ? Number(model.totalCostUsd.toFixed(6)) : null,
+        }))
+        .sort((a, b) => {
+          const costA = a.totalCostUsd ?? -1;
+          const costB = b.totalCostUsd ?? -1;
+          if (costB !== costA) return costB - costA;
+          if (b.totalTokens !== a.totalTokens) return b.totalTokens - a.totalTokens;
+          return a.model.localeCompare(b.model);
+        }),
+    }))
+    .sort((a, b) => {
+      const costA = a.totalCostUsd ?? -1;
+      const costB = b.totalCostUsd ?? -1;
+      if (costB !== costA) return costB - costA;
+      if (b.totalTokens !== a.totalTokens) return b.totalTokens - a.totalTokens;
+      return a.agent.localeCompare(b.agent);
+    });
+
   const daily = [...bucket.daily.values()]
     .map(day => ({
       ...day,
@@ -904,6 +991,7 @@ function finalizeOpenClawUsageAccumulator(bucket) {
     cacheWriteTokens: bucket.cacheWriteTokens,
     totalTokens: bucket.totalTokens,
     models,
+    agents,
     daily,
   };
 }
@@ -954,9 +1042,18 @@ function listOpenClawUsageFiles() {
   return files.sort();
 }
 
+function openClawUsageAgentId(filePath) {
+  if (!OPENCLAW_AGENTS_DIR) return null;
+  const relative = path.relative(OPENCLAW_AGENTS_DIR, filePath || '');
+  if (!relative || relative.startsWith('..')) return null;
+  const [agentId] = relative.split(path.sep);
+  return agentId || null;
+}
+
 function parseOpenClawUsageFile(filePath, stats) {
   const events = [];
   const rootSessionId = openClawUsageRootSessionId(filePath);
+  const agent = openClawUsageAgentId(filePath);
   const lines = fs.readFileSync(filePath, 'utf8').split('\n').filter(Boolean);
 
   for (const line of lines) {
@@ -1003,6 +1100,7 @@ function parseOpenClawUsageFile(filePath, stats) {
 
       events.push({
         key: eventKey,
+        agent,
         sessionId: rootSessionId,
         timestamp,
         model,
@@ -1081,18 +1179,18 @@ function readOpenClawUsageAnalytics() {
     firstSeenAt = firstSeenAt === null ? event.timestamp : Math.min(firstSeenAt, event.timestamp);
     lastSeenAt = lastSeenAt === null ? event.timestamp : Math.max(lastSeenAt, event.timestamp);
 
-    addOpenClawUsageToAccumulator(windows.all, event, event.model);
+    addOpenClawUsageToAccumulator(windows.all, event, event.model, event.agent);
 
     if (windows.today.startAt !== null && event.timestamp >= windows.today.startAt) {
-      addOpenClawUsageToAccumulator(windows.today, event, event.model);
+      addOpenClawUsageToAccumulator(windows.today, event, event.model, event.agent);
     }
 
     if (windows['7d'].startAt !== null && event.timestamp >= windows['7d'].startAt) {
-      addOpenClawUsageToAccumulator(windows['7d'], event, event.model);
+      addOpenClawUsageToAccumulator(windows['7d'], event, event.model, event.agent);
     }
 
     if (windows['30d'].startAt !== null && event.timestamp >= windows['30d'].startAt) {
-      addOpenClawUsageToAccumulator(windows['30d'], event, event.model);
+      addOpenClawUsageToAccumulator(windows['30d'], event, event.model, event.agent);
     }
   }
 

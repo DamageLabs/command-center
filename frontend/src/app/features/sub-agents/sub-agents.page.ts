@@ -1,7 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
 
 import { DashboardDataService } from '../../core/data/dashboard-data.service';
-import type { OpenClawRunSummary, OpenClawSessionSummary } from '../../models/api';
+import type { OpenClawRunSummary, OpenClawSessionSummary, OpenClawUsageAgent, OpenClawUsageWindowKey } from '../../models/api';
 import { ViewShellComponent } from '../../layout/view-shell.component';
 import { STANDARD_PANEL_ACTIONS } from '../../shared/models/panel-action';
 import { PanelActionsComponent } from '../../shared/ui/panel-actions.component';
@@ -22,7 +22,7 @@ interface SubAgentRuntimeStatus {
   selector: 'app-sub-agents-page',
   imports: [ViewShellComponent, PanelActionsComponent, PillComponent, StatePanelComponent],
   template: `
-    <app-view-shell eyebrow="Atlas" title="Sub-agents" subtitle="Atlas's worker roster, including when to use each specialist and whether any matching OpenClaw activity is visible right now." [meta]="meta()">
+    <app-view-shell eyebrow="Atlas" title="Sub-agents" subtitle="Atlas's worker roster, including when to use each specialist, whether any matching OpenClaw activity is visible right now, and how much usage each worker is consuming." [meta]="meta()">
       <div view-actions class="flex flex-wrap items-center gap-3">
         <cc-panel-actions [actions]="headerActions" (actionSelected)="onHeaderAction($event)"></cc-panel-actions>
       </div>
@@ -48,6 +48,7 @@ interface SubAgentRuntimeStatus {
               <div class="mt-4 rounded-2xl border border-[var(--cc-border)] bg-[var(--cc-surface-soft)] px-4 py-3 text-xs leading-5 text-[var(--cc-text-soft)]">
                 {{ activitySummary(agent, runtime) }}
               </div>
+              <div class="mt-3 text-xs text-[var(--cc-text-soft)]">{{ usageSummary(agent.id, 'today') }}</div>
             </button>
           }
         </div>
@@ -121,6 +122,38 @@ interface SubAgentRuntimeStatus {
                 </dl>
               }
             </section>
+
+            <section class="cc-stat-surface mt-4 p-4">
+              <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--cc-text-soft)]">Usage</div>
+                <div class="text-xs text-[var(--cc-text-soft)]">{{ usageCoverage(agent.id) }}</div>
+              </div>
+              <div class="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+                <div>
+                  <div class="text-[var(--cc-text-soft)]">Today tokens</div>
+                  <div class="mt-1 font-medium text-[var(--cc-text)]">{{ formatTokenCount(usageForAgent(agent.id, 'today')?.totalTokens ?? 0) }}</div>
+                </div>
+                <div>
+                  <div class="text-[var(--cc-text-soft)]">Today spend</div>
+                  <div class="mt-1 font-medium text-[var(--cc-text)]">{{ formatCost(usageForAgent(agent.id, 'today')?.totalCostUsd ?? null) }}</div>
+                </div>
+                <div>
+                  <div class="text-[var(--cc-text-soft)]">7d calls</div>
+                  <div class="mt-1 font-medium text-[var(--cc-text)]">{{ usageForAgent(agent.id, '7d')?.calls ?? 0 }}</div>
+                </div>
+                <div>
+                  <div class="text-[var(--cc-text-soft)]">Top model</div>
+                  <div class="mt-1 font-medium text-[var(--cc-text)]">{{ topModelLabel(usageForAgent(agent.id, '7d')) }}</div>
+                </div>
+                <div>
+                  <div class="text-[var(--cc-text-soft)]">Last seen</div>
+                  <div class="mt-1 font-medium text-[var(--cc-text)]">{{ usageLastSeen(agent.id) }}</div>
+                </div>
+              </div>
+              <div class="mt-4 text-sm leading-6 text-[var(--cc-text-muted)]">
+                {{ usageDetail(agent.id) }}
+              </div>
+            </section>
           }
         </article>
       </section>
@@ -188,6 +221,77 @@ export class SubAgentsPage {
     return 'No active or recent OpenClaw session currently matches this role. It remains available as part of the standing roster.';
   }
 
+  protected usageSummary(agentId: SubAgentId, window: OpenClawUsageWindowKey): string {
+    const usage = this.usageForAgent(agentId, window);
+    if (usage?.calls) {
+      const model = this.topModelLabel(usage);
+    const suffix = model !== '—' ? ` · ${model}` : '';
+    return `${formatCompactNumber(usage.totalTokens)} tokens · ${this.formatCost(usage.totalCostUsd)} · ${usage.calls} calls ${window === 'today' ? 'today' : `in ${window}`}${suffix}`;
+    }
+
+    if (window === 'today') {
+      const week = this.usageForAgent(agentId, '7d');
+      if (week?.calls) {
+        const model = this.topModelLabel(week);
+        const suffix = model !== '—' ? ` · ${model}` : '';
+        return `No usage today · ${formatCompactNumber(week.totalTokens)} tokens · ${week.calls} calls in 7d${suffix}`;
+      }
+    }
+
+    return window === 'today' ? 'No usage recorded today.' : `No usage recorded in ${window}.`;
+  }
+
+  protected usageForAgent(agentId: SubAgentId, window: OpenClawUsageWindowKey): OpenClawUsageAgent | null {
+    return this.openClaw.data()?.usageAnalytics?.windows?.[window]?.agents?.find((entry) => entry.agent === agentId) ?? null;
+  }
+
+  protected usageDetail(agentId: SubAgentId): string {
+    const today = this.usageForAgent(agentId, 'today');
+    const week = this.usageForAgent(agentId, '7d');
+    if (!today?.calls && !week?.calls) {
+      return 'No token or cost usage has been recorded for this sub-agent yet.';
+    }
+
+    const topModel = this.topModelLabel(week);
+    const lastSeen = week?.lastSeenAt ? this.timeAgo(week.lastSeenAt) : 'unknown';
+    return `${week?.calls ?? 0} calls in 7d, ${this.formatCost(week?.totalCostUsd ?? null)} spend, top model ${topModel}, last seen ${lastSeen}.`;
+  }
+
+  protected usageCoverage(agentId: SubAgentId): string {
+    const today = this.usageForAgent(agentId, 'today');
+    const generatedAt = this.openClaw.data()?.usageAnalytics?.generatedAt;
+    const updated = generatedAt ? `Updated ${this.timeAgo(generatedAt)}` : 'Update time unknown';
+
+    if (!today?.calls) {
+      return `${updated} · no costed calls today`;
+    }
+
+    return `${updated} · cost for ${today.costAvailableCalls}/${today.calls} calls today`;
+  }
+
+  protected topModelLabel(usage: OpenClawUsageAgent | null | undefined): string {
+    const model = usage?.models?.[0]?.model;
+    if (!model) return '—';
+    const parts = model.split('/');
+    return parts[parts.length - 1] || model;
+  }
+
+  protected usageLastSeen(agentId: SubAgentId): string {
+    const usage = this.usageForAgent(agentId, '7d') || this.usageForAgent(agentId, 'today');
+    return usage?.lastSeenAt ? this.timeAgo(usage.lastSeenAt) : 'unknown';
+  }
+
+  protected formatCost(value: number | null | undefined): string {
+    if (value === null || value === undefined) return '—';
+    if (value === 0) return '$0.00';
+    if (value < 0.01) return `$${value.toFixed(4)}`;
+    return `$${value.toFixed(2)}`;
+  }
+
+  protected formatTokenCount(value: number | null | undefined): string {
+    return formatCompactNumber(value ?? 0);
+  }
+
   protected timeAgo(timestamp: number | null | undefined): string {
     if (!timestamp) return 'unknown';
     const seconds = Math.max(1, Math.floor((Date.now() - timestamp) / 1000));
@@ -202,21 +306,21 @@ export class SubAgentsPage {
     const activeSessions = data?.activeSessions ?? [];
     const recentRuns = data?.recentRuns ?? [];
 
-    const matchedActive = activeSessions.find((session) => session.active && this.matchTerm(session, agent.bindingTerms));
+    const matchedActive = activeSessions.find((session) => session.active && this.matchesAgent(session, agent));
     if (matchedActive) {
       return {
         state: 'active',
-        matchedTerm: this.findMatchedTerm(this.searchText(matchedActive), agent.bindingTerms),
+        matchedTerm: this.findMatchedTerm(this.searchText(matchedActive), agent.bindingTerms, matchedActive.agent === agent.id ? agent.id : null),
         activeSession: matchedActive,
         recentRun: null,
       };
     }
 
-    const matchedRun = recentRuns.find((run) => this.matchTerm(run, agent.bindingTerms));
+    const matchedRun = recentRuns.find((run) => this.matchesAgent(run, agent));
     if (matchedRun) {
       return {
         state: 'recent',
-        matchedTerm: this.findMatchedTerm(this.searchText(matchedRun), agent.bindingTerms),
+        matchedTerm: this.findMatchedTerm(this.searchText(matchedRun), agent.bindingTerms, matchedRun.agent === agent.id ? agent.id : null),
         activeSession: null,
         recentRun: matchedRun,
       };
@@ -242,7 +346,12 @@ export class SubAgentsPage {
     return terms.some((term) => haystack.includes(term.toLowerCase()));
   }
 
-  private findMatchedTerm(haystack: string, terms: string[]): string | null {
+  private matchesAgent(entry: OpenClawSessionSummary | OpenClawRunSummary, agent: SubAgentDefinition): boolean {
+    return entry.agent === agent.id || this.matchTerm(entry, agent.bindingTerms);
+  }
+
+  private findMatchedTerm(haystack: string, terms: string[], directAgentId: string | null = null): string | null {
+    if (directAgentId) return directAgentId;
     return terms.find((term) => haystack.includes(term.toLowerCase())) ?? null;
   }
 
@@ -250,4 +359,8 @@ export class SubAgentsPage {
     if (typeof window === 'undefined' || !navigator?.clipboard) return;
     await navigator.clipboard.writeText(window.location.href);
   }
+}
+
+function formatCompactNumber(value: number): string {
+  return new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: value >= 1000 ? 1 : 0 }).format(value);
 }
