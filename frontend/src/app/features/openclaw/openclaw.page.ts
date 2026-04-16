@@ -343,11 +343,11 @@ import { TrendBarsComponent } from '../../shared/ui/trend-bars.component';
               <cc-pill tone="info">{{ activeSessionCount() }} live</cc-pill>
             </div>
 
-            @if (!openClaw.data()!.activeSessions.length) {
-              <cc-state-panel class="mt-5" kind="empty" title="No recent sessions" message="No OpenClaw sessions were active in the recent window."></cc-state-panel>
+            @if (!liveSessions().length) {
+              <cc-state-panel class="mt-5" kind="empty" title="No live sessions" message="No OpenClaw sessions are currently active."></cc-state-panel>
             } @else {
               <div class="mt-5 space-y-3">
-                @for (session of openClaw.data()!.activeSessions; track session.key) {
+                @for (session of liveSessions(); track session.key) {
                   <div class="cc-stat-surface p-4">
                     <div class="flex flex-wrap items-start justify-between gap-3">
                       <div>
@@ -397,7 +397,7 @@ import { TrendBarsComponent } from '../../shared/ui/trend-bars.component';
                       </div>
                     </div>
                     <dl class="mt-4 grid gap-3 text-sm text-[var(--cc-text-muted)] md:grid-cols-4">
-                      <div><dt class="text-[var(--cc-text-soft)]">Finished</dt><dd class="mt-1 font-medium text-[var(--cc-text)]">{{ formatAge(run.ageMs) }}</dd></div>
+                      <div><dt class="text-[var(--cc-text-soft)]">Last seen</dt><dd class="mt-1 font-medium text-[var(--cc-text)]">{{ formatAge(run.ageMs) }}</dd></div>
                       <div><dt class="text-[var(--cc-text-soft)]">Duration</dt><dd class="mt-1 font-medium text-[var(--cc-text)]">{{ formatDuration(run.durationSec) }}</dd></div>
                       <div><dt class="text-[var(--cc-text-soft)]">Tokens</dt><dd class="mt-1 font-medium text-[var(--cc-text)]">{{ run.totalTokens }}</dd></div>
                       <div><dt class="text-[var(--cc-text-soft)]">Cost</dt><dd class="mt-1 font-medium text-[var(--cc-text)]">{{ formatCost(run.estimatedCostUsd) }}</dd></div>
@@ -450,7 +450,8 @@ export class OpenClawPage {
     const current = this.currentVersion();
     return Boolean(latest && current && latest !== current);
   });
-  protected readonly activeSessionCount = computed(() => (this.openClaw.data()?.activeSessions ?? []).filter((session) => session.active).length);
+  protected readonly liveSessions = computed(() => (this.openClaw.data()?.activeSessions ?? []).filter((session) => session.active));
+  protected readonly activeSessionCount = computed(() => this.liveSessions().length);
   protected readonly errorFeedCount = computed(() => this.openClaw.data()?.errorFeed?.length || 0);
   protected readonly selectedUsageWindowData = computed<OpenClawUsageWindow | null>(() => this.openClaw.data()?.usageAnalytics?.windows?.[this.selectedUsageWindow()] ?? null);
   protected readonly selectedUsageModels = computed<OpenClawUsageModel[]>(() => (this.selectedUsageWindowData()?.models ?? []).slice(0, 8));

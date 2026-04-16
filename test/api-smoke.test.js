@@ -76,7 +76,10 @@ function createTestApp({ cacheOverrides = {}, sourceOverrides = {}, infraError =
       nodeService: { label: 'systemd', installed: false, loaded: false, managedByOpenClaw: false, externallyManaged: false, runtime: { status: 'stopped', state: 'inactive' }, runtimeShort: 'stopped (state inactive)' },
       agents: { defaultId: 'main', agents: [{ id: 'main', name: 'main', workspaceDir: '/tmp/workspace', bootstrapPending: false, sessionsPath: '/tmp/sessions.json', sessionsCount: 16 }], totalSessions: 16, bootstrapPendingCount: 0 },
       memoryPlugin: { enabled: true, slot: 'memory-core' },
-      activeSessions: [{ key: 'agent:main:discord:direct:123', sessionId: 'sid-1', agent: 'main', type: 'direct', name: 'Tony DM', model: 'gpt-5.4', updatedAt: 1713124800000, ageMs: 60000, active: true, percentUsed: 12, totalTokens: 3200, contextTokens: 272000, estimatedCostUsd: 0.01, chatType: 'direct', label: 'Tony DM', subject: null, spawnedBy: null, abortedLastRun: false }],
+      activeSessions: [
+        { key: 'agent:main:discord:direct:123', sessionId: 'sid-1', agent: 'main', type: 'direct', name: 'Tony DM', model: 'gpt-5.4', updatedAt: 1713124800000, ageMs: 60000, active: true, percentUsed: 12, totalTokens: 3200, contextTokens: 272000, estimatedCostUsd: 0.01, chatType: 'direct', label: 'Tony DM', subject: null, spawnedBy: null, abortedLastRun: false },
+        { key: 'agent:main:discord:direct:456', sessionId: 'sid-3', agent: 'main', type: 'direct', name: 'Idle Thread', model: 'gpt-5.4', updatedAt: 1713124740000, ageMs: 120000, active: false, percentUsed: 4, totalTokens: 900, contextTokens: 272000, estimatedCostUsd: 0.003, chatType: 'direct', label: 'Idle Thread', subject: null, spawnedBy: null, abortedLastRun: false },
+      ],
       recentRuns: [{ key: 'agent:main:cron:test:run:sid-2', sessionId: 'sid-2', agent: 'main', type: 'run', name: 'Daily Standup', model: 'gpt-5.4', updatedAt: 1713124800000, ageMs: 120000, active: false, percentUsed: 8, totalTokens: 2800, contextTokens: 272000, estimatedCostUsd: 0.02, chatType: 'direct', label: 'Daily Standup', subject: null, spawnedBy: null, abortedLastRun: false, durationSec: 45, status: 'completed' }],
       usageAnalytics: {
         generatedAt: 1713124800000,
@@ -165,7 +168,9 @@ test('main API routes return smoke-level shapes', async () => {
       assert.equal(openClaw.ok, true);
       assert.equal(openClaw.gateway.reachable, true);
       assert.equal(openClaw.agents.totalSessions, 16);
-      assert.equal(openClaw.activeSessions.length, 1);
+      assert.equal(openClaw.activeSessions.length, 2);
+      assert.equal(openClaw.activeSessions[0].active, true);
+      assert.equal(openClaw.activeSessions[1].active, false);
       assert.equal(openClaw.recentRuns.length, 1);
       assert.equal(openClaw.usageAnalytics.windows.today.calls, 4);
       assert.equal(openClaw.usageAnalytics.windows.all.totalCostUsd, 0.3456);

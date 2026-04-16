@@ -202,7 +202,7 @@ export class SubAgentsPage {
     const activeSessions = data?.activeSessions ?? [];
     const recentRuns = data?.recentRuns ?? [];
 
-    const matchedActive = activeSessions.find((session) => this.matchTerm(session, agent.bindingTerms));
+    const matchedActive = activeSessions.find((session) => session.active && this.matchTerm(session, agent.bindingTerms));
     if (matchedActive) {
       return {
         state: 'active',
