@@ -175,12 +175,12 @@ The backend is centered on one large operational module, `server.js`, plus a sma
 
 ```mermaid
 flowchart TB
-  Config[loadConfig()] --> Server[server.js]
+  Config["loadConfig()"] --> Server[server.js]
   Parsers[lib/parsers.js] --> Server
   Server --> Cache[in-memory cache]
   Server --> SourceState[source metadata]
   Server --> Schedulers[node-cron schedules]
-  Server --> AppFactory[createApp()]
+  Server --> AppFactory["createApp()"]
   AppFactory --> Express[Express routes]
 ```
 
@@ -338,7 +338,7 @@ flowchart LR
   Page[Feature Page] --> DDS[DashboardDataService]
   DDS --> Resource[createDashboardResource]
   Resource --> APIService[CommandCenterApiService]
-  APIService --> Backend[/api/*]
+  APIService --> Backend["/api/*"]
 ```
 
 ### Resource behavior
