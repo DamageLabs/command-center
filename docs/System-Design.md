@@ -55,7 +55,7 @@ flowchart LR
   CAL[iCal calendar feeds]
   OBS[Obsidian markdown files]
   STANDUP[Standup markdown dir]
-  UMAMI[Umami HTTP API]
+  ANALYTICS[Analytics provider]
   PM2[PM2 via pm2 jlist]
   OC[OpenClaw CLI + local state]
 
@@ -65,7 +65,7 @@ flowchart LR
   API --> CAL
   API --> OBS
   API --> STANDUP
-  API --> UMAMI
+  API --> ANALYTICS
   API --> PM2
   API --> OC
 ```
@@ -143,15 +143,12 @@ The loader:
 - derives some Obsidian paths from `vaultDir` when omitted
 - emits warnings for missing optional config instead of always throwing
 
-### Important exception: Umami
-Umami credentials are **not** primarily loaded through the JSON config model. The backend reads environment variables for analytics access, including:
-- `UMAMI_URL`
-- `UMAMI_USERNAME`
-- `UMAMI_PASSWORD`
+### Analytics credentials
+Some analytics credentials are provided through environment variables rather than the main JSON config surface.
 
-So the system has a mixed config surface:
+So the system has a mixed config model:
 - JSON config for most local/dashboard concerns
-- env vars for at least part of analytics auth
+- environment variables for some provider-specific auth
 
 ---
 
@@ -263,8 +260,8 @@ The backend reads markdown files directly from configured directories to build:
 - open/completed task lists
 - latest standup sections
 
-### Umami analytics
-The backend authenticates against the Umami API, caches an auth token, fetches sites/stats, and aggregates totals.
+### Analytics
+The backend authenticates against the configured analytics provider, caches an auth token, fetches site stats, and aggregates totals.
 
 ### PM2 infra
 The backend shells out to `pm2 jlist` and normalizes the process list into the Infra view.
@@ -537,7 +534,7 @@ flowchart TD
   GH[gh CLI] --> Fetchers
   CAL[iCal feeds] --> Fetchers
   OBS[Obsidian + standups] --> Fetchers
-  UMAMI[Umami API] --> Fetchers
+  ANALYTICS[Analytics provider] --> Fetchers
   PM2[pm2 jlist] --> Fetchers
   OC[OpenClaw CLI + local files] --> Fetchers
 
