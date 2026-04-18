@@ -375,6 +375,12 @@ export interface OpenClawUsageAnalytics {
   windows: Record<OpenClawUsageWindowKey, OpenClawUsageWindow>;
 }
 
+export interface OpenClawConfiguredAgent {
+  id: string;
+  name: string;
+  model: string | null;
+}
+
 export interface OpenClawLogEntry {
   timestamp: number;
   seenAt: string;
@@ -416,6 +422,7 @@ export interface OpenClawResponse extends ApiEnvelope {
   channelSummary?: string[];
   activeSessions: OpenClawSessionSummary[];
   recentRuns: OpenClawRunSummary[];
+  configuredAgents?: OpenClawConfiguredAgent[];
   usageAnalytics: OpenClawUsageAnalytics;
   logsTail: OpenClawLogEntry[];
   errorFeed: OpenClawErrorGroup[];
