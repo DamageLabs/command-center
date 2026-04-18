@@ -1,8 +1,9 @@
-export type SubAgentId = 'scout' | 'scope' | 'patch' | 'proof' | 'trace' | 'ink' | 'index' | 'second-look';
+export type SubAgentId = 'scout' | 'scope' | 'patch' | 'proof' | 'trace' | 'ink' | 'index' | 'second-look' | 'watch';
 
 export interface SubAgentDefinition {
   id: SubAgentId;
-  name: string;
+  displayName: string;
+  operationalName: string;
   role: string;
   spawnWhen: string;
   description: string;
@@ -16,7 +17,8 @@ export interface SubAgentDefinition {
 export const SUB_AGENTS: SubAgentDefinition[] = [
   {
     id: 'scout',
-    name: 'Scout',
+    displayName: 'Owl',
+    operationalName: 'Scout',
     role: 'Repo scout and architecture mapper',
     spawnWhen: 'Use when Atlas needs fast orientation in an unfamiliar codebase before deciding where to act.',
     description: 'Scout maps the real shape of a repo, finds the likely entrypoints, and identifies where the work probably lives.',
@@ -41,7 +43,8 @@ export const SUB_AGENTS: SubAgentDefinition[] = [
   },
   {
     id: 'scope',
-    name: 'Scope',
+    displayName: 'Veidt',
+    operationalName: 'Scope',
     role: 'Issue triage and scope-definer',
     spawnWhen: 'Use when a bug or issue needs hidden-scope analysis before coding starts.',
     description: 'Scope turns a vague request into an implementation plan with real boundaries, dependencies, and test expectations.',
@@ -66,7 +69,8 @@ export const SUB_AGENTS: SubAgentDefinition[] = [
   },
   {
     id: 'patch',
-    name: 'Patch',
+    displayName: 'Blue',
+    operationalName: 'Patch',
     role: 'Bounded implementer',
     spawnWhen: 'Use when the task is already scoped and Atlas wants a focused implementation pass.',
     description: 'Patch makes one concrete change at a time, with a clear boundary, explicit files, and defined acceptance criteria.',
@@ -91,7 +95,8 @@ export const SUB_AGENTS: SubAgentDefinition[] = [
   },
   {
     id: 'proof',
-    name: 'Proof',
+    displayName: 'Rorschach',
+    operationalName: 'Proof',
     role: 'Verifier and regression runner',
     spawnWhen: 'Use when Atlas already has a candidate fix and needs hard evidence that it worked.',
     description: 'Proof validates behavior with tests, smoke checks, route verification, and before/after comparisons.',
@@ -116,7 +121,8 @@ export const SUB_AGENTS: SubAgentDefinition[] = [
   },
   {
     id: 'trace',
-    name: 'Trace',
+    displayName: 'Glass',
+    operationalName: 'Trace',
     role: 'Runtime and log forensics',
     spawnWhen: 'Use when something is failing live and Atlas needs grouped symptoms plus likely causes.',
     description: 'Trace reads logs, cron output, service state, and runtime traces to turn noisy failures into ranked explanations.',
@@ -141,7 +147,8 @@ export const SUB_AGENTS: SubAgentDefinition[] = [
   },
   {
     id: 'ink',
-    name: 'Ink',
+    displayName: 'Mason',
+    operationalName: 'Ink',
     role: 'Docs and runbook writer',
     spawnWhen: 'Use when working knowledge should become durable documentation that matches reality.',
     description: 'Ink turns live workflows, code behavior, and practical setup knowledge into runbooks, guides, and durable canon.',
@@ -166,7 +173,8 @@ export const SUB_AGENTS: SubAgentDefinition[] = [
   },
   {
     id: 'index',
-    name: 'Index',
+    displayName: 'Archive',
+    operationalName: 'Index',
     role: 'Structured extractor and fact organizer',
     spawnWhen: 'Use when Atlas needs broad evidence collected into a normalized fact set.',
     description: 'Index gathers facts across files, repos, logs, or transcripts and returns them in a structured shape Atlas can reason over.',
@@ -191,7 +199,8 @@ export const SUB_AGENTS: SubAgentDefinition[] = [
   },
   {
     id: 'second-look',
-    name: 'Second Look',
+    displayName: 'Spectre',
+    operationalName: 'Second Look',
     role: 'Reviewer and scope checker',
     spawnWhen: 'Use when Atlas wants one adversarial review pass before calling something done.',
     description: 'Second Look checks for scope creep, suspicious diffs, weak evidence, and whether the result actually matches the request.',
@@ -213,5 +222,31 @@ export const SUB_AGENTS: SubAgentDefinition[] = [
       'What still lacks evidence',
     ],
     bindingTerms: ['second look', 'second-look', 'secondlook'],
+  },
+  {
+    id: 'watch',
+    displayName: 'Clock',
+    operationalName: 'Watch',
+    role: 'Monitor and anomaly surfacer',
+    spawnWhen: 'Use when Atlas wants quiet heartbeat-style monitoring that notices meaningful changes before they become surprises.',
+    description: 'Watch keeps an eye on services, cron jobs, queues, and drifting runtime state, then surfaces only the changes that actually deserve attention.',
+    portraitPath: '/atlas/sub-agents/watch.png',
+    goodTasks: [
+      'Heartbeat monitoring',
+      'Missed cron or stale service detection',
+      'High-signal anomaly surfacing',
+    ],
+    badTasks: [
+      'Deep debugging instead of Trace',
+      'Noisy constant status chatter',
+      'Declaring incidents without evidence',
+    ],
+    outputContract: [
+      'What changed',
+      'Why it matters or does not',
+      'Recommended next action',
+      'Whether Atlas should notify, investigate, or stay quiet',
+    ],
+    bindingTerms: ['watch'],
   },
 ];
