@@ -42,7 +42,10 @@ interface SubAgentRuntimeStatus {
                   <div class="text-lg font-semibold text-[var(--cc-text)]">{{ agent.name }}</div>
                   <div class="mt-2 text-sm text-[var(--cc-text-muted)]">{{ agent.role }}</div>
                 </div>
-                <cc-pill [tone]="statusTone(runtime.state)">{{ statusLabel(runtime.state) }}</cc-pill>
+                <div class="flex flex-wrap items-center justify-end gap-2">
+                  <cc-pill [tone]="configuredModelTone(agent.id)">{{ configuredModelLabel(agent.id) }}</cc-pill>
+                  <cc-pill [tone]="statusTone(runtime.state)">{{ statusLabel(runtime.state) }}</cc-pill>
+                </div>
               </div>
               <div class="mt-4 text-sm leading-6 text-[var(--cc-text-muted)]">{{ agent.spawnWhen }}</div>
               <div class="mt-4 rounded-2xl border border-[var(--cc-border)] bg-[var(--cc-surface-soft)] px-4 py-3 text-xs leading-5 text-[var(--cc-text-soft)]">
@@ -63,7 +66,10 @@ interface SubAgentRuntimeStatus {
                 <div class="mt-2 text-2xl font-semibold text-[var(--cc-text)]">{{ agent.name }}</div>
                 <div class="mt-2 text-sm text-[var(--cc-text-muted)]">{{ agent.role }}</div>
               </div>
-              <cc-pill [tone]="statusTone(runtime.state)">{{ statusLabel(runtime.state) }}</cc-pill>
+              <div class="flex flex-wrap items-center justify-end gap-2">
+                <cc-pill [tone]="configuredModelTone(agent.id)">{{ configuredModelLabel(agent.id) }}</cc-pill>
+                <cc-pill [tone]="statusTone(runtime.state)">{{ statusLabel(runtime.state) }}</cc-pill>
+              </div>
             </div>
 
             <div class="mt-5 rounded-2xl border border-[var(--cc-border)] bg-[var(--cc-surface-soft)] px-4 py-3 text-sm leading-7 text-[var(--cc-text-muted)]">
@@ -219,6 +225,21 @@ export class SubAgentsPage {
     }
 
     return 'No active or recent OpenClaw session currently matches this role. It remains available as part of the standing roster.';
+  }
+
+  protected configuredModelLabel(agentId: SubAgentId): string {
+    const model = this.openClaw.data()?.configuredAgents?.find((entry) => entry.id === agentId)?.model;
+    if (!model) return 'model unknown';
+    const [provider, ...rest] = model.split('/');
+    const modelId = rest.join('/') || provider;
+    return `${provider} · ${modelId}`;
+  }
+
+  protected configuredModelTone(agentId: SubAgentId): 'accent' | 'info' | 'neutral' {
+    const model = this.openClaw.data()?.configuredAgents?.find((entry) => entry.id === agentId)?.model || '';
+    if (model.startsWith('ollama/')) return 'info';
+    if (model.startsWith('openai/')) return 'accent';
+    return 'neutral';
   }
 
   protected usageSummary(agentId: SubAgentId, window: OpenClawUsageWindowKey): string {
