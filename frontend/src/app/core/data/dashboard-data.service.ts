@@ -48,6 +48,7 @@ export class DashboardDataService {
     channelSummary: OpenClawResponse['channelSummary'];
     activeSessions: OpenClawResponse['activeSessions'];
     recentRuns: OpenClawResponse['recentRuns'];
+    configuredAgents: OpenClawResponse['configuredAgents'];
     usageAnalytics: OpenClawResponse['usageAnalytics'];
     logsTail: OpenClawResponse['logsTail'];
     errorFeed: OpenClawResponse['errorFeed'];
@@ -167,6 +168,7 @@ export class DashboardDataService {
     channelSummary: OpenClawResponse['channelSummary'];
     activeSessions: OpenClawResponse['activeSessions'];
     recentRuns: OpenClawResponse['recentRuns'];
+    configuredAgents: OpenClawResponse['configuredAgents'];
     usageAnalytics: OpenClawResponse['usageAnalytics'];
     logsTail: OpenClawResponse['logsTail'];
     errorFeed: OpenClawResponse['errorFeed'];
@@ -194,6 +196,7 @@ export class DashboardDataService {
         channelSummary: response.channelSummary,
         activeSessions: response.activeSessions,
         recentRuns: response.recentRuns,
+        configuredAgents: response.configuredAgents,
         usageAnalytics: response.usageAnalytics,
         logsTail: response.logsTail,
         errorFeed: response.errorFeed,

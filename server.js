@@ -1465,6 +1465,22 @@ function buildOpenClawErrorFeed(...collections) {
     .slice(0, OPENCLAW_ERROR_FEED_LIMIT);
 }
 
+function readOpenClawConfiguredAgents() {
+  const raw = execFileSync('openclaw', ['agents', 'list', '--json'], {
+    encoding: 'utf8',
+    timeout: 15000,
+    maxBuffer: 2 * 1024 * 1024,
+  });
+  const list = JSON.parse(raw);
+  return Array.isArray(list)
+    ? list.map((agent) => ({
+        id: agent.id,
+        name: agent.identityName || agent.name || agent.id,
+        model: agent.model || null,
+      }))
+    : [];
+}
+
 function fetchOpenClawRuntime() {
   beginSource('openclaw');
   try {
@@ -1478,6 +1494,12 @@ function fetchOpenClawRuntime() {
     const gatewayPid = status.gatewayService?.runtime?.pid;
     const gatewayProcess = readProcessSnapshot(gatewayPid);
     const activity = collectOpenClawActivity();
+    let configuredAgents = [];
+    try {
+      configuredAgents = readOpenClawConfiguredAgents();
+    } catch (error) {
+      console.warn('[openclaw] configured agent roster unavailable:', error.message);
+    }
     let usageAnalytics = emptyOpenClawUsageAnalytics(updatedAt);
     try {
       usageAnalytics = readOpenClawUsageAnalytics();
@@ -1522,6 +1544,7 @@ function fetchOpenClawRuntime() {
       secretDiagnostics: status.secretDiagnostics || [],
       activeSessions: activity.activeSessions,
       recentRuns: activity.recentRuns,
+      configuredAgents,
       usageAnalytics,
       logsTail,
       errorFeed,

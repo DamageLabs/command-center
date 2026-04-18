@@ -81,6 +81,7 @@ function createTestApp({ cacheOverrides = {}, sourceOverrides = {}, infraError =
         { key: 'agent:main:discord:direct:456', sessionId: 'sid-3', agent: 'main', type: 'direct', name: 'Idle Thread', model: 'gpt-5.4', updatedAt: 1713124740000, ageMs: 120000, active: false, percentUsed: 4, totalTokens: 900, contextTokens: 272000, estimatedCostUsd: 0.003, chatType: 'direct', label: 'Idle Thread', subject: null, spawnedBy: null, abortedLastRun: false },
       ],
       recentRuns: [{ key: 'agent:main:cron:test:run:sid-2', sessionId: 'sid-2', agent: 'main', type: 'run', name: 'Daily Standup', model: 'gpt-5.4', updatedAt: 1713124800000, ageMs: 120000, active: false, percentUsed: 8, totalTokens: 2800, contextTokens: 272000, estimatedCostUsd: 0.02, chatType: 'direct', label: 'Daily Standup', subject: null, spawnedBy: null, abortedLastRun: false, durationSec: 45, status: 'completed' }],
+      configuredAgents: [{ id: 'scout', name: 'Scout', model: 'ollama/qwen3:14b' }, { id: 'patch', name: 'Patch', model: 'openai/gpt-5.4' }],
       usageAnalytics: {
         generatedAt: 1713124800000,
         filesScanned: 3,
@@ -172,6 +173,8 @@ test('main API routes return smoke-level shapes', async () => {
       assert.equal(openClaw.activeSessions[0].active, true);
       assert.equal(openClaw.activeSessions[1].active, false);
       assert.equal(openClaw.recentRuns.length, 1);
+      assert.equal(openClaw.configuredAgents.length, 2);
+      assert.equal(openClaw.configuredAgents[0].model, 'ollama/qwen3:14b');
       assert.equal(openClaw.usageAnalytics.windows.today.calls, 4);
       assert.equal(openClaw.usageAnalytics.windows.today.agents.length, 2);
       assert.equal(openClaw.usageAnalytics.windows.today.agents[0].agent, 'scout');
