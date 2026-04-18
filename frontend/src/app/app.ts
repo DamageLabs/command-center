@@ -23,7 +23,7 @@ export class App {
     { path: '/repos', label: 'Repos' },
     { path: '/infra', label: 'Infra' },
     { path: '/openclaw', label: 'OpenClaw' },
-    { path: '/sub-agents', label: 'Sub-agents' },
+    { path: '/sub-agents', label: 'Agents' },
     { path: '/analytics', label: 'Analytics' },
   ];
 }

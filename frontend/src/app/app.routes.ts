@@ -95,7 +95,7 @@ export const routes: Routes = [
   {
     path: 'sub-agents',
     component: SubAgentsPage,
-    title: 'Atlas Sub-agents',
+    title: 'Atlas Agents',
   },
   {
     path: 'analytics',
